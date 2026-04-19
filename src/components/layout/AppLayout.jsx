@@ -3,6 +3,7 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { isInstructor, isCadetAdmin } from '@/lib/constants';
 import BottomNav from './BottomNav';
+import LoadingScreen from './LoadingScreen';
 
 export default function AppLayout() {
   const [user, setUser] = useState(null);
@@ -24,11 +25,7 @@ export default function AppLayout() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center bg-background">
-        <div className="w-7 h-7 border-2 border-muted border-t-primary rounded-full animate-spin" />
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   return (

@@ -8,9 +8,9 @@ export default function QuickAction({ to, icon: Icon, label, description, varian
       to={to}
       className={cn(
         "flex items-start gap-3 p-3.5 rounded-xl border transition-all active:scale-[0.98]",
-        variant === 'primary' 
-          ? "bg-primary/5 border-primary/20 hover:bg-primary/10" 
-          : "bg-card border-border hover:bg-muted/50"
+        variant === 'primary'
+          ? "bg-primary/10 border-primary/25 hover:bg-primary/15"
+          : "bg-card border-border hover:bg-secondary/60"
       )}
     >
       <div className={cn(

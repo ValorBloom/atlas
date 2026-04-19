@@ -6,15 +6,16 @@
       "type": "string",
       "enum": [
         "cadet",
+        "cadet_admin",
         "instructor"
       ],
       "default": "cadet",
-      "description": "User role in the system"
+      "description": "User role"
     },
     "is_admin": {
       "type": "boolean",
       "default": false,
-      "description": "Whether user has admin privileges"
+      "description": "Whether user has instructor-level privileges"
     },
     "unit": {
       "type": "string",
@@ -28,9 +29,13 @@
       "type": "string",
       "description": "Contact phone number"
     },
-    "display_name": {
+    "platoon": {
       "type": "string",
-      "description": "Display name (rank + name)"
+      "description": "Platoon / Flight / Byte / Division"
+    },
+    "section": {
+      "type": "string",
+      "description": "Section number (for standard units)"
     }
   },
   "required": [

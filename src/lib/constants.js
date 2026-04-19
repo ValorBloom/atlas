@@ -2,24 +2,48 @@
 
 export const ADMIN_PIN = "SAF2040";
 
-export const RANKS = [
-  "SCT", "OCT", "ME4T",
+export const CADET_RANKS = ["SCT", "OCT", "ME4T"];
+
+export const INSTRUCTOR_RANKS = [
   "2LT", "LTA", "CPT", "MAJ", "LTC", "SLTC", "COL",
   "ME4", "ME5", "ME6",
   "MSG", "3WO", "2WO", "1WO", "MWO"
 ];
 
+export const RANKS = [...CADET_RANKS, ...INSTRUCTOR_RANKS];
+
 export const UNITS = [
-  "OCS, Alpha",
-  "OCS, Charlie",
-  "OCS, Delta",
-  "OCS, Echo",
-  "OCS, Sierra",
-  "OCS, Tango",
-  "OCS, Mids",
-  "OCS, Air",
-  "OCS, DIS"
+  "Alpha", "Charlie", "Delta", "Echo", "Sierra", "Tango",
+  "Mids", "Air", "DIS"
 ];
+
+// Unit-specific platoon/section groups
+export const UNIT_GROUPS = {
+  Air: ["Alpha", "Bravo", "Charlie"],
+  DIS: ["Byte 1", "Byte 2", "Byte 3", "Byte 4", "Byte 5", "Byte 6"],
+  Mids: ["Sea Tiger", "Sea Lion", "Sea Dragon"],
+};
+
+export const PLATOONS = [1, 2, 3, 4];
+export const SECTIONS = [1, 2, 3, 4];
+
+// Returns the group label for unit (Platoon / Flight / Byte etc.)
+export const getGroupLabel = (unit) => {
+  if (unit === 'Air') return 'Flight';
+  if (unit === 'DIS') return 'Byte';
+  if (unit === 'Mids') return 'Division';
+  return 'Platoon';
+};
+
+export const getGroupOptions = (unit) => {
+  if (UNIT_GROUPS[unit]) return UNIT_GROUPS[unit];
+  return PLATOONS.map(p => `Platoon ${p}`);
+};
+
+export const getSectionOptions = (unit) => {
+  if (UNIT_GROUPS[unit]) return null; // No sections for these units
+  return SECTIONS.map(s => `Section ${s}`);
+};
 
 export const LOCATIONS = [
   "Camp", "SAF Ferry Terminal", "Tekong Jetty", "Medical Centre",

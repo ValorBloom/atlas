@@ -7,9 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RANKS, UNITS, isInstructor } from '@/lib/constants';
-import { LogOut, User, Shield, Star, ChevronRight } from 'lucide-react';
+import { LogOut, User, Shield, Star, ChevronRight, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -19,6 +18,11 @@ export default function Profile() {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
+
+  // Delete account state
+  const [showDelete, setShowDelete] = useState(false);
+  const [deleteInput, setDeleteInput] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -32,130 +36,199 @@ export default function Profile() {
 
   const handleSave = async () => {
     setSaving(true);
-    await base44.auth.updateMe({
-      ...form,
-      display_name: `${form.rank} ${user.full_name || ''}`.trim(),
-    });
+    await base44.auth.updateMe(form);
     setSaving(false);
     setEditing(false);
     toast.success('Profile updated');
   };
 
+  const handleDeleteAccount = async () => {
+    if (deleteInput.trim() !== user?.full_name?.trim()) return;
+    setDeleting(true);
+    await base44.entities.User.delete(user.id);
+    base44.auth.logout('/');
+  };
+
+  const fullName = user?.full_name || '';
+  const deleteReady = deleteInput.trim() === fullName.trim() && fullName.length > 0;
+
   return (
     <div>
-      <PageHeader 
-        title="Profile" 
+      <PageHeader
+        title="Profile"
         rightAction={
-          <Button variant="ghost" size="sm" className="text-destructive text-xs" onClick={() => base44.auth.logout('/')}>
-            <LogOut className="h-3.5 w-3.5 mr-1" />
-            Logout
+          <Button variant="ghost" size="sm" className="text-muted-foreground text-xs gap-1" onClick={() => base44.auth.logout('/')}>
+            <LogOut className="h-3.5 w-3.5" /> Logout
           </Button>
         }
       />
-      <div className="px-4 py-5 space-y-5">
-        {/* Identity Card */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                <User className="h-5 w-5 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-base font-semibold truncate">{user?.full_name || 'User'}</p>
-                <p className="text-xs text-muted-foreground">{user?.email}</p>
-                <div className="flex items-center gap-1.5 mt-1">
-                  <Badge variant="secondary" className="text-[10px]">{user?.rank || '—'}</Badge>
-                  <Badge variant="secondary" className="text-[10px]">{user?.unit || '—'}</Badge>
-                  {user?.is_admin && (
-                    <Badge className="text-[10px] bg-primary/10 text-primary border-0">
-                      <Shield className="h-2.5 w-2.5 mr-0.5" />Admin
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Edit Form */}
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm">Details</CardTitle>
-              {!editing ? (
-                <Button variant="ghost" size="sm" className="text-xs" onClick={() => setEditing(true)}>
-                  Edit
+      <div className="px-4 py-5 space-y-4">
+
+        {/* Identity */}
+        <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-3">
+          <div className="w-11 h-11 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+            <User className="h-5 w-5 text-primary" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-foreground truncate">{user?.full_name || 'User'}</p>
+            <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+              {user?.rank && <Badge variant="secondary" className="text-[10px]">{user.rank}</Badge>}
+              {user?.unit && <Badge variant="secondary" className="text-[10px]">{user.unit}</Badge>}
+              {user?.platoon && <Badge variant="secondary" className="text-[10px]">{user.platoon}</Badge>}
+              {user?.section && <Badge variant="secondary" className="text-[10px]">{user.section}</Badge>}
+              {user?.is_admin && (
+                <Badge className="text-[10px] bg-primary/15 text-primary border-0">
+                  <Shield className="h-2.5 w-2.5 mr-0.5" />Instructor
+                </Badge>
+              )}
+              {user?.role === 'cadet_admin' && (
+                <Badge className="text-[10px] bg-amber-500/15 text-amber-400 border-0">
+                  <Star className="h-2.5 w-2.5 mr-0.5" />Admin
+                </Badge>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Edit Details */}
+        <div className="bg-card border border-border rounded-xl p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-foreground">Details</p>
+            {!editing ? (
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setEditing(true)}>Edit</Button>
+            ) : (
+              <div className="flex gap-2">
+                <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setEditing(false)}>Cancel</Button>
+                <Button size="sm" className="text-xs h-7" onClick={handleSave} disabled={saving}>
+                  {saving ? 'Saving…' : 'Save'}
                 </Button>
-              ) : (
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" className="text-xs" onClick={() => setEditing(false)}>
-                    Cancel
-                  </Button>
-                  <Button size="sm" className="text-xs" onClick={handleSave} disabled={saving}>
-                    {saving ? 'Saving...' : 'Save'}
-                  </Button>
-                </div>
-              )}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Role</span>
+              <span className="text-xs font-medium capitalize">{user?.role || 'Cadet'}</span>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4 pt-0">
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Role</Label>
-              <p className="text-sm font-medium capitalize">{user?.role || 'Cadet'}</p>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Rank</Label>
+            <div className="flex items-center justify-between">
               {editing ? (
-                <Select value={form.rank} onValueChange={(v) => setForm({ ...form, rank: v })}>
-                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {RANKS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <>
+                  <span className="text-xs text-muted-foreground">Rank</span>
+                  <Select value={form.rank} onValueChange={(v) => setForm({ ...form, rank: v })}>
+                    <SelectTrigger className="h-8 w-32 text-xs bg-background border-border"><SelectValue /></SelectTrigger>
+                    <SelectContent>{RANKS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+                  </Select>
+                </>
               ) : (
-                <p className="text-sm font-medium">{user?.rank || '—'}</p>
+                <>
+                  <span className="text-xs text-muted-foreground">Rank</span>
+                  <span className="text-xs font-medium">{user?.rank || '—'}</span>
+                </>
               )}
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Unit</Label>
+            <div className="flex items-center justify-between">
               {editing ? (
-                <Select value={form.unit} onValueChange={(v) => setForm({ ...form, unit: v })}>
-                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <>
+                  <span className="text-xs text-muted-foreground">Unit</span>
+                  <Select value={form.unit} onValueChange={(v) => setForm({ ...form, unit: v })}>
+                    <SelectTrigger className="h-8 w-32 text-xs bg-background border-border"><SelectValue /></SelectTrigger>
+                    <SelectContent>{UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
+                  </Select>
+                </>
               ) : (
-                <p className="text-sm font-medium">{user?.unit || '—'}</p>
+                <>
+                  <span className="text-xs text-muted-foreground">Unit</span>
+                  <span className="text-xs font-medium">{user?.unit || '—'}</span>
+                </>
               )}
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Phone</Label>
+            <div className="flex items-center justify-between">
               {editing ? (
-                <Input 
-                  className="h-9" 
-                  value={form.phone_number} 
-                  onChange={(e) => setForm({ ...form, phone_number: e.target.value })} 
-                />
+                <>
+                  <span className="text-xs text-muted-foreground">Phone</span>
+                  <Input
+                    className="h-8 w-32 text-xs bg-background border-border"
+                    value={form.phone_number}
+                    onChange={(e) => setForm({ ...form, phone_number: e.target.value })}
+                  />
+                </>
               ) : (
-                <p className="text-sm font-medium">{user?.phone_number || '—'}</p>
+                <>
+                  <span className="text-xs text-muted-foreground">Phone</span>
+                  <span className="text-xs font-medium">{user?.phone_number || '—'}</span>
+                </>
               )}
             </div>
-          </CardContent>
-        </Card>
-        {/* Instructor: Appoint Admin */}
+          </div>
+        </div>
+
+        {/* Instructor: Appoint Cadet Admin */}
         {instructor && (
-          <Link to="/admin/appoint" className="flex items-center gap-3 p-4 rounded-xl border border-border bg-card hover:bg-muted/30 transition-colors">
-            <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
-              <Star className="h-4 w-4 text-amber-600" />
+          <Link
+            to="/admin/appoint"
+            className="flex items-center gap-3 p-4 bg-card border border-border rounded-xl hover:bg-secondary/50 transition-colors"
+          >
+            <div className="w-9 h-9 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
+              <Star className="h-4 w-4 text-amber-400" />
             </div>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold">Appoint Cadet Admin</p>
-              <p className="text-xs text-muted-foreground">Grant limited admin access to cadets</p>
+              <p className="text-xs text-muted-foreground">Grant admin access to cadets</p>
             </div>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
           </Link>
         )}
+
+        {/* Delete Account */}
+        {!showDelete ? (
+          <button
+            onClick={() => setShowDelete(true)}
+            className="w-full flex items-center gap-3 p-4 bg-card border border-destructive/20 rounded-xl hover:bg-destructive/5 transition-colors text-left"
+          >
+            <div className="w-9 h-9 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0">
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-destructive">Delete Account</p>
+              <p className="text-xs text-muted-foreground">Permanently remove your account</p>
+            </div>
+          </button>
+        ) : (
+          <div className="bg-card border border-destructive/30 rounded-xl p-4 space-y-3">
+            <p className="text-sm font-semibold text-destructive">Delete Account</p>
+            <p className="text-xs text-muted-foreground">Type your full name to confirm:</p>
+            <p className="text-xs font-mono bg-background border border-border rounded-lg px-3 py-2 text-foreground">{fullName}</p>
+            <Input
+              placeholder="Type full name here"
+              value={deleteInput}
+              onChange={(e) => setDeleteInput(e.target.value)}
+              className="h-10 bg-background border-border text-sm"
+            />
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 border-border"
+                onClick={() => { setShowDelete(false); setDeleteInput(''); }}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                className="flex-1"
+                disabled={!deleteReady || deleting}
+                onClick={handleDeleteAccount}
+              >
+                {deleting ? 'Deleting…' : 'Delete'}
+              </Button>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
