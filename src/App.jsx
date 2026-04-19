@@ -4,10 +4,12 @@ import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import { ThemeProvider } from '@/lib/ThemeContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
 // Layout
 import AppLayout from './components/layout/AppLayout';
+import LoginScreen from './components/LoginScreen';
 
 // Pages
 import Home from './pages/Home';
@@ -42,10 +44,10 @@ const AuthenticatedApp = () => {
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-background">
+      <div className="fixed inset-0 flex items-center justify-center bg-[#0a0e1a]">
         <div className="text-center space-y-3">
-          <div className="w-8 h-8 border-3 border-muted border-t-primary rounded-full animate-spin mx-auto"></div>
-          <p className="text-xs text-muted-foreground">Loading Anchor...</p>
+          <div className="w-8 h-8 border-2 border-blue-900 border-t-blue-500 rounded-full animate-spin mx-auto"></div>
+          <p className="text-xs text-slate-500">Loading Anchor...</p>
         </div>
       </div>
     );
@@ -55,8 +57,7 @@ const AuthenticatedApp = () => {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
     } else if (authError.type === 'auth_required') {
-      navigateToLogin();
-      return null;
+      return <LoginScreen onLogin={navigateToLogin} />;
     }
   }
 
@@ -95,14 +96,16 @@ const AuthenticatedApp = () => {
 
 function App() {
   return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <AuthenticatedApp />
-        </Router>
-        <Toaster />
-      </QueryClientProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <QueryClientProvider client={queryClientInstance}>
+          <Router>
+            <AuthenticatedApp />
+          </Router>
+          <Toaster />
+        </QueryClientProvider>
+      </AuthProvider>
+    </ThemeProvider>
   )
 }
 

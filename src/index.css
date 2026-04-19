@@ -7,6 +7,49 @@
 @layer base {
   :root {
     --font-inter: 'Inter', sans-serif;
+    /* Light mode */
+    --background: 210 20% 97%;
+    --foreground: 222 24% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 24% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 24% 10%;
+    --primary: 217 91% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 16% 93%;
+    --secondary-foreground: 222 18% 30%;
+    --muted: 210 16% 93%;
+    --muted-foreground: 220 10% 48%;
+    --accent: 210 16% 90%;
+    --accent-foreground: 222 18% 20%;
+    --destructive: 0 65% 52%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 210 16% 88%;
+    --input: 210 16% 93%;
+    --ring: 217 91% 55%;
+    --chart-1: 217 91% 55%;
+    --chart-2: 160 60% 42%;
+    --chart-3: 30 80% 52%;
+    --chart-4: 280 65% 58%;
+    --chart-5: 340 75% 52%;
+    --radius: 0.65rem;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 24% 10%;
+    --sidebar-primary: 217 91% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 16% 93%;
+    --sidebar-accent-foreground: 222 18% 20%;
+    --sidebar-border: 210 16% 88%;
+    --sidebar-ring: 217 91% 55%;
+    --success: 152 60% 38%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 48%;
+    --warning-foreground: 0 0% 0%;
+    --info: 217 91% 55%;
+    --info-foreground: 0 0% 100%;
+  }
+
+  .dark {
     --background: 222 24% 8%;
     --foreground: 210 20% 92%;
     --card: 222 22% 11%;

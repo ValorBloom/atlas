@@ -6,8 +6,8 @@ import { isInstructor, isCadetAdmin, formatRankName } from '@/lib/constants';
 import QuickAction from '@/components/home/QuickAction';
 import {
   MapPin, Activity, FileText, Trophy, Bell,
-  ClipboardList, Dumbbell, LayoutDashboard,
-  ChevronRight, Eye, Megaphone
+  ClipboardList, LayoutDashboard,
+  ChevronRight, Eye, Megaphone, Anchor
 } from 'lucide-react';
 
 export default function Home() {
@@ -80,8 +80,8 @@ export default function Home() {
               </span>
             </div>
           </div>
-          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shrink-0">
-            <span className="text-white font-bold text-sm">A</span>
+          <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/25 flex items-center justify-center shrink-0">
+            <Anchor className="h-4.5 w-4.5 text-primary" style={{ width: 18, height: 18 }} />
           </div>
         </div>
       </div>
@@ -133,7 +133,7 @@ export default function Home() {
           <div className="space-y-2.5">
             <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Actions</p>
             <div className="grid grid-cols-2 gap-2">
-              <QuickAction to="/actions/movement" icon={MapPin} label="Movement" description="Report movement" variant="primary" />
+              <QuickAction to="/actions/movement" icon={MapPin} label="Movement" description="Log departure / arrival" variant="primary" />
               <QuickAction to="/actions/sft" icon={Activity} label="SFT" description="Submit activity" variant="primary" />
               <QuickAction to="/actions/status" icon={FileText} label="Status" description="RSO / MA / RSI" />
               <QuickAction to="/points" icon={Trophy} label="Points" description="Leaderboard" />

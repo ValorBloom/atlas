@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Anchor } from 'lucide-react';
 
 const tips = [
   "Fall in — loading your unit data",
@@ -35,11 +36,11 @@ export default function LoadingScreen() {
     <div className="fixed inset-0 bg-background flex flex-col items-center justify-center gap-8">
       {/* Logo mark */}
       <div className="relative">
-        <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
-          <span className="text-white font-bold text-2xl">A</span>
+        <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-lg shadow-primary/20">
+          <Anchor className="text-primary" style={{ width: 28, height: 28 }} />
         </div>
         {/* Pulse rings */}
-        <div className="absolute inset-0 rounded-2xl bg-primary/20 animate-ping" style={{ animationDuration: '2s' }} />
+        <div className="absolute inset-0 rounded-2xl bg-primary/15 animate-ping" style={{ animationDuration: '2s' }} />
       </div>
 
       {/* App name */}

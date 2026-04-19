@@ -8,13 +8,15 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { RANKS, UNITS, isInstructor } from '@/lib/constants';
-import { LogOut, User, Shield, Star, ChevronRight, Trash2 } from 'lucide-react';
+import { LogOut, User, Shield, Star, ChevronRight, Trash2, Moon, Sun } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useTheme } from '@/lib/ThemeContext';
 
 export default function Profile() {
   const { user } = useOutletContext();
   const instructor = isInstructor(user);
+  const { theme, toggleTheme } = useTheme();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
@@ -165,6 +167,25 @@ export default function Profile() {
           </div>
         </div>
 
+        {/* Theme Toggle */}
+        <button
+          onClick={toggleTheme}
+          className="w-full flex items-center justify-between p-4 bg-card border border-border rounded-xl hover:bg-secondary/50 transition-colors text-left"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
+              {theme === 'dark' ? <Moon className="h-4 w-4 text-primary" /> : <Sun className="h-4 w-4 text-amber-400" />}
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">Appearance</p>
+              <p className="text-xs text-muted-foreground">{theme === 'dark' ? 'Dark mode' : 'Light mode'}</p>
+            </div>
+          </div>
+          <div className={`w-11 h-6 rounded-full transition-colors ${theme === 'dark' ? 'bg-primary' : 'bg-muted'} flex items-center px-1`}>
+            <div className={`w-4 h-4 rounded-full bg-white shadow transition-transform ${theme === 'dark' ? 'translate-x-5' : 'translate-x-0'}`} />
+          </div>
+        </button>
+
         {/* Instructor: Appoint Cadet Admin */}
         {instructor && (
           <Link
@@ -184,46 +205,33 @@ export default function Profile() {
 
         {/* Delete Account */}
         {!showDelete ? (
-          <button
-            onClick={() => setShowDelete(true)}
-            className="w-full flex items-center gap-3 p-4 bg-card border border-destructive/20 rounded-xl hover:bg-destructive/5 transition-colors text-left"
-          >
-            <div className="w-9 h-9 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0">
-              <Trash2 className="h-4 w-4 text-destructive" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-destructive">Delete Account</p>
-              <p className="text-xs text-muted-foreground">Permanently remove your account</p>
-            </div>
-          </button>
+          <div className="flex justify-center pt-2 pb-4">
+            <button
+              onClick={() => setShowDelete(true)}
+              className="flex items-center gap-1.5 text-xs text-destructive/60 hover:text-destructive transition-colors"
+            >
+              <Trash2 className="h-3 w-3" />
+              Delete Account
+            </button>
+          </div>
         ) : (
           <div className="bg-card border border-destructive/30 rounded-xl p-4 space-y-3">
-            <p className="text-sm font-semibold text-destructive">Delete Account</p>
-            <p className="text-xs text-muted-foreground">Type your full name to confirm:</p>
-            <p className="text-xs font-mono bg-background border border-border rounded-lg px-3 py-2 text-foreground">{fullName}</p>
+            <p className="text-xs font-semibold text-destructive">Confirm Account Deletion</p>
+            <p className="text-xs text-muted-foreground">Type your full name: <span className="text-foreground font-mono">{fullName}</span></p>
             <Input
-              placeholder="Type full name here"
+              placeholder="Type full name to confirm"
               value={deleteInput}
               onChange={(e) => setDeleteInput(e.target.value)}
-              className="h-10 bg-background border-border text-sm"
+              className="h-9 text-xs bg-background border-border"
             />
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1 border-border"
-                onClick={() => { setShowDelete(false); setDeleteInput(''); }}
-              >
+              <Button variant="outline" size="sm" className="flex-1 text-xs border-border h-8"
+                onClick={() => { setShowDelete(false); setDeleteInput(''); }}>
                 Cancel
               </Button>
-              <Button
-                size="sm"
-                variant="destructive"
-                className="flex-1"
-                disabled={!deleteReady || deleting}
-                onClick={handleDeleteAccount}
-              >
-                {deleting ? 'Deleting…' : 'Delete'}
+              <Button size="sm" variant="destructive" className="flex-1 text-xs h-8"
+                disabled={!deleteReady || deleting} onClick={handleDeleteAccount}>
+                {deleting ? 'Deleting…' : 'Delete Forever'}
               </Button>
             </div>
           </div>
