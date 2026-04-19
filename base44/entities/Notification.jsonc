@@ -1,0 +1,57 @@
+{
+  "name": "Notification",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "success",
+        "info",
+        "warning",
+        "error"
+      ],
+      "default": "info"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "movement",
+        "sft",
+        "status",
+        "points",
+        "admin",
+        "announcement",
+        "approval",
+        "system"
+      ],
+      "default": "system"
+    },
+    "recipient_email": {
+      "type": "string",
+      "description": "Target user email"
+    },
+    "recipient_unit": {
+      "type": "string",
+      "description": "Target unit for broadcast"
+    },
+    "is_read": {
+      "type": "boolean",
+      "default": false
+    },
+    "link": {
+      "type": "string",
+      "description": "Optional navigation link"
+    }
+  },
+  "required": [
+    "title",
+    "message",
+    "type"
+  ]
+}

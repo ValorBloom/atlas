@@ -1,0 +1,41 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "cadet",
+        "instructor"
+      ],
+      "default": "cadet",
+      "description": "User role in the system"
+    },
+    "is_admin": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether user has admin privileges"
+    },
+    "unit": {
+      "type": "string",
+      "description": "Unit assignment"
+    },
+    "rank": {
+      "type": "string",
+      "description": "Military rank"
+    },
+    "phone_number": {
+      "type": "string",
+      "description": "Contact phone number"
+    },
+    "display_name": {
+      "type": "string",
+      "description": "Display name (rank + name)"
+    }
+  },
+  "required": [
+    "role",
+    "unit",
+    "rank"
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "name": "StatusReport",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "RSO",
+        "MA",
+        "RSI"
+      ],
+      "description": "Status type"
+    },
+    "personnel_name": {
+      "type": "string"
+    },
+    "personnel_rank": {
+      "type": "string"
+    },
+    "personnel_id": {
+      "type": "string"
+    },
+    "symptoms": {
+      "type": "string"
+    },
+    "diagnosis": {
+      "type": "string"
+    },
+    "details": {
+      "type": "string"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "resolved",
+        "pending_approval",
+        "approved",
+        "rejected"
+      ],
+      "default": "active"
+    },
+    "unit": {
+      "type": "string"
+    },
+    "reported_by": {
+      "type": "string"
+    },
+    "approved_by": {
+      "type": "string"
+    },
+    "approval_date": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "type",
+    "personnel_name",
+    "unit"
+  ]
+}

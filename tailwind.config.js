@@ -4,6 +4,9 @@ module.exports = {
     content: ["./index.html", "./src/**/*.{ts,tsx,js,jsx}"],
   theme: {
   	extend: {
+  		fontFamily: {
+  			inter: ['var(--font-inter)'],
+  		},
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
@@ -43,6 +46,18 @@ module.exports = {
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',
   			ring: 'hsl(var(--ring))',
+  			success: {
+  				DEFAULT: 'hsl(var(--success))',
+  				foreground: 'hsl(var(--success-foreground))'
+  			},
+  			warning: {
+  				DEFAULT: 'hsl(var(--warning))',
+  				foreground: 'hsl(var(--warning-foreground))'
+  			},
+  			info: {
+  				DEFAULT: 'hsl(var(--info))',
+  				foreground: 'hsl(var(--info-foreground))'
+  			},
   			chart: {
   				'1': 'hsl(var(--chart-1))',
   				'2': 'hsl(var(--chart-2))',
@@ -85,5 +100,13 @@ module.exports = {
   		}
   	}
   },
+  safelist: [
+    'bg-green-50', 'bg-red-50', 'bg-amber-50', 'bg-primary/5', 'bg-primary/10',
+    'text-green-600', 'text-green-700', 'text-red-600', 'text-red-700', 
+    'text-amber-600', 'text-amber-700', 'text-amber-800',
+    'border-green-200', 'border-amber-200', 'border-primary/20', 'border-primary/30',
+    'border-destructive/20', 'border-destructive/30',
+    'text-amber-500', 'text-slate-400', 'text-amber-700',
+  ],
   plugins: [require("tailwindcss-animate")],
 }

@@ -1,0 +1,43 @@
+{
+  "name": "Announcement",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "content": {
+      "type": "string"
+    },
+    "unit": {
+      "type": "string"
+    },
+    "target_role": {
+      "type": "string",
+      "enum": [
+        "all",
+        "cadet",
+        "instructor"
+      ],
+      "default": "all"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "keywords": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Keywords for CET filtering"
+    },
+    "sent_by": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "title",
+    "content",
+    "unit"
+  ]
+}

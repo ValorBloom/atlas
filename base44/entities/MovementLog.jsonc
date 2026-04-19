@@ -1,0 +1,62 @@
+{
+  "name": "MovementLog",
+  "type": "object",
+  "properties": {
+    "personnel_name": {
+      "type": "string",
+      "description": "Name of person moving"
+    },
+    "personnel_rank": {
+      "type": "string"
+    },
+    "personnel_id": {
+      "type": "string",
+      "description": "User ID of person moving"
+    },
+    "from_location": {
+      "type": "string"
+    },
+    "to_location": {
+      "type": "string"
+    },
+    "purpose": {
+      "type": "string"
+    },
+    "leave_time": {
+      "type": "string",
+      "description": "Departure time in HHmm format"
+    },
+    "reached_time": {
+      "type": "string",
+      "description": "Arrival time in HHmm format"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "departed",
+        "reached",
+        "cancelled"
+      ],
+      "default": "departed"
+    },
+    "unit": {
+      "type": "string"
+    },
+    "reported_by": {
+      "type": "string",
+      "description": "Email of reporting user"
+    },
+    "movement_date": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "personnel_name",
+    "from_location",
+    "to_location",
+    "purpose",
+    "leave_time",
+    "unit"
+  ]
+}

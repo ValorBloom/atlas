@@ -1,0 +1,47 @@
+{
+  "name": "SFTSubmission",
+  "type": "object",
+  "properties": {
+    "cadet_name": {
+      "type": "string"
+    },
+    "cadet_rank": {
+      "type": "string"
+    },
+    "cadet_id": {
+      "type": "string"
+    },
+    "activity": {
+      "type": "string",
+      "description": "SFT activity type"
+    },
+    "location": {
+      "type": "string"
+    },
+    "time_range": {
+      "type": "string",
+      "description": "Time range e.g. 0600-0700"
+    },
+    "window_id": {
+      "type": "string",
+      "description": "Associated SFT window"
+    },
+    "unit": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "withdrawn"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "cadet_name",
+    "activity",
+    "window_id",
+    "unit"
+  ]
+}

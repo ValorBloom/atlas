@@ -1,0 +1,36 @@
+{
+  "name": "PointLog",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "user_name": {
+      "type": "string"
+    },
+    "user_rank": {
+      "type": "string"
+    },
+    "delta": {
+      "type": "number",
+      "description": "Points change (positive or negative)"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "unit": {
+      "type": "string"
+    },
+    "action_by": {
+      "type": "string",
+      "description": "Admin who made the change"
+    }
+  },
+  "required": [
+    "user_id",
+    "user_name",
+    "delta",
+    "reason",
+    "unit"
+  ]
+}

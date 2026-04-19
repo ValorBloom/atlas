@@ -1,0 +1,46 @@
+{
+  "name": "AuditLog",
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "description": "Action performed"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "auth",
+        "movement",
+        "sft",
+        "status",
+        "points",
+        "parade",
+        "import",
+        "data_clear",
+        "approval",
+        "admin"
+      ],
+      "default": "admin"
+    },
+    "details": {
+      "type": "string"
+    },
+    "target_entity": {
+      "type": "string"
+    },
+    "target_id": {
+      "type": "string"
+    },
+    "performed_by": {
+      "type": "string"
+    },
+    "unit": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "action",
+    "category",
+    "performed_by"
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "name": "SFTWindow",
+  "type": "object",
+  "properties": {
+    "start_time": {
+      "type": "string",
+      "description": "Window start in HHmm"
+    },
+    "end_time": {
+      "type": "string",
+      "description": "Window end in HHmm"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "unit": {
+      "type": "string"
+    },
+    "instructor_name": {
+      "type": "string"
+    },
+    "instructor_id": {
+      "type": "string"
+    },
+    "salutation": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "start_time",
+    "end_time",
+    "unit"
+  ]
+}
