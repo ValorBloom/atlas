@@ -1,20 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { isAdmin } from '@/lib/constants';
 import BottomNav from './BottomNav';
 
 export default function AppLayout() {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
+    base44.auth.me()
+      .then((u) => {
+        setUser(u);
+        // Redirect to setup if profile is incomplete
+        if (!u?.unit && location.pathname !== '/setup') {
+          navigate('/setup', { replace: true });
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-background">
+        <div className="w-7 h-7 border-2 border-muted border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background font-inter">
-      <main className="pb-20 max-w-lg mx-auto">
-        <Outlet context={{ user }} />
+      <main className="pb-20 max-w-lg mx-auto min-h-screen">
+        <Outlet context={{ user, setUser }} />
       </main>
       <BottomNav isAdmin={isAdmin(user)} />
     </div>

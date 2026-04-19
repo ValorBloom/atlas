@@ -1,18 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { useOutletContext, useNavigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useOutletContext, useNavigate, Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { isAdmin, formatRankName } from '@/lib/constants';
 import QuickAction from '@/components/home/QuickAction';
 import { 
-  MapPin, Activity, FileText, Trophy, Bell, User,
-  Users, ClipboardList, Upload, Dumbbell, Shield, LayoutDashboard
+  MapPin, Activity, FileText, Trophy, Bell,
+  ClipboardList, Upload, Dumbbell, LayoutDashboard, ChevronRight
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export default function Home() {
   const { user } = useOutletContext();
+  const navigate = useNavigate();
   const admin = isAdmin(user);
+
+  useEffect(() => {
+    if (user && !user.unit) {
+      navigate('/setup', { replace: true });
+    }
+  }, [user]);
 
   const { data: notifications = [] } = useQuery({
     queryKey: ['notifications-unread', user?.email],
@@ -68,14 +75,15 @@ export default function Home() {
 
       {/* Unread Notifications */}
       {notifications.length > 0 && (
-        <div className="bg-card border border-border rounded-xl p-3.5">
+        <Link to="/notifications" className="block bg-amber-50 border border-amber-200 rounded-xl p-3.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Bell className="h-4 w-4 text-muted-foreground" />
-              <p className="text-sm font-medium">{notifications.length} unread alert{notifications.length > 1 ? 's' : ''}</p>
+              <Bell className="h-4 w-4 text-amber-600" />
+              <p className="text-sm font-medium text-amber-800">{notifications.length} unread alert{notifications.length > 1 ? 's' : ''}</p>
             </div>
+            <ChevronRight className="h-4 w-4 text-amber-500" />
           </div>
-        </div>
+        </Link>
       )}
 
       {/* Quick Actions */}
