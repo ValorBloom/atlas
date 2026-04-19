@@ -11,8 +11,15 @@ export const RANKS = [
 ];
 
 export const UNITS = [
-  "1 SIR", "2 SIR", "3 SIR", "4 SAR", "5 SAR",
-  "OCS", "SCS", "SAFTI MI", "HQ TRADOC", "BMT Centre"
+  "OCS, Alpha",
+  "OCS, Charlie",
+  "OCS, Delta",
+  "OCS, Echo",
+  "OCS, Sierra",
+  "OCS, Tango",
+  "OCS, Mids",
+  "OCS, Air",
+  "OCS, DIS"
 ];
 
 export const LOCATIONS = [
