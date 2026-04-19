@@ -3,11 +3,10 @@
 export const ADMIN_PIN = "SAF2040";
 
 export const RANKS = [
-  "REC", "PTE", "LCP", "CPL", "CFC",
-  "3SG", "2SG", "1SG", "SSG", "MSG",
-  "3WO", "2WO", "1WO", "MWO", "SWO", "CWO",
-  "OCT", "2LT", "LTA", "CPT", "MAJ", "LTC", "SLTC", "COL",
-  "BG", "MG", "LG"
+  "SCT", "OCT", "ME4T",
+  "2LT", "LTA", "CPT", "MAJ", "LTC", "SLTC", "COL",
+  "ME4", "ME5", "ME6",
+  "MSG", "3WO", "2WO", "1WO", "MWO"
 ];
 
 export const UNITS = [
@@ -83,6 +82,19 @@ export const getCurrentTimeSG = () => {
   return `${String(sg.getHours()).padStart(2, '0')}${String(sg.getMinutes()).padStart(2, '0')}`;
 };
 
+// Role hierarchy:
+// instructor = full admin (SAF2040 PIN required)
+// cadet_admin = limited admin (appointed by instructor, can view movements + send parade state)
+// cadet = standard user
+
+export const isInstructor = (user) => {
+  return user?.role === 'instructor' && user?.is_admin === true;
+};
+
+export const isCadetAdmin = (user) => {
+  return user?.role === 'cadet_admin';
+};
+
 export const isAdmin = (user) => {
-  return user?.is_admin === true || user?.role === 'instructor';
+  return isInstructor(user) || isCadetAdmin(user);
 };

@@ -8,12 +8,14 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { RANKS, UNITS } from '@/lib/constants';
-import { LogOut, User, Shield } from 'lucide-react';
+import { RANKS, UNITS, isInstructor } from '@/lib/constants';
+import { LogOut, User, Shield, Star, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
 export default function Profile() {
   const { user } = useOutletContext();
+  const instructor = isInstructor(user);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
@@ -141,6 +143,19 @@ export default function Profile() {
             </div>
           </CardContent>
         </Card>
+        {/* Instructor: Appoint Admin */}
+        {instructor && (
+          <Link to="/admin/appoint" className="flex items-center gap-3 p-4 rounded-xl border border-border bg-card hover:bg-muted/30 transition-colors">
+            <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
+              <Star className="h-4 w-4 text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold">Appoint Cadet Admin</p>
+              <p className="text-xs text-muted-foreground">Grant limited admin access to cadets</p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </Link>
+        )}
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { isAdmin } from '@/lib/constants';
+import { isInstructor, isCadetAdmin } from '@/lib/constants';
 import BottomNav from './BottomNav';
 
 export default function AppLayout() {
@@ -36,7 +36,7 @@ export default function AppLayout() {
       <main className="pb-20 max-w-lg mx-auto min-h-screen">
         <Outlet context={{ user, setUser }} />
       </main>
-      <BottomNav isAdmin={isAdmin(user)} />
+      <BottomNav isInstructor={isInstructor(user)} isCadetAdmin={isCadetAdmin(user)} />
     </div>
   );
 }

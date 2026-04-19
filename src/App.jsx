@@ -29,6 +29,8 @@ import DrawNames from './pages/DrawNames';
 
 // Admin Pages
 import Dashboard from './pages/admin/Dashboard';
+import LocationTracker from './pages/admin/LocationTracker';
+import AppointAdmin from './pages/admin/AppointAdmin';
 import PTAdmin from './pages/admin/PTAdmin';
 import ParadeState from './pages/admin/ParadeState';
 import ImportUsers from './pages/admin/ImportUsers';
@@ -78,6 +80,8 @@ const AuthenticatedApp = () => {
         <Route path="/points/edit" element={<EditPoints />} />
         <Route path="/points/draw" element={<DrawNames />} />
         <Route path="/admin" element={<Dashboard />} />
+        <Route path="/admin/locations" element={<LocationTracker />} />
+        <Route path="/admin/appoint" element={<AppointAdmin />} />
         <Route path="/admin/pt" element={<PTAdmin />} />
         <Route path="/admin/parade-state" element={<ParadeState />} />
         <Route path="/admin/import" element={<ImportUsers />} />

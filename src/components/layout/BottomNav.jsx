@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Zap, Bell, User, Shield } from 'lucide-react';
+import { Home, Zap, Bell, User, Shield, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -10,11 +10,15 @@ const navItems = [
   { path: '/profile', icon: User, label: 'Profile' },
 ];
 
-const adminItem = { path: '/admin', icon: Shield, label: 'Admin' };
-
-export default function BottomNav({ isAdmin }) {
+export default function BottomNav({ isInstructor, isCadetAdmin }) {
   const location = useLocation();
-  const items = isAdmin ? [...navItems, adminItem] : navItems;
+  const adminItem = isInstructor
+    ? { path: '/admin', icon: Shield, label: 'Instructor' }
+    : isCadetAdmin
+    ? { path: '/admin/parade-state', icon: Star, label: 'Admin' }
+    : null;
+
+  const items = adminItem ? [...navItems, adminItem] : navItems;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border safe-area-bottom">
