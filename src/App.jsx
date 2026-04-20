@@ -68,7 +68,7 @@ const AuthenticatedApp = () => {
         <Route path="/" element={<Home />} />
         <Route path="/actions" element={<Actions />} />
         <Route path="/actions/movement" element={<MovementWizard />} />
-        <Route path="/actions/movement/reached" element={<ReachedUpdate />} />
+        <Route path="/actions/movement/reached" element={<MovementWizard />} />
         <Route path="/actions/sft" element={<SFTSubmission />} />
         <Route path="/actions/status" element={<StatusMenu />} />
         <Route path="/actions/status/report/:type" element={<StatusReport />} />

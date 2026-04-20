@@ -46,15 +46,30 @@ export const getSectionOptions = (unit) => {
 };
 
 export const LOCATIONS = [
-  "Camp", "SAF Ferry Terminal", "Tekong Jetty", "Medical Centre",
-  "Cookhouse", "Training Shed", "SOC Ground", "BTP", "Parade Square",
-  "Company Line", "HQ", "Guard Room", "Armskote"
+  "DHA",
+  "WINGLINE",
+  "TRASH POINT",
+  "STADIUM",
+  "OCS HQ",
+  "MEDICAL CENTRE",
+  "AUDITORIUM",
+  "EXAM HALL",
+  "E-MART",
+  "PASS OFFICE",
+  "LIBRARY",
 ];
 
 export const PURPOSES = [
-  "Training", "Medical Appointment", "Admin", "Duty",
-  "Personal Errand", "Book Out", "Book In", "Fatigue",
-  "Guard Duty", "Ration Run", "COS Detail"
+  "TO COLLECT OUTRATION",
+  "TO SET UP SAFETY STORE",
+  "TO RSI",
+  "TO HAVE LUNCH",
+  "TO HAVE DINNER",
+  "TO BOOKOUT",
+  "TO THROW TRASH",
+  "TO ATTEND STAFF PARADE",
+  "TO ATTEND CERT BRIEF",
+  "TO JOIN BACK MAIN BODY",
 ];
 
 export const SFT_ACTIVITIES = [

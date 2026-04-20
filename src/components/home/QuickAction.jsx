@@ -20,12 +20,12 @@ export default function QuickAction({ to, icon: Icon, label, description, varian
         <Icon className={cn(
           "h-4.5 w-4.5",
           variant === 'primary' ? "text-primary" : "text-muted-foreground"
-        )} />
+        )} style={{ width: 18, height: 18 }} />
       </div>
-      <div className="min-w-0">
-        <p className="text-sm font-medium text-foreground">{label}</p>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-foreground leading-tight">{label}</p>
         {description && (
-          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{description}</p>
+          <p className="text-xs text-muted-foreground mt-0.5 leading-tight break-words">{description}</p>
         )}
       </div>
     </Link>

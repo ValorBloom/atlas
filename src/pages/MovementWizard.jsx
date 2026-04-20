@@ -1,17 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import PageHeader from '@/components/layout/PageHeader';
-import StepIndicator from '@/components/movement/StepIndicator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { LOCATIONS, PURPOSES, TIME_REGEX, formatTime, formatRankName, getCurrentTimeSG } from '@/lib/constants';
-import { MapPin, ArrowRight, Clock, Check, AlertTriangle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { LOCATIONS, PURPOSES, TIME_REGEX, formatTime, formatRankName, getCurrentTimeSG, getGroupLabel } from '@/lib/constants';
+import { MapPin, ArrowRight, Clock, Check, X, Search, Users, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -20,12 +18,18 @@ const STEPS = ['Personnel', 'From', 'To', 'Purpose', 'Time', 'Confirm'];
 export default function MovementWizard() {
   const { user } = useOutletContext();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  // Tab: 'report' or 'reached'
+  const [tab, setTab] = useState('report');
+
+  // --- REPORT STATE ---
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [selectedPersonnel, setSelectedPersonnel] = useState([]); // array of user objects
+  const [search, setSearch] = useState('');
+  const [groupFilter, setGroupFilter] = useState('All');
   const [data, setData] = useState({
-    personnel_name: '',
-    personnel_rank: '',
-    personnel_id: '',
     from_location: '',
     to_location: '',
     purpose: '',
@@ -35,23 +39,55 @@ export default function MovementWizard() {
     custom_purpose: '',
   });
 
+  // --- REACHED STATE ---
+  const [selectedLog, setSelectedLog] = useState(null);
+  const [reachedTime, setReachedTime] = useState('');
+  const [reachedSaving, setReachedSaving] = useState(false);
+
   const { data: users = [] } = useQuery({
     queryKey: ['users-unit', user?.unit],
     queryFn: () => base44.entities.User.filter({ unit: user?.unit }),
     enabled: !!user?.unit,
   });
 
-  // Auto-fill self
+  const { data: pendingLogs = [], isLoading: logsLoading } = useQuery({
+    queryKey: ['movement-pending', user?.unit],
+    queryFn: () => base44.entities.MovementLog.filter(
+      { unit: user?.unit, status: 'departed' }, '-created_date', 30
+    ),
+    enabled: !!user?.unit && tab === 'reached',
+  });
+
+  // Auto-select self on mount
   useEffect(() => {
-    if (user) {
-      setData(d => ({
-        ...d,
-        personnel_name: user.full_name || '',
-        personnel_rank: user.rank || '',
-        personnel_id: user.id || '',
-      }));
+    if (user && selectedPersonnel.length === 0) {
+      setSelectedPersonnel([user]);
     }
   }, [user]);
+
+  const groupLabel = getGroupLabel(user?.unit);
+  const groupOptions = useMemo(() => {
+    const groups = new Set(users.map(u => u.platoon).filter(Boolean));
+    return ['All', ...Array.from(groups).sort()];
+  }, [users]);
+
+  const filteredUsers = useMemo(() => {
+    return users.filter(u => {
+      const matchGroup = groupFilter === 'All' || u.platoon === groupFilter;
+      const matchSearch = !search || 
+        u.full_name?.toLowerCase().includes(search.toLowerCase()) ||
+        u.rank?.toLowerCase().includes(search.toLowerCase());
+      return matchGroup && matchSearch;
+    });
+  }, [users, groupFilter, search]);
+
+  const togglePerson = (person) => {
+    setSelectedPersonnel(prev =>
+      prev.find(p => p.id === person.id)
+        ? prev.filter(p => p.id !== person.id)
+        : [...prev, person]
+    );
+  };
 
   const fromLoc = data.from_location === 'Other' ? data.custom_from : data.from_location;
   const toLoc = data.to_location === 'Other' ? data.custom_to : data.to_location;
@@ -59,7 +95,7 @@ export default function MovementWizard() {
 
   const canNext = () => {
     switch (step) {
-      case 0: return data.personnel_name;
+      case 0: return selectedPersonnel.length > 0;
       case 1: return fromLoc;
       case 2: return toLoc && fromLoc !== toLoc;
       case 3: return purpose;
@@ -68,43 +104,35 @@ export default function MovementWizard() {
     }
   };
 
-  const handleSelectPerson = (userId) => {
-    const person = users.find(u => u.id === userId);
-    if (person) {
-      setData({
-        ...data,
-        personnel_name: person.full_name,
-        personnel_rank: person.rank || '',
-        personnel_id: person.id,
-      });
-    }
-  };
-
-  const reportMessage = () => {
-    const name = formatRankName(data.personnel_rank, data.personnel_name);
+  const reportLines = () => {
     const date = format(new Date(), 'ddMMMMyyyy').toUpperCase();
-    return `📍 MOVEMENT REPORT\n${name}\nFrom: ${fromLoc}\nTo: ${toLoc}\nPurpose: ${purpose}\nLeave Time: ${formatTime(data.leave_time)}\nDate: ${date}`;
+    const names = selectedPersonnel.map(p => formatRankName(p.rank || '', p.full_name || '')).join(', ');
+    return `📍 MOVEMENT REPORT\n${names}\nFrom: ${fromLoc}\nTo: ${toLoc}\nPurpose: ${purpose}\nLeave Time: ${formatTime(data.leave_time)}\nDate: ${date}`;
   };
 
   const handleSubmit = async () => {
     setSaving(true);
-    await base44.entities.MovementLog.create({
-      personnel_name: data.personnel_name,
-      personnel_rank: data.personnel_rank,
-      personnel_id: data.personnel_id,
-      from_location: fromLoc,
-      to_location: toLoc,
-      purpose: purpose,
-      leave_time: data.leave_time,
-      status: 'departed',
-      unit: user?.unit,
-      reported_by: user?.email,
-      movement_date: format(new Date(), 'yyyy-MM-dd'),
-    });
+    const date = format(new Date(), 'yyyy-MM-dd');
+    for (const person of selectedPersonnel) {
+      await base44.entities.MovementLog.create({
+        personnel_name: person.full_name,
+        personnel_rank: person.rank || '',
+        personnel_id: person.id,
+        from_location: fromLoc,
+        to_location: toLoc,
+        purpose: purpose,
+        leave_time: data.leave_time,
+        status: 'departed',
+        unit: user?.unit,
+        reported_by: user?.email,
+        movement_date: date,
+      });
+    }
 
+    const names = selectedPersonnel.map(p => formatRankName(p.rank || '', p.full_name || '')).join(', ');
     await base44.entities.Notification.create({
       title: 'Movement Reported',
-      message: `${formatRankName(data.personnel_rank, data.personnel_name)} departed from ${fromLoc} to ${toLoc}`,
+      message: `${names} departed from ${fromLoc} to ${toLoc}`,
       type: 'info',
       category: 'movement',
       recipient_unit: user?.unit,
@@ -113,14 +141,41 @@ export default function MovementWizard() {
     await base44.entities.AuditLog.create({
       action: 'movement_report',
       category: 'movement',
-      details: reportMessage(),
+      details: reportLines(),
       performed_by: user?.email,
       unit: user?.unit,
     });
 
     setSaving(false);
-    toast.success('Movement reported');
-    navigate('/actions/movement/reached');
+    toast.success(`${selectedPersonnel.length > 1 ? selectedPersonnel.length + ' movements' : 'Movement'} reported`);
+    queryClient.invalidateQueries({ queryKey: ['movement-pending'] });
+    // Switch to reached tab
+    setTab('reached');
+    // Reset report form
+    setStep(0);
+    setData({ from_location: '', to_location: '', purpose: '', leave_time: '', custom_from: '', custom_to: '', custom_purpose: '' });
+    setSelectedPersonnel([user]);
+  };
+
+  const handleReached = async () => {
+    if (!selectedLog || !TIME_REGEX.test(reachedTime)) return;
+    setReachedSaving(true);
+    await base44.entities.MovementLog.update(selectedLog.id, {
+      reached_time: reachedTime,
+      status: 'reached',
+    });
+    await base44.entities.Notification.create({
+      title: 'Reached Confirmed',
+      message: `${formatRankName(selectedLog.personnel_rank, selectedLog.personnel_name)} reached ${selectedLog.to_location} at ${formatTime(reachedTime)}`,
+      type: 'success',
+      category: 'movement',
+      recipient_unit: user?.unit,
+    });
+    setReachedSaving(false);
+    toast.success('Reached recorded');
+    setSelectedLog(null);
+    setReachedTime('');
+    queryClient.invalidateQueries({ queryKey: ['movement-pending'] });
   };
 
   const locOptions = [...LOCATIONS, 'Other'];
@@ -128,208 +183,330 @@ export default function MovementWizard() {
 
   return (
     <div>
-      <PageHeader title="Movement Report" backTo="/" />
-      <StepIndicator steps={STEPS} currentStep={step} />
+      <PageHeader title="Movement" backTo="/" />
+
+      {/* Tabs */}
+      <div className="flex border-b border-border mx-4 mt-1">
+        <button
+          onClick={() => setTab('report')}
+          className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
+            tab === 'report' ? 'text-primary border-b-2 border-primary' : 'text-muted-foreground'
+          }`}
+        >
+          Report Departure
+        </button>
+        <button
+          onClick={() => { setTab('reached'); queryClient.invalidateQueries({ queryKey: ['movement-pending'] }); }}
+          className={`flex-1 py-2.5 text-sm font-medium transition-colors relative ${
+            tab === 'reached' ? 'text-primary border-b-2 border-primary' : 'text-muted-foreground'
+          }`}
+        >
+          Update Reached
+          {pendingLogs.length > 0 && tab !== 'reached' && (
+            <span className="absolute top-1.5 right-3 w-4 h-4 bg-destructive rounded-full text-[10px] text-white flex items-center justify-center">
+              {pendingLogs.length}
+            </span>
+          )}
+        </button>
+      </div>
 
       <div className="px-4 py-3">
-        {/* Step 0: Personnel */}
-        {step === 0 && (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Select Personnel</Label>
-              <Select 
-                value={data.personnel_id} 
-                onValueChange={handleSelectPerson}
-              >
-                <SelectTrigger><SelectValue placeholder="Choose person" /></SelectTrigger>
-                <SelectContent>
-                  {users.map(u => (
-                    <SelectItem key={u.id} value={u.id}>
-                      {formatRankName(u.rank, u.full_name)}
-                    </SelectItem>
+
+        {/* ===== REPORT TAB ===== */}
+        {tab === 'report' && (
+          <>
+            {/* Step indicator */}
+            <div className="flex items-center gap-1 mb-4 overflow-x-auto pb-1">
+              {STEPS.map((s, i) => (
+                <React.Fragment key={s}>
+                  <div className={`flex items-center gap-1 shrink-0 ${i <= step ? 'text-primary' : 'text-muted-foreground'}`}>
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border ${
+                      i < step ? 'bg-primary border-primary text-white' :
+                      i === step ? 'border-primary text-primary' :
+                      'border-muted-foreground/30 text-muted-foreground/50'
+                    }`}>
+                      {i < step ? <Check className="w-3 h-3" /> : i + 1}
+                    </div>
+                    <span className={`text-[11px] ${i === step ? 'font-semibold' : 'font-medium opacity-60'}`}>{s}</span>
+                  </div>
+                  {i < STEPS.length - 1 && <div className="w-3 h-px bg-border shrink-0" />}
+                </React.Fragment>
+              ))}
+            </div>
+
+            {/* Step 0: Personnel (multi-select) */}
+            {step === 0 && (
+              <div className="space-y-3">
+                {/* Selected chips */}
+                {selectedPersonnel.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedPersonnel.map(p => (
+                      <div key={p.id} className="flex items-center gap-1 px-2 py-1 bg-primary/10 border border-primary/20 rounded-lg text-xs font-medium text-primary">
+                        {formatRankName(p.rank || '', p.full_name || '')}
+                        <button onClick={() => togglePerson(p)}><X className="w-3 h-3" /></button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Search */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                  <Input
+                    placeholder="Search name or rank..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    className="pl-8 text-sm"
+                  />
+                </div>
+
+                {/* Group filter */}
+                {groupOptions.length > 1 && (
+                  <div className="flex gap-1.5 flex-wrap">
+                    {groupOptions.map(g => (
+                      <button
+                        key={g}
+                        onClick={() => setGroupFilter(g)}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all ${
+                          groupFilter === g ? 'bg-primary text-white border-primary' : 'border-border text-muted-foreground bg-card'
+                        }`}
+                      >
+                        {g === 'All' ? 'All' : `${groupLabel} ${g}`}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* User list */}
+                <div className="space-y-1 max-h-64 overflow-y-auto">
+                  {filteredUsers.map(u => {
+                    const selected = selectedPersonnel.find(p => p.id === u.id);
+                    return (
+                      <button
+                        key={u.id}
+                        onClick={() => togglePerson(u)}
+                        className={`w-full text-left px-3 py-2.5 rounded-xl border text-sm transition-all flex items-center justify-between ${
+                          selected ? 'border-primary bg-primary/5' : 'border-border bg-card hover:bg-muted/30'
+                        }`}
+                      >
+                        <div>
+                          <span className="font-medium">{formatRankName(u.rank || '', u.full_name || '')}</span>
+                          {u.platoon && <span className="text-xs text-muted-foreground ml-2">{u.platoon}</span>}
+                        </div>
+                        {selected && <Check className="w-4 h-4 text-primary shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-muted-foreground">{selectedPersonnel.length} selected</p>
+              </div>
+            )}
+
+            {/* Step 1: From Location */}
+            {step === 1 && (
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">From Location</Label>
+                <div className="space-y-1.5">
+                  {locOptions.map(loc => (
+                    <button
+                      key={loc}
+                      onClick={() => setData({ ...data, from_location: loc })}
+                      className={`w-full text-left p-3 rounded-xl border text-sm transition-all ${
+                        data.from_location === loc
+                          ? 'border-primary bg-primary/5 font-medium'
+                          : 'border-border bg-card hover:bg-muted/30'
+                      }`}
+                    >
+                      {loc}
+                    </button>
                   ))}
-                </SelectContent>
-              </Select>
+                </div>
+                {data.from_location === 'Other' && (
+                  <Input placeholder="Enter location" value={data.custom_from}
+                    onChange={(e) => setData({ ...data, custom_from: e.target.value })} />
+                )}
+              </div>
+            )}
+
+            {/* Step 2: To Location */}
+            {step === 2 && (
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">To Location</Label>
+                <div className="space-y-1.5">
+                  {locOptions.filter(l => l !== data.from_location || l === 'Other').map(loc => (
+                    <button
+                      key={loc}
+                      onClick={() => setData({ ...data, to_location: loc })}
+                      className={`w-full text-left p-3 rounded-xl border text-sm transition-all ${
+                        data.to_location === loc
+                          ? 'border-primary bg-primary/5 font-medium'
+                          : 'border-border bg-card hover:bg-muted/30'
+                      }`}
+                    >
+                      {loc}
+                    </button>
+                  ))}
+                </div>
+                {data.to_location === 'Other' && (
+                  <Input placeholder="Enter location" value={data.custom_to}
+                    onChange={(e) => setData({ ...data, custom_to: e.target.value })} />
+                )}
+              </div>
+            )}
+
+            {/* Step 3: Purpose */}
+            {step === 3 && (
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Purpose</Label>
+                <div className="space-y-1.5">
+                  {purposeOptions.map(p => (
+                    <button
+                      key={p}
+                      onClick={() => setData({ ...data, purpose: p })}
+                      className={`w-full text-left p-3 rounded-xl border text-sm transition-all ${
+                        data.purpose === p
+                          ? 'border-primary bg-primary/5 font-medium'
+                          : 'border-border bg-card hover:bg-muted/30'
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+                {data.purpose === 'Other' && (
+                  <Input placeholder="Enter purpose" value={data.custom_purpose}
+                    onChange={(e) => setData({ ...data, custom_purpose: e.target.value })} />
+                )}
+              </div>
+            )}
+
+            {/* Step 4: Time */}
+            {step === 4 && (
+              <div className="space-y-4">
+                <Label className="text-sm font-medium">Leave Time (HHmm)</Label>
+                <div className="flex items-center gap-3">
+                  <Input
+                    placeholder="e.g. 0830"
+                    maxLength={4}
+                    value={data.leave_time}
+                    onChange={(e) => setData({ ...data, leave_time: e.target.value.replace(/\D/g, '') })}
+                    className="text-center text-lg font-mono tracking-wider"
+                  />
+                  <Button variant="outline" size="sm"
+                    onClick={() => setData({ ...data, leave_time: getCurrentTimeSG() })}>
+                    <Clock className="h-3.5 w-3.5 mr-1" />Now
+                  </Button>
+                </div>
+                {data.leave_time && !TIME_REGEX.test(data.leave_time) && (
+                  <p className="text-xs text-destructive">Enter a valid time (e.g. 0830)</p>
+                )}
+              </div>
+            )}
+
+            {/* Step 5: Confirm */}
+            {step === 5 && (
+              <div className="space-y-4">
+                <Label className="text-sm font-medium">Preview</Label>
+                <Card className="bg-muted/30">
+                  <CardContent className="p-4">
+                    <pre className="text-xs whitespace-pre-wrap font-mono leading-relaxed text-foreground">
+                      {reportLines()}
+                    </pre>
+                  </CardContent>
+                </Card>
+                <p className="text-xs text-muted-foreground text-center">Verify all details before submitting.</p>
+              </div>
+            )}
+
+            {/* Navigation */}
+            <div className="flex items-center gap-3 mt-5">
+              {step > 0 && (
+                <Button variant="outline" className="flex-1" onClick={() => setStep(step - 1)}>Back</Button>
+              )}
+              {step < 5 ? (
+                <Button className="flex-1" onClick={() => setStep(step + 1)} disabled={!canNext()}>
+                  Next <ArrowRight className="h-4 w-4 ml-1" />
+                </Button>
+              ) : (
+                <Button className="flex-1" onClick={handleSubmit} disabled={saving}>
+                  <Check className="h-4 w-4 mr-1" />
+                  {saving ? 'Submitting...' : 'Submit'}
+                </Button>
+              )}
             </div>
-            {data.personnel_name && (
-              <Card>
-                <CardContent className="p-3">
-                  <p className="text-sm font-medium">
-                    {formatRankName(data.personnel_rank, data.personnel_name)}
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+          </>
         )}
 
-        {/* Step 1: From Location */}
-        {step === 1 && (
+        {/* ===== REACHED TAB ===== */}
+        {tab === 'reached' && (
           <div className="space-y-4">
-            <Label className="text-sm font-medium">From Location</Label>
-            <div className="space-y-1.5">
-              {locOptions.map(loc => (
-                <button
-                  key={loc}
-                  onClick={() => setData({ ...data, from_location: loc })}
-                  className={`w-full text-left p-3 rounded-xl border text-sm transition-all ${
-                    data.from_location === loc 
-                      ? 'border-primary bg-primary/5 font-medium' 
-                      : 'border-border bg-card hover:bg-muted/50'
-                  }`}
-                >
-                  {loc}
-                </button>
-              ))}
-            </div>
-            {data.from_location === 'Other' && (
-              <Input
-                placeholder="Enter location"
-                value={data.custom_from}
-                onChange={(e) => setData({ ...data, custom_from: e.target.value })}
-              />
+            {logsLoading ? (
+              <div className="flex justify-center py-12">
+                <div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" />
+              </div>
+            ) : pendingLogs.length === 0 ? (
+              <div className="text-center py-12">
+                <CheckCircle2 className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">No pending movements.</p>
+              </div>
+            ) : (
+              <>
+                <Label className="text-sm font-medium">Pending Movements ({pendingLogs.length})</Label>
+                <div className="space-y-2">
+                  {pendingLogs.map(log => (
+                    <div key={log.id} className="border border-border rounded-xl overflow-hidden">
+                      <button
+                        onClick={() => {
+                          setSelectedLog(selectedLog?.id === log.id ? null : log);
+                          setReachedTime('');
+                        }}
+                        className={`w-full text-left p-3 text-sm transition-all flex items-center justify-between ${
+                          selectedLog?.id === log.id ? 'bg-primary/5 border-primary' : 'bg-card hover:bg-muted/30'
+                        }`}
+                      >
+                        <div>
+                          <p className="font-medium">{formatRankName(log.personnel_rank, log.personnel_name)}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {log.from_location} → {log.to_location} · Left {formatTime(log.leave_time)}
+                          </p>
+                        </div>
+                        {selectedLog?.id === log.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                      </button>
+
+                      {selectedLog?.id === log.id && (
+                        <div className="px-3 pb-3 pt-2 border-t border-border space-y-3 bg-card">
+                          <Label className="text-xs font-medium text-muted-foreground">Reached Time (HHmm)</Label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              placeholder="e.g. 0900"
+                              maxLength={4}
+                              value={reachedTime}
+                              onChange={e => setReachedTime(e.target.value.replace(/\D/g, ''))}
+                              className="text-center font-mono tracking-wider"
+                            />
+                            <Button variant="outline" size="sm" onClick={() => setReachedTime(getCurrentTimeSG())}>
+                              <Clock className="h-3.5 w-3.5 mr-1" />Now
+                            </Button>
+                          </div>
+                          <Button
+                            className="w-full"
+                            size="sm"
+                            onClick={handleReached}
+                            disabled={!TIME_REGEX.test(reachedTime) || reachedSaving}
+                          >
+                            <Check className="h-3.5 w-3.5 mr-1" />
+                            {reachedSaving ? 'Saving...' : 'Confirm Reached'}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         )}
 
-        {/* Step 2: To Location */}
-        {step === 2 && (
-          <div className="space-y-4">
-            <Label className="text-sm font-medium">To Location</Label>
-            {fromLoc === toLoc && toLoc && (
-              <Alert variant="destructive" className="py-2">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription className="text-xs">From and To cannot be the same.</AlertDescription>
-              </Alert>
-            )}
-            <div className="space-y-1.5">
-              {locOptions.filter(l => {
-                const from = data.from_location === 'Other' ? data.custom_from : data.from_location;
-                return l !== from || l === 'Other';
-              }).map(loc => (
-                <button
-                  key={loc}
-                  onClick={() => setData({ ...data, to_location: loc })}
-                  className={`w-full text-left p-3 rounded-xl border text-sm transition-all ${
-                    data.to_location === loc 
-                      ? 'border-primary bg-primary/5 font-medium' 
-                      : 'border-border bg-card hover:bg-muted/50'
-                  }`}
-                >
-                  {loc}
-                </button>
-              ))}
-            </div>
-            {data.to_location === 'Other' && (
-              <Input
-                placeholder="Enter location"
-                value={data.custom_to}
-                onChange={(e) => setData({ ...data, custom_to: e.target.value })}
-              />
-            )}
-          </div>
-        )}
-
-        {/* Step 3: Purpose */}
-        {step === 3 && (
-          <div className="space-y-4">
-            <Label className="text-sm font-medium">Purpose</Label>
-            <div className="space-y-1.5">
-              {purposeOptions.map(p => (
-                <button
-                  key={p}
-                  onClick={() => setData({ ...data, purpose: p })}
-                  className={`w-full text-left p-3 rounded-xl border text-sm transition-all ${
-                    data.purpose === p 
-                      ? 'border-primary bg-primary/5 font-medium' 
-                      : 'border-border bg-card hover:bg-muted/50'
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-            {data.purpose === 'Other' && (
-              <Input
-                placeholder="Enter purpose"
-                value={data.custom_purpose}
-                onChange={(e) => setData({ ...data, custom_purpose: e.target.value })}
-              />
-            )}
-          </div>
-        )}
-
-        {/* Step 4: Time */}
-        {step === 4 && (
-          <div className="space-y-4">
-            <Label className="text-sm font-medium">Leave Time (24hr format)</Label>
-            <div className="flex items-center gap-3">
-              <Input
-                placeholder="e.g. 0830"
-                maxLength={4}
-                value={data.leave_time}
-                onChange={(e) => setData({ ...data, leave_time: e.target.value.replace(/\D/g, '') })}
-                className="text-center text-lg font-mono tracking-wider"
-              />
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setData({ ...data, leave_time: getCurrentTimeSG() })}
-              >
-                <Clock className="h-3.5 w-3.5 mr-1" />
-                Now
-              </Button>
-            </div>
-            {data.leave_time && !TIME_REGEX.test(data.leave_time) && (
-              <p className="text-xs text-destructive">Enter a valid time in HHmm format (e.g. 0830)</p>
-            )}
-          </div>
-        )}
-
-        {/* Step 5: Confirm */}
-        {step === 5 && (
-          <div className="space-y-4">
-            <Label className="text-sm font-medium">Preview</Label>
-            <Card className="bg-muted/30">
-              <CardContent className="p-4">
-                <pre className="text-xs whitespace-pre-wrap font-mono leading-relaxed text-foreground">
-                  {reportMessage()}
-                </pre>
-              </CardContent>
-            </Card>
-            <p className="text-xs text-muted-foreground text-center">
-              Please verify all details before submitting.
-            </p>
-          </div>
-        )}
-
-        {/* Navigation */}
-        <div className="flex items-center gap-3 mt-6">
-          {step > 0 && (
-            <Button variant="outline" className="flex-1" onClick={() => setStep(step - 1)}>
-              Back
-            </Button>
-          )}
-          {step < 5 ? (
-            <Button 
-              className="flex-1" 
-              onClick={() => setStep(step + 1)} 
-              disabled={!canNext()}
-            >
-              Next
-              <ArrowRight className="h-4 w-4 ml-1" />
-            </Button>
-          ) : (
-            <Button 
-              className="flex-1" 
-              onClick={handleSubmit} 
-              disabled={saving}
-            >
-              <Check className="h-4 w-4 mr-1" />
-              {saving ? 'Submitting...' : 'Submit Report'}
-            </Button>
-          )}
-        </div>
       </div>
     </div>
   );

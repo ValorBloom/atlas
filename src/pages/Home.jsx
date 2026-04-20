@@ -71,6 +71,11 @@ export default function Home() {
                   {user.platoon}
                 </span>
               )}
+              {user?.section && (
+                <span className="text-[11px] bg-secondary text-muted-foreground px-2 py-0.5 rounded-full">
+                  {user.section}
+                </span>
+              )}
               <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${
                 instructor ? 'bg-primary/20 text-primary' :
                 cadetAdmin ? 'bg-amber-500/20 text-amber-400' :
@@ -133,7 +138,7 @@ export default function Home() {
           <div className="space-y-2.5">
             <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Actions</p>
             <div className="grid grid-cols-2 gap-2">
-              <QuickAction to="/actions/movement" icon={MapPin} label="Movement" description="Log departure / arrival" variant="primary" />
+              <QuickAction to="/actions/movement" icon={MapPin} label="Movement" description="Depart / Reached" variant="primary" />
               <QuickAction to="/actions/sft" icon={Activity} label="SFT" description="Submit activity" variant="primary" />
               <QuickAction to="/actions/status" icon={FileText} label="Status" description="RSO / MA / RSI" />
               <QuickAction to="/points" icon={Trophy} label="Points" description="Leaderboard" />
