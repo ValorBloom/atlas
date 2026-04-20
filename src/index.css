@@ -101,3 +101,80 @@
     color-scheme: dark;
   }
 }
+
+/* ── Platform Auth Page Dark Mode Override ── */
+body[class*="auth"],
+div[class*="auth-"],
+div[id*="auth"] {
+  background: hsl(222, 24%, 8%) !important;
+}
+
+/* Target the base44 hosted auth page iframe / injected styles */
+:root {
+  --auth-bg: hsl(222, 24%, 8%);
+  --auth-card-bg: hsl(222, 22%, 11%);
+  --auth-text: hsl(210, 20%, 92%);
+  --auth-muted: hsl(220, 10%, 50%);
+  --auth-border: hsl(222, 18%, 18%);
+  --auth-input-bg: hsl(222, 18%, 16%);
+  --auth-primary: hsl(217, 91%, 55%);
+}
+
+/* Broad overrides for platform-injected auth UI */
+[data-base44-auth],
+[data-base44-auth] * {
+  color-scheme: dark;
+}
+
+[data-base44-auth] {
+  background: var(--auth-bg) !important;
+  color: var(--auth-text) !important;
+}
+
+[data-base44-auth] form,
+[data-base44-auth] .card,
+[data-base44-auth] [class*="card"],
+[data-base44-auth] [class*="container"],
+[data-base44-auth] [class*="wrapper"],
+[data-base44-auth] [class*="box"] {
+  background: var(--auth-card-bg) !important;
+  border-color: var(--auth-border) !important;
+  color: var(--auth-text) !important;
+}
+
+[data-base44-auth] input,
+[data-base44-auth] input[type="email"],
+[data-base44-auth] input[type="password"],
+[data-base44-auth] input[type="text"] {
+  background: var(--auth-input-bg) !important;
+  border-color: var(--auth-border) !important;
+  color: var(--auth-text) !important;
+}
+
+[data-base44-auth] input::placeholder {
+  color: var(--auth-muted) !important;
+}
+
+[data-base44-auth] label,
+[data-base44-auth] p,
+[data-base44-auth] span,
+[data-base44-auth] h1,
+[data-base44-auth] h2,
+[data-base44-auth] h3 {
+  color: var(--auth-text) !important;
+}
+
+[data-base44-auth] a {
+  color: var(--auth-primary) !important;
+}
+
+[data-base44-auth] [class*="divider"],
+[data-base44-auth] hr {
+  border-color: var(--auth-border) !important;
+}
+
+[data-base44-auth] [class*="or"],
+[data-base44-auth] [class*="separator"] {
+  color: var(--auth-muted) !important;
+  background: var(--auth-bg) !important;
+}
