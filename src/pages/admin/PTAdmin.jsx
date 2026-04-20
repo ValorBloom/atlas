@@ -11,9 +11,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { TIME_REGEX, formatTime, formatRankName } from '@/lib/constants';
-import { Activity, Clock, Check, XCircle, Copy, Send, AlertTriangle, Users } from 'lucide-react';
+import { Activity, Clock, Check, XCircle, Copy, Send, AlertTriangle, Users, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { isCadetAdmin, isInstructor } from '@/lib/constants';
 
 // Convert HHmm to display
 const fmt = (hhmm) => hhmm ? `${hhmm}H` : '';
@@ -21,6 +22,8 @@ const fmt = (hhmm) => hhmm ? `${hhmm}H` : '';
 export default function PTAdmin() {
   const { user } = useOutletContext();
   const queryClient = useQueryClient();
+  const cadetAdmin = isCadetAdmin(user);
+  const instructor = isInstructor(user);
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [saving, setSaving] = useState(false);
@@ -163,7 +166,7 @@ export default function PTAdmin() {
 
   return (
     <div>
-      <PageHeader title="PT Admin" backTo="/" subtitle="SFT session management" />
+      <PageHeader title="PT Admin" backTo="/" subtitle={instructor ? 'SFT approval' : 'SFT session management'} />
       <div className="px-4 py-4 space-y-5">
 
         {/* Active or Create Window */}
@@ -181,12 +184,14 @@ export default function PTAdmin() {
                 <Users className="h-3.5 w-3.5 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">{submissions.length} cadets joined</p>
               </div>
-              <Button variant="destructive" size="sm" onClick={handleCloseWindow}>
-                <XCircle className="h-3.5 w-3.5 mr-1" />Close Window
-              </Button>
+              {cadetAdmin && (
+                <Button variant="destructive" size="sm" onClick={handleCloseWindow}>
+                  <XCircle className="h-3.5 w-3.5 mr-1" />Close Window
+                </Button>
+              )}
             </CardContent>
           </Card>
-        ) : (
+        ) : cadetAdmin ? (
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm">Open SFT Window</CardTitle>
@@ -229,6 +234,14 @@ export default function PTAdmin() {
               </Button>
             </CardContent>
           </Card>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center mb-3">
+              <Shield className="h-5 w-5 text-muted-foreground/50" />
+            </div>
+            <p className="text-sm font-medium text-muted-foreground">No active SFT window</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">Cadet admins open sessions for cadets to join</p>
+          </div>
         )}
 
         {/* Submission list */}
@@ -249,9 +262,11 @@ export default function PTAdmin() {
                         </p>
                       </div>
                     </div>
-                    <Button variant="ghost" size="sm" className="text-destructive/70 hover:text-destructive h-7 w-7 p-0 shrink-0" onClick={() => handleRemoveSubmission(sub.id)}>
-                      <XCircle className="h-3.5 w-3.5" />
-                    </Button>
+                    {cadetAdmin && (
+                      <Button variant="ghost" size="sm" className="text-destructive/70 hover:text-destructive h-7 w-7 p-0 shrink-0" onClick={() => handleRemoveSubmission(sub.id)}>
+                        <XCircle className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                   </div>
                 ))}
               </div>

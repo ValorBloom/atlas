@@ -5,7 +5,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import PageHeader from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Bell, CheckCheck, AlertTriangle, Info, CheckCircle2, XCircle, Shield, Megaphone } from 'lucide-react';
+import {
+  Bell, CheckCheck, AlertTriangle, Info, CheckCircle2,
+  XCircle, Shield, Megaphone, ArrowLeft, Clock
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { isCadetAdmin, isInstructor } from '@/lib/constants';
@@ -27,26 +30,36 @@ const typeColors = {
   error: 'text-destructive bg-destructive/15',
 };
 
-function NotifItem({ notif, onRead }) {
+const categoryLabel = {
+  movement: 'Movement',
+  sft: 'SFT',
+  status: 'Status',
+  approval: 'Approval',
+  admin: 'Admin',
+  parade: 'Parade',
+  announcement: 'Announcement',
+  points: 'Points',
+  system: 'System',
+};
+
+function NotifItem({ notif, onRead, onClick }) {
   const Icon = typeIcons[notif.type] || Info;
   const colors = typeColors[notif.type] || typeColors.info;
   return (
     <button
-      onClick={() => !notif.is_read && onRead(notif.id)}
+      onClick={() => { if (!notif.is_read) onRead(notif.id); onClick(notif); }}
       className={cn(
-        "w-full text-left p-3.5 rounded-xl border transition-all",
-        notif.is_read
-          ? "bg-card border-border opacity-60"
-          : "bg-card border-border shadow-sm"
+        'w-full text-left p-3.5 rounded-xl border transition-all active:scale-[0.98]',
+        notif.is_read ? 'bg-card border-border opacity-60' : 'bg-card border-border shadow-sm'
       )}
     >
       <div className="flex items-start gap-3">
-        <div className={cn("p-1.5 rounded-lg shrink-0", colors)}>
+        <div className={cn('p-1.5 rounded-lg shrink-0', colors)}>
           <Icon className="h-3.5 w-3.5" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <p className={cn("text-sm leading-tight", !notif.is_read ? "font-semibold" : "font-medium")}>
+            <p className={cn('text-sm leading-tight', !notif.is_read ? 'font-semibold' : 'font-medium')}>
               {notif.title}
             </p>
             {!notif.is_read && (
@@ -63,6 +76,48 @@ function NotifItem({ notif, onRead }) {
   );
 }
 
+function NotifDetail({ notif, onBack }) {
+  const Icon = typeIcons[notif.type] || Info;
+  const colors = typeColors[notif.type] || typeColors.info;
+  return (
+    <div className="pb-24">
+      <PageHeader
+        title="Notification"
+        backTo={null}
+        rightAction={
+          <Button variant="ghost" size="sm" className="gap-1.5 text-xs" onClick={onBack}>
+            <ArrowLeft className="h-3.5 w-3.5" /> Back
+          </Button>
+        }
+      />
+      <div className="px-4 py-5 space-y-4">
+        <div className="bg-card border border-border rounded-xl p-4 space-y-3">
+          <div className="flex items-start gap-3">
+            <div className={cn('p-2 rounded-xl shrink-0', colors)}>
+              <Icon className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-base font-bold text-foreground leading-tight">{notif.title}</p>
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                {notif.category && (
+                  <Badge variant="secondary" className="text-[10px]">{categoryLabel[notif.category] || notif.category}</Badge>
+                )}
+                <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                  <Clock className="h-2.5 w-2.5" />
+                  {format(new Date(notif.created_date), 'dd MMM yyyy, HH:mm')}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div className="pt-3 border-t border-border">
+            <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{notif.message}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Notifications() {
   const { user } = useOutletContext();
   const queryClient = useQueryClient();
@@ -70,31 +125,24 @@ export default function Notifications() {
   const instructor = isInstructor(user);
   const showTabs = cadetAdmin || instructor;
   const [tab, setTab] = useState('admin');
+  const [selected, setSelected] = useState(null);
 
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ['notifications', user?.email],
-    queryFn: () => base44.entities.Notification.filter(
-      { recipient_email: user?.email }, '-created_date', 100
-    ),
+    queryFn: () => base44.entities.Notification.filter({ recipient_email: user?.email }, '-created_date', 100),
     enabled: !!user?.email,
   });
 
-  // Also fetch unit-wide notifications (announcements etc.)
   const { data: unitNotifs = [] } = useQuery({
     queryKey: ['notifications-unit', user?.unit],
-    queryFn: () => base44.entities.Notification.filter(
-      { recipient_unit: user?.unit }, '-created_date', 100
-    ),
+    queryFn: () => base44.entities.Notification.filter({ recipient_unit: user?.unit }, '-created_date', 100),
     enabled: !!user?.unit,
   });
 
-  // Merge and deduplicate
   const allNotifs = useMemo(() => {
     const map = new Map();
     [...notifications, ...unitNotifs].forEach(n => map.set(n.id, n));
-    return Array.from(map.values()).sort((a, b) =>
-      new Date(b.created_date) - new Date(a.created_date)
-    );
+    return Array.from(map.values()).sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
   }, [notifications, unitNotifs]);
 
   const markReadMutation = useMutation({
@@ -116,10 +164,14 @@ export default function Notifications() {
 
   const adminNotifs = allNotifs.filter(n => ADMIN_CATEGORIES.includes(n.category));
   const cadetNotifs = allNotifs.filter(n => CADET_CATEGORIES.includes(n.category) || !n.category);
-
   const currentList = showTabs ? (tab === 'admin' ? adminNotifs : cadetNotifs) : allNotifs;
   const unreadCount = currentList.filter(n => !n.is_read).length;
   const totalUnread = allNotifs.filter(n => !n.is_read).length;
+
+  // Detail view
+  if (selected) {
+    return <NotifDetail notif={selected} onBack={() => setSelected(null)} />;
+  }
 
   return (
     <div>
@@ -136,14 +188,14 @@ export default function Notifications() {
         }
       />
 
-      {/* Tabs for cadet admins / instructors */}
       {showTabs && (
         <div className="flex border-b border-border mx-4">
           <button
             onClick={() => setTab('admin')}
-            className={`flex items-center gap-1.5 flex-1 py-2.5 text-sm font-medium transition-colors relative ${
+            className={cn(
+              'flex items-center gap-1.5 flex-1 py-2.5 text-sm font-medium transition-colors',
               tab === 'admin' ? 'text-primary border-b-2 border-primary' : 'text-muted-foreground'
-            }`}
+            )}
           >
             <Shield className="h-3.5 w-3.5" />
             Admin
@@ -155,9 +207,10 @@ export default function Notifications() {
           </button>
           <button
             onClick={() => setTab('cadet')}
-            className={`flex items-center gap-1.5 flex-1 py-2.5 text-sm font-medium transition-colors relative ${
+            className={cn(
+              'flex items-center gap-1.5 flex-1 py-2.5 text-sm font-medium transition-colors',
               tab === 'cadet' ? 'text-primary border-b-2 border-primary' : 'text-muted-foreground'
-            }`}
+            )}
           >
             <Megaphone className="h-3.5 w-3.5" />
             Announcements
@@ -183,7 +236,12 @@ export default function Notifications() {
         ) : (
           <div className="space-y-1.5">
             {currentList.map((notif) => (
-              <NotifItem key={notif.id} notif={notif} onRead={(id) => markReadMutation.mutate(id)} />
+              <NotifItem
+                key={notif.id}
+                notif={notif}
+                onRead={(id) => markReadMutation.mutate(id)}
+                onClick={(n) => setSelected(n)}
+              />
             ))}
           </div>
         )}

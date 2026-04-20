@@ -7,21 +7,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { RANKS, UNITS, isInstructor, getGroupLabel } from '@/lib/constants';
-import { LogOut, User, Shield, Star, ChevronRight, Trash2, Moon, Sun } from 'lucide-react';
+import { RANKS, UNITS, isInstructor, isCadetAdmin, getGroupLabel } from '@/lib/constants';
+import { LogOut, User, Shield, Star, ChevronRight, Trash2, Moon, Sun, Phone, Bell, Lock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useTheme } from '@/lib/ThemeContext';
+import { cn } from '@/lib/utils';
 
 export default function Profile() {
   const { user } = useOutletContext();
   const instructor = isInstructor(user);
+  const cadetAdmin = isCadetAdmin(user);
   const { theme, toggleTheme } = useTheme();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
-
-  // Delete account state
   const [showDelete, setShowDelete] = useState(false);
   const [deleteInput, setDeleteInput] = useState('');
   const [deleting, setDeleting] = useState(false);
@@ -54,12 +54,17 @@ export default function Profile() {
   const fullName = user?.full_name || '';
   const deleteReady = deleteInput.trim() === fullName.trim() && fullName.length > 0;
 
+  const initials = fullName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+
+  const roleLabel = instructor ? 'Instructor' : cadetAdmin ? 'Cadet Admin' : 'Cadet';
+  const roleBg = instructor ? 'bg-primary/15 text-primary' : cadetAdmin ? 'bg-amber-500/15 text-amber-400' : 'bg-secondary text-secondary-foreground';
+
   return (
-    <div>
+    <div className="pb-24">
       <PageHeader
         title="Profile"
         rightAction={
-          <Button variant="ghost" size="sm" className="text-muted-foreground text-xs gap-1" onClick={() => base44.auth.logout('/')}>
+          <Button variant="ghost" size="sm" className="text-muted-foreground text-xs gap-1.5" onClick={() => base44.auth.logout('/')}>
             <LogOut className="h-3.5 w-3.5" /> Logout
           </Button>
         }
@@ -67,36 +72,40 @@ export default function Profile() {
 
       <div className="px-4 py-5 space-y-4">
 
-        {/* Identity */}
-        <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
-            <User className="h-5 w-5 text-primary" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-foreground truncate">{user?.full_name || 'User'}</p>
-            <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-              {user?.rank && <Badge variant="secondary" className="text-[10px]">{user.rank}</Badge>}
-              {user?.unit && <Badge variant="secondary" className="text-[10px]">{user.unit}</Badge>}
-              {user?.platoon && <Badge variant="secondary" className="text-[10px]">{user.platoon}</Badge>}
-              {user?.section && <Badge variant="secondary" className="text-[10px]">{user.section}</Badge>}
-              {user?.is_admin && (
-                <Badge className="text-[10px] bg-primary/15 text-primary border-0">
-                  <Shield className="h-2.5 w-2.5 mr-0.5" />Instructor
-                </Badge>
-              )}
-              {user?.role === 'cadet_admin' && (
-                <Badge className="text-[10px] bg-amber-500/15 text-amber-400 border-0">
-                  <Star className="h-2.5 w-2.5 mr-0.5" />Admin
-                </Badge>
-              )}
+        {/* ── Identity Hero ── */}
+        <div className="relative bg-gradient-to-br from-primary/10 via-card to-card border border-primary/15 rounded-2xl p-5 overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -translate-y-6 translate-x-6 pointer-events-none" />
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-primary/20 border border-primary/25 flex items-center justify-center shrink-0">
+              <span className="text-xl font-bold text-primary">{initials || <User className="h-6 w-6" />}</span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-base font-bold text-foreground truncate">{fullName || 'User'}</p>
+              <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+              <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                {user?.rank && (
+                  <Badge variant="secondary" className="text-[10px] font-semibold">{user.rank}</Badge>
+                )}
+                {user?.unit && (
+                  <Badge variant="secondary" className="text-[10px]">{user.unit}</Badge>
+                )}
+                <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-semibold', roleBg)}>
+                  {roleLabel}
+                </span>
+              </div>
             </div>
           </div>
+          {(user?.phone_number) && (
+            <div className="flex items-center gap-2 mt-4 pt-3 border-t border-border/50">
+              <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <span className="text-xs text-muted-foreground">{user.phone_number}</span>
+            </div>
+          )}
         </div>
 
-        {/* Edit Details */}
-        <div className="bg-card border border-border rounded-xl p-4 space-y-4">
-          <div className="flex items-center justify-between">
+        {/* ── Edit Details ── */}
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
             <p className="text-sm font-semibold text-foreground">Details</p>
             {!editing ? (
               <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setEditing(true)}>Edit</Button>
@@ -110,114 +119,124 @@ export default function Profile() {
             )}
           </div>
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
+          <div className="divide-y divide-border">
+            <div className="flex items-center justify-between px-4 py-3">
               <span className="text-xs text-muted-foreground">Role</span>
-              <span className="text-xs font-medium capitalize">{user?.role || 'Cadet'}</span>
+              <span className="text-xs font-medium capitalize">{roleLabel}</span>
             </div>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between px-4 py-3">
+              <span className="text-xs text-muted-foreground">Rank</span>
               {editing ? (
-                <>
-                  <span className="text-xs text-muted-foreground">Rank</span>
-                  <Select value={form.rank} onValueChange={(v) => setForm({ ...form, rank: v })}>
-                    <SelectTrigger className="h-8 w-32 text-xs bg-background border-border"><SelectValue /></SelectTrigger>
-                    <SelectContent>{RANKS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
-                  </Select>
-                </>
+                <Select value={form.rank} onValueChange={(v) => setForm({ ...form, rank: v })}>
+                  <SelectTrigger className="h-8 w-32 text-xs bg-background border-border"><SelectValue /></SelectTrigger>
+                  <SelectContent>{RANKS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+                </Select>
               ) : (
-                <>
-                  <span className="text-xs text-muted-foreground">Rank</span>
-                  <span className="text-xs font-medium">{user?.rank || '—'}</span>
-                </>
+                <span className="text-xs font-medium">{user?.rank || '—'}</span>
               )}
             </div>
-            <div className="flex items-center justify-between">
-              {editing ? (
-                <>
-                  <span className="text-xs text-muted-foreground">Unit</span>
-                  <Select value={form.unit} onValueChange={(v) => setForm({ ...form, unit: v })}>
-                    <SelectTrigger className="h-8 w-32 text-xs bg-background border-border"><SelectValue /></SelectTrigger>
-                    <SelectContent>{UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
-                  </Select>
-                </>
+            <div className="flex items-center justify-between px-4 py-3">
+              <span className="text-xs text-muted-foreground">Unit</span>
+              {editing && !instructor ? (
+                <Select value={form.unit} onValueChange={(v) => setForm({ ...form, unit: v })}>
+                  <SelectTrigger className="h-8 w-32 text-xs bg-background border-border"><SelectValue /></SelectTrigger>
+                  <SelectContent>{UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
+                </Select>
               ) : (
-                <>
-                  <span className="text-xs text-muted-foreground">Unit</span>
-                  <span className="text-xs font-medium">{user?.unit || '—'}</span>
-                </>
+                <span className="text-xs font-medium">{user?.unit || '—'}</span>
               )}
             </div>
-            {/* Platoon / Section / Group (read-only) */}
-            {(user?.platoon || user?.section) && (
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">{getGroupLabel(user?.unit)}</span>
-                <span className="text-xs font-medium">
-                  {user?.platoon || '—'}{user?.section ? ` · ${user.section}` : ''}
-                </span>
-              </div>
-            )}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between px-4 py-3">
+              <span className="text-xs text-muted-foreground">Phone</span>
               {editing ? (
-                <>
-                  <span className="text-xs text-muted-foreground">Phone</span>
-                  <Input
-                    className="h-8 w-32 text-xs bg-background border-border"
-                    value={form.phone_number}
-                    onChange={(e) => setForm({ ...form, phone_number: e.target.value })}
-                  />
-                </>
+                <Input
+                  className="h-8 w-32 text-xs bg-background border-border"
+                  value={form.phone_number}
+                  onChange={(e) => setForm({ ...form, phone_number: e.target.value })}
+                />
               ) : (
-                <>
-                  <span className="text-xs text-muted-foreground">Phone</span>
-                  <span className="text-xs font-medium">{user?.phone_number || '—'}</span>
-                </>
+                <span className="text-xs font-medium">{user?.phone_number || '—'}</span>
               )}
             </div>
           </div>
         </div>
 
-        {/* Theme Toggle */}
-        <button
-          onClick={toggleTheme}
-          className="w-full flex items-center justify-between p-4 bg-card border border-border rounded-xl hover:bg-secondary/50 transition-colors text-left"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
-              {theme === 'dark' ? <Moon className="h-4 w-4 text-primary" /> : <Sun className="h-4 w-4 text-amber-400" />}
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground">Appearance</p>
-              <p className="text-xs text-muted-foreground">{theme === 'dark' ? 'Dark mode' : 'Light mode'}</p>
-            </div>
+        {/* ── Settings ── */}
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-border">
+            <p className="text-sm font-semibold text-foreground">Settings</p>
           </div>
-          <div className={`w-11 h-6 rounded-full transition-colors ${theme === 'dark' ? 'bg-primary' : 'bg-muted'} flex items-center px-1`}>
-            <div className={`w-4 h-4 rounded-full bg-white shadow transition-transform ${theme === 'dark' ? 'translate-x-5' : 'translate-x-0'}`} />
-          </div>
-        </button>
 
-        {/* Instructor: Appoint Cadet Admin */}
-        {instructor && (
-          <Link
-            to="/admin/appoint"
-            className="flex items-center gap-3 p-4 bg-card border border-border rounded-xl hover:bg-secondary/50 transition-colors"
+          {/* Theme toggle */}
+          <button
+            onClick={toggleTheme}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors border-b border-border"
           >
-            <div className="w-9 h-9 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
-              <Star className="h-4 w-4 text-amber-400" />
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                {theme === 'dark' ? <Moon className="h-3.5 w-3.5 text-primary" /> : <Sun className="h-3.5 w-3.5 text-amber-400" />}
+              </div>
+              <div className="text-left">
+                <p className="text-sm font-medium text-foreground">Appearance</p>
+                <p className="text-xs text-muted-foreground">{theme === 'dark' ? 'Dark mode' : 'Light mode'}</p>
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold">Appoint Cadet Admin</p>
-              <p className="text-xs text-muted-foreground">Grant admin access to cadets</p>
+            <div className={cn('w-10 h-5.5 rounded-full transition-colors flex items-center px-0.5', theme === 'dark' ? 'bg-primary' : 'bg-muted')}>
+              <div className={cn('w-4 h-4 rounded-full bg-white shadow transition-transform', theme === 'dark' ? 'translate-x-5' : 'translate-x-0')} />
             </div>
-            <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+          </button>
+
+          {/* Notifications link */}
+          <Link to="/notifications" className="flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                <Bell className="h-3.5 w-3.5 text-foreground/60" />
+              </div>
+              <p className="text-sm font-medium text-foreground">Notifications</p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
           </Link>
+        </div>
+
+        {/* ── Instructor tools ── */}
+        {instructor && (
+          <div className="bg-card border border-border rounded-xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-border">
+              <p className="text-sm font-semibold text-foreground">Administration</p>
+            </div>
+            <Link to="/admin/appoint" className="flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
+                  <Star className="h-3.5 w-3.5 text-amber-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">Appoint Cadet Admin</p>
+                  <p className="text-xs text-muted-foreground">Grant admin access to cadets</p>
+                </div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </Link>
+            <Link to="/admin/import" className="flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors border-t border-border">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                  <Lock className="h-3.5 w-3.5 text-foreground/60" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">Import Users</p>
+                  <p className="text-xs text-muted-foreground">Mass import via CSV</p>
+                </div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </Link>
+          </div>
         )}
 
-        {/* Delete Account */}
+        {/* ── Delete Account ── */}
         {!showDelete ? (
           <div className="flex justify-center pt-2 pb-4">
             <button
               onClick={() => setShowDelete(true)}
-              className="flex items-center gap-1.5 text-xs text-destructive/60 hover:text-destructive transition-colors"
+              className="flex items-center gap-1.5 text-xs text-destructive/50 hover:text-destructive transition-colors"
             >
               <Trash2 className="h-3 w-3" />
               Delete Account

@@ -60,14 +60,15 @@ export default function Setup() {
     }
 
     setSaving(true);
+    const isInstr = form.role === 'instructor';
     await base44.auth.updateMe({
       unit: form.unit,
       rank: form.rank,
       role: form.role,
-      is_admin: form.role === 'instructor',
+      is_admin: isInstr,
       phone_number: form.phone_number,
-      platoon: form.platoon || null,
-      section: form.section || null,
+      platoon: isInstr ? null : (form.platoon || null),
+      section: isInstr ? null : (form.section || null),
     });
     setSaving(false);
     navigate('/');
