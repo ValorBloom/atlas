@@ -27,7 +27,7 @@ export default function PTAdmin() {
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [saving, setSaving] = useState(false);
-  const [instructor, setInstructor] = useState('');
+  const [instructorName, setInstructorName] = useState('');
   const [salutation, setSalutation] = useState('');
   const [sending, setSending] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -61,7 +61,7 @@ export default function PTAdmin() {
       date: format(new Date(), 'yyyy-MM-dd'),
       is_active: true,
       unit: user?.unit,
-      instructor_name: instructor,
+      instructor_name: instructorName,
       salutation: salutation,
     });
     setSaving(false);
@@ -103,8 +103,8 @@ export default function PTAdmin() {
     const greeting = hour < 12 ? 'Good Morning' : 'Good Afternoon';
     const dateStr = format(new Date(), 'ddMMMyyyy').toUpperCase();
     const windowStr = activeWindow ? `${fmt(activeWindow.start_time)} to ${fmt(activeWindow.end_time)}` : '';
-    const sal = salutation || (instructor ? 'Sir/Ma\'am' : 'Sir/Ma\'am');
-    const instrName = instructor || (activeWindow?.instructor_name || '');
+    const sal = salutation || 'Sir/Ma\'am';
+    const instrName = instructorName || (activeWindow?.instructor_name || '');
 
     let report = `${greeting} ${sal}${instrName ? ' ' + instrName.split(' ').slice(-1)[0] : ''}, `;
     report += `below are the cadets participating in SFT for ${dateStr} from ${windowStr}.\n\n`;
@@ -213,7 +213,7 @@ export default function PTAdmin() {
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Approving Instructor</Label>
-                <Select value={instructor} onValueChange={setInstructor}>
+                <Select value={instructorName} onValueChange={setInstructorName}>
                   <SelectTrigger><SelectValue placeholder="Select instructor" /></SelectTrigger>
                   <SelectContent>
                     {instructors.map(i => (
