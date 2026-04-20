@@ -73,14 +73,18 @@ export const PURPOSES = [
 ];
 
 export const SFT_ACTIVITIES = [
-  "Running (2.4km)", "Running (5km)", "Push-ups", "Sit-ups",
-  "Pull-ups", "Shuttle Run", "Standing Broad Jump",
-  "Swim (IPPT)", "SOC", "Route March", "Other PT"
+  "Gym @ Wingline",
+  "Running @ Yellow Cluster Parade Square",
+  "Running @ DIS Wing Approved Route",
+  "Frisbee @ Basketball court",
+  "Basketball @ Basketball court",
+  "Other ball @ Yellow Cluster Parade Square",
+  "Badminton @ Basketball court",
 ];
 
 export const SFT_LOCATIONS = [
-  "Track", "Gym", "SOC Ground", "Pool", "Training Shed",
-  "Company Line", "Route (Camp)", "Route (External)"
+  "Wingline", "Yellow Cluster Parade Square", "DIS Wing Approved Route",
+  "Basketball court", "Track", "Gym", "SOC Ground", "Pool", "Training Shed"
 ];
 
 export const POINT_REASONS = [

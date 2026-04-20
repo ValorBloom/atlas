@@ -5,7 +5,7 @@ import PageHeader from '@/components/layout/PageHeader';
 import QuickAction from '@/components/home/QuickAction';
 import {
   MapPin, Activity, FileText, Dumbbell, ClipboardList,
-  Upload, Trophy, Megaphone, Trash2, Eye, LayoutDashboard
+  Upload, Trophy, Megaphone, Trash2, Eye, LayoutDashboard, Calendar
 } from 'lucide-react';
 
 export default function Actions() {
@@ -50,7 +50,8 @@ export default function Actions() {
                 <QuickAction to="/admin/locations" icon={MapPin} label="Live Locations" description="Where is everyone" variant="primary" />
                 <QuickAction to="/admin/parade-state" icon={ClipboardList} label="Parade State" description="View, update & send" variant="primary" />
                 <QuickAction to="/actions/status/update/RSO" icon={FileText} label="Status Approvals" description="Review RSO & status reports" />
-                <QuickAction to="/admin/announcements" icon={Megaphone} label="Announcements / CET" description="Send daily CET updates" />
+                <QuickAction to="/admin/cet" icon={Calendar} label="Send CET" description="Daily timetable with quote" variant="primary" />
+                <QuickAction to="/admin/announcements" icon={FileText} label="Announcements" description="Post unit-wide notices" />
                 <QuickAction to="/points" icon={Trophy} label="Points" description="View and manage points" />
               </div>
             </div>

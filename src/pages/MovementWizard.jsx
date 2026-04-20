@@ -248,23 +248,23 @@ export default function MovementWizard() {
                 </div>
               </div>
             )}
-            {/* Step indicator */}
-            <div className="flex items-center gap-1 mb-4 overflow-x-auto pb-1">
-              {STEPS.map((s, i) => (
-                <React.Fragment key={s}>
-                  <div className={`flex items-center gap-1 shrink-0 ${i <= step ? 'text-primary' : 'text-muted-foreground'}`}>
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border ${
-                      i < step ? 'bg-primary border-primary text-white' :
-                      i === step ? 'border-primary text-primary' :
-                      'border-muted-foreground/30 text-muted-foreground/50'
-                    }`}>
-                      {i < step ? <Check className="w-3 h-3" /> : i + 1}
-                    </div>
-                    <span className={`text-[11px] ${i === step ? 'font-semibold' : 'font-medium opacity-60'}`}>{s}</span>
-                  </div>
-                  {i < STEPS.length - 1 && <div className="w-3 h-px bg-border shrink-0" />}
-                </React.Fragment>
-              ))}
+            {/* Step indicator — compact dots + current label */}
+            <div className="flex flex-col items-center gap-2 mb-4">
+              <div className="flex items-center gap-1.5">
+                {STEPS.map((s, i) => (
+                  <div
+                    key={s}
+                    className={`rounded-full transition-all ${
+                      i < step ? 'w-2 h-2 bg-primary' :
+                      i === step ? 'w-3 h-3 bg-primary ring-2 ring-primary/30' :
+                      'w-2 h-2 bg-border'
+                    }`}
+                  />
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Step {step + 1} of {STEPS.length} — <span className="font-semibold text-foreground">{STEPS[step]}</span>
+              </p>
             </div>
 
             {/* Step 0: Personnel (multi-select) */}

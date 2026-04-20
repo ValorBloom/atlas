@@ -17,6 +17,8 @@ export default function ParadeState() {
   const { user } = useOutletContext();
   const qc = useQueryClient();
   const [outOfCamp, setOutOfCamp] = useState('');
+  const [othersCount, setOthersCount] = useState('');
+  const [permanentStatusCount, setPermanentStatusCount] = useState('');
   const [previewing, setPreviewing] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [sending, setSending] = useState(false);
@@ -53,12 +55,15 @@ export default function ParadeState() {
   const allStatuses = [...activeStatuses, ...approvedStatuses];
   const totalStrength = allUsers.length;
   const outOfCampNum = parseInt(outOfCamp) || 0;
+  const othersNum = parseInt(othersCount) || 0;
+  const permanentNum = parseInt(permanentStatusCount) || 0;
   const rsoList = allStatuses.filter(s => s.type === 'RSO');
   const maList = allStatuses.filter(s => s.type === 'MA');
   const rsiList = allStatuses.filter(s => s.type === 'RSI');
   const rsoCount = rsoList.length;
   const maCount = maList.length;
   const rsiCount = rsiList.length;
+  const statusTotal = rsoCount + maCount + rsiCount;
   const validOutOfCamp = outOfCampNum >= 0 && outOfCampNum <= totalStrength;
   const inCamp = Math.max(totalStrength - outOfCampNum - rsoCount, 0);
 
@@ -75,9 +80,13 @@ Total Strength : ${totalStrength}
 In Camp        : ${inCamp}
 Out of Camp    : ${outOfCampNum}
 ────────────────────
-RSO : ${rsoCount}
-MA  : ${maCount}
-RSI : ${rsiCount}
+RSO              : ${rsoCount.toString().padStart(2, '0')}
+MA               : ${maCount.toString().padStart(2, '0')}
+RSI              : ${rsiCount.toString().padStart(2, '0')}
+────────────────────
+OTHERS           : ${othersNum.toString().padStart(2, '0')}
+STATUSES         : ${statusTotal.toString().padStart(2, '0')}
+PERMANENT STATUS : ${permanentNum.toString().padStart(2, '0')}
 ────────────────────
 ${details || 'NIL'}
 ────────────────────
@@ -151,31 +160,50 @@ Updated by: ${formatRankName(user?.rank, user?.full_name)}`;
           ))}
         </div>
 
-        {/* Out of camp input */}
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Out of Camp Count</Label>
-          <Input
-            type="number"
-            min="0"
-            placeholder="Enter number"
-            value={outOfCamp}
-            onChange={(e) => { setOutOfCamp(e.target.value); setPreviewing(false); setConfirming(false); }}
-            className="text-center text-lg font-mono h-12"
-          />
-          {!validOutOfCamp && outOfCamp !== '' && (
-            <Alert variant="destructive" className="py-2">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription className="text-xs">
-                Cannot exceed total strength ({totalStrength}).
-              </AlertDescription>
-            </Alert>
-          )}
+        {/* Additional counts */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground text-center block">Out of Camp</Label>
+            <Input
+              type="number" min="0"
+              placeholder="0"
+              value={outOfCamp}
+              onChange={(e) => { setOutOfCamp(e.target.value); setPreviewing(false); setConfirming(false); }}
+              className="text-center font-mono h-11"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground text-center block">Others</Label>
+            <Input
+              type="number" min="0"
+              placeholder="0"
+              value={othersCount}
+              onChange={(e) => { setOthersCount(e.target.value); setPreviewing(false); setConfirming(false); }}
+              className="text-center font-mono h-11"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground text-center block">Perm Status</Label>
+            <Input
+              type="number" min="0"
+              placeholder="0"
+              value={permanentStatusCount}
+              onChange={(e) => { setPermanentStatusCount(e.target.value); setPreviewing(false); setConfirming(false); }}
+              className="text-center font-mono h-11"
+            />
+          </div>
         </div>
+        {!validOutOfCamp && outOfCamp !== '' && (
+          <Alert variant="destructive" className="py-2">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription className="text-xs">Out of camp cannot exceed total strength ({totalStrength}).</AlertDescription>
+          </Alert>
+        )}
 
         <Button
           className="w-full h-10"
           onClick={() => setPreviewing(true)}
-          disabled={!validOutOfCamp || outOfCamp === ''}
+          disabled={!validOutOfCamp && outOfCamp !== ''}
           variant="outline"
         >
           <ClipboardList className="h-4 w-4 mr-1.5" /> Preview Report

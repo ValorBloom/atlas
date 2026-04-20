@@ -148,7 +148,8 @@ export default function Dashboard() {
             <NavLink to="/admin/parade-state" icon={ClipboardList} label="Parade State" />
             <NavLink to="/admin/pt" icon={Activity} label="PT / SFT Admin" />
             <NavLink to="/actions/status/update/RSO" icon={FileText} label="Status Approvals" badge={pendingApprovals.length > 0 ? `${pendingApprovals.length}` : null} />
-            <NavLink to="/admin/announcements" icon={Megaphone} label="Announcements / CET" />
+            <NavLink to="/admin/announcements" icon={Megaphone} label="Announcements" />
+            <NavLink to="/admin/cet" icon={FileText} label="Send CET" />
             <NavLink to="/points" icon={Trophy} label="Points & Leaderboard" />
             <NavLink to="/admin/import" icon={Upload} label="Import Users" />
             <NavLink to="/admin/data-clear" icon={Trash2} label="Data Clear" />

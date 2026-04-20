@@ -38,6 +38,7 @@ import ParadeState from './pages/admin/ParadeState';
 import ImportUsers from './pages/admin/ImportUsers';
 import DataClear from './pages/admin/DataClear';
 import Announcements from './pages/admin/Announcements';
+import CET from './pages/admin/CET';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -88,6 +89,7 @@ const AuthenticatedApp = () => {
         <Route path="/admin/import" element={<ImportUsers />} />
         <Route path="/admin/data-clear" element={<DataClear />} />
         <Route path="/admin/announcements" element={<Announcements />} />
+        <Route path="/admin/cet" element={<CET />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
