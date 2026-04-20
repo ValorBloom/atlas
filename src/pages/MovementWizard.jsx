@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { LOCATIONS, PURPOSES, TIME_REGEX, formatTime, formatRankName, getCurrentTimeSG, getGroupLabel } from '@/lib/constants';
-import { MapPin, ArrowRight, Clock, Check, X, Search, Users, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
+import { MapPin, ArrowRight, Clock, Check, X, Search, CheckCircle2, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -22,6 +22,7 @@ export default function MovementWizard() {
 
   // Tab: 'report' or 'reached'
   const [tab, setTab] = useState('report');
+  const [showActiveWarning, setShowActiveWarning] = useState(false);
 
   // --- REPORT STATE ---
   const [step, setStep] = useState(0);
@@ -55,8 +56,11 @@ export default function MovementWizard() {
     queryFn: () => base44.entities.MovementLog.filter(
       { unit: user?.unit, status: 'departed' }, '-created_date', 30
     ),
-    enabled: !!user?.unit && tab === 'reached',
+    enabled: !!user?.unit,
   });
+
+  // Check if current user has an active movement
+  const myActiveLogs = pendingLogs.filter(l => l.personnel_id === user?.id);
 
   // Auto-select self on mount
   useEffect(() => {
@@ -146,6 +150,17 @@ export default function MovementWizard() {
       unit: user?.unit,
     });
 
+    // Schedule a 20-minute reminder notification
+    setTimeout(async () => {
+      await base44.entities.Notification.create({
+        title: '⏱ Report Reached Time',
+        message: `Reminder: ${selectedPersonnel.map(p => p.full_name).join(', ')} departed 20 mins ago. Please update reached time.`,
+        type: 'warning',
+        category: 'movement',
+        recipient_unit: user?.unit,
+      });
+    }, 20 * 60 * 1000);
+
     setSaving(false);
     toast.success(`${selectedPersonnel.length > 1 ? selectedPersonnel.length + ' movements' : 'Movement'} reported`);
     queryClient.invalidateQueries({ queryKey: ['movement-pending'] });
@@ -215,6 +230,24 @@ export default function MovementWizard() {
         {/* ===== REPORT TAB ===== */}
         {tab === 'report' && (
           <>
+            {/* Active movement warning banner */}
+            {myActiveLogs.length > 0 && (
+              <div className="mb-3 p-3 bg-amber-500/10 border border-amber-500/25 rounded-xl flex items-start gap-2.5">
+                <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-amber-300">Active movement pending!</p>
+                  <p className="text-xs text-amber-400/80 mt-0.5">
+                    {myActiveLogs.map(l => `${l.to_location} (left ${formatTime(l.leave_time)})`).join(', ')} — remember to report reached time.
+                  </p>
+                  <button
+                    onClick={() => setTab('reached')}
+                    className="text-xs text-amber-300 underline underline-offset-2 mt-1"
+                  >
+                    Update reached →
+                  </button>
+                </div>
+              </div>
+            )}
             {/* Step indicator */}
             <div className="flex items-center gap-1 mb-4 overflow-x-auto pb-1">
               {STEPS.map((s, i) => (

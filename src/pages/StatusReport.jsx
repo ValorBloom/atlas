@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { useOutletContext, useNavigate, useParams } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+
 import PageHeader from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatRankName } from '@/lib/constants';
 import { Check, ArrowRight } from 'lucide-react';
@@ -43,12 +42,7 @@ export default function StatusReport() {
     endorsed_by: '',
   });
 
-  // Fetch instructors for MA endorsed_by
-  const { data: instructors = [] } = useQuery({
-    queryKey: ['instructors-unit', user?.unit],
-    queryFn: () => base44.entities.User.filter({ unit: user?.unit, role: 'instructor' }),
-    enabled: !!user?.unit && type === 'MA',
-  });
+
 
   const statusLabel = { RSO: 'Report Sick Out', MA: 'Medical Appointment', RSI: 'Report Sick In' };
 
@@ -191,27 +185,10 @@ export default function StatusReport() {
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Endorsed By (optional)</Label>
-              {instructors.length > 0 ? (
-                <Select value={data.endorsed_by} onValueChange={(v) => setData({ ...data, endorsed_by: v })}>
-                  <SelectTrigger className="bg-card border-border"><SelectValue placeholder="Select instructor" /></SelectTrigger>
-                  <SelectContent>
-                    {instructors.map(u => (
-                      <SelectItem key={u.id} value={formatRankName(u.rank, u.full_name)}>
-                        {formatRankName(u.rank, u.full_name)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Input
-                  placeholder="Instructor name"
-                  value={data.endorsed_by}
-                  onChange={(e) => setData({ ...data, endorsed_by: e.target.value.toUpperCase() })}
-                  className="bg-card border-border"
-                />
-              )}
+            <div className="p-3 bg-muted/40 border border-border rounded-xl">
+              <p className="text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">Endorsed By</span> — will be filled by your instructor when they endorse this appointment.
+              </p>
             </div>
           </div>
         )}
@@ -222,10 +199,11 @@ export default function StatusReport() {
             <CardContent className="p-4">
               <pre className="text-xs whitespace-pre-wrap font-mono leading-relaxed text-foreground">
 {`${formatRankName(selfRank, selfName)}
-NAME: ${data.appointment_type || '—'}
+APPOINTMENT TYPE: ${data.appointment_type || '—'}
 LOCATION: ${data.location || '—'}
 DATE: ${formatMADate(data.appointment_date)}
-TIME OF APPOINTMENT: ${data.appointment_time || '—'}H${data.endorsed_by ? `\nENDORSED BY: ${data.endorsed_by}` : ''}`}
+TIME: ${data.appointment_time || '—'}H
+ENDORSED BY: (Pending instructor endorsement)`}
               </pre>
             </CardContent>
           </Card>

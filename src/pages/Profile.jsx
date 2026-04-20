@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { RANKS, UNITS, isInstructor } from '@/lib/constants';
+import { RANKS, UNITS, isInstructor, getGroupLabel } from '@/lib/constants';
 import { LogOut, User, Shield, Star, ChevronRight, Trash2, Moon, Sun } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -147,6 +147,15 @@ export default function Profile() {
                 </>
               )}
             </div>
+            {/* Platoon / Section / Group (read-only) */}
+            {(user?.platoon || user?.section) && (
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">{getGroupLabel(user?.unit)}</span>
+                <span className="text-xs font-medium">
+                  {user?.platoon || '—'}{user?.section ? ` · ${user.section}` : ''}
+                </span>
+              </div>
+            )}
             <div className="flex items-center justify-between">
               {editing ? (
                 <>
