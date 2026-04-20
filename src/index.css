@@ -102,6 +102,38 @@
   }
 }
 
+/* Light page transitions and motion */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.page-enter {
+  animation: fadeInUp 0.2s ease-out forwards;
+}
+
+/* Card hover lifts */
+a, button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Smooth all transitions by default */
+* {
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Subtle pulse for unread badges */
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+.pulse-soft { animation: pulse-soft 2s ease-in-out infinite; }
+
 /* ── Platform Auth Page Dark Mode Override ── */
 body[class*="auth"],
 div[class*="auth-"],

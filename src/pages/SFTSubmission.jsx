@@ -328,8 +328,8 @@ export default function SFTSubmission() {
                     </div>
                     <div className="pt-1 border-t border-border">
                       <p className="text-xs text-muted-foreground mb-1">Activities</p>
-                      {activities.map(a => (
-                        <p key={a} className="text-sm font-medium">• {a}</p>
+                      {activities.map((a, i) => (
+                        <p key={a} className="text-sm font-medium">{i + 1}. {a}</p>
                       ))}
                     </div>
                   </CardContent>

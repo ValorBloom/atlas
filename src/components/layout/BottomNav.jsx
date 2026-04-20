@@ -15,7 +15,7 @@ export default function BottomNav({ isInstructor, isCadetAdmin }) {
   const adminItem = isInstructor
     ? { path: '/admin', icon: Shield, label: 'Instructor' }
     : isCadetAdmin
-    ? { path: '/admin/parade-state', icon: Star, label: 'Admin' }
+    ? { path: '/admin/pt', icon: Star, label: 'Admin' }
     : null;
 
   const items = adminItem ? [...navItems, adminItem] : navItems;

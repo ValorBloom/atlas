@@ -3,11 +3,10 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { useOutletContext } from 'react-router-dom';
 import PageHeader from '@/components/layout/PageHeader';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Clock, ArrowRight, User } from 'lucide-react';
+import { MapPin, Clock, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { formatRankName, formatTime } from '@/lib/constants';
-import { format, isToday, parseISO } from 'date-fns';
+import { format, isToday, parseISO, differenceInMinutes } from 'date-fns';
 
 export default function LocationTracker() {
   const { user } = useOutletContext();
@@ -18,7 +17,7 @@ export default function LocationTracker() {
       { unit: user?.unit, status: 'departed' }, '-created_date', 50
     ),
     enabled: !!user?.unit,
-    refetchInterval: 30000, // refresh every 30s
+    refetchInterval: 30000,
   });
 
   const { data: allMovements = [] } = useQuery({
@@ -36,72 +35,85 @@ export default function LocationTracker() {
   const reachedToday = todayMovements.filter(m => m.status === 'reached').length;
   const activeNow = movements.length;
 
+  // Determine if a departure is overdue (left > 60 min ago with no reached)
+  const isOverdue = (m) => {
+    if (!m.leave_time) return false;
+    const hh = parseInt(m.leave_time.slice(0, 2));
+    const mm = parseInt(m.leave_time.slice(2, 4));
+    const now = new Date();
+    const leaveDate = new Date();
+    leaveDate.setHours(hh, mm, 0, 0);
+    return differenceInMinutes(now, leaveDate) > 60;
+  };
+
+  const backPath = user?.role === 'instructor' ? '/admin' : '/';
+
   return (
     <div>
-      <PageHeader title="Personnel Location" backTo="/admin" subtitle="Live movement tracker" />
+      <PageHeader title="Movement Tracker" backTo={backPath} subtitle="Live personnel movements" />
       <div className="px-4 py-4 space-y-5">
 
-        {/* Summary */}
+        {/* Summary tiles */}
         <div className="grid grid-cols-2 gap-2">
-          <Card className="border-primary/20 bg-primary/5">
-            <CardContent className="p-3 text-center">
-              <p className="text-xs text-primary font-medium">Out of Camp</p>
-              <p className="text-2xl font-bold text-primary">{activeNow}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-3 text-center">
-              <p className="text-xs text-muted-foreground">Returned Today</p>
-              <p className="text-2xl font-bold">{reachedToday}</p>
-            </CardContent>
-          </Card>
+          <div className={`rounded-xl border p-4 text-center ${activeNow > 0 ? 'border-destructive/25 bg-destructive/8' : 'border-border bg-card'}`}>
+            <p className={`text-xs font-medium ${activeNow > 0 ? 'text-destructive/70' : 'text-muted-foreground'}`}>Out of Camp</p>
+            <p className={`text-3xl font-bold mt-0.5 ${activeNow > 0 ? 'text-destructive' : 'text-foreground'}`}>{activeNow}</p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-4 text-center">
+            <p className="text-xs font-medium text-muted-foreground">Returned Today</p>
+            <p className="text-3xl font-bold mt-0.5 text-foreground">{reachedToday}</p>
+          </div>
         </div>
 
-        {/* Active movements */}
+        {/* Active movements — highlight pending */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Currently Out of Camp</h2>
-            <span className="text-xs text-muted-foreground">Auto-refreshes</span>
+            <h2 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Currently Out</h2>
+            <span className="text-[10px] text-muted-foreground/60">Refreshes every 30s</span>
           </div>
 
           {isLoading && (
-            <div className="text-center py-8">
-              <div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin mx-auto" />
+            <div className="flex justify-center py-8">
+              <div className="w-5 h-5 border-2 border-muted border-t-primary rounded-full animate-spin" />
             </div>
           )}
 
           {!isLoading && movements.length === 0 && (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <MapPin className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">All personnel are in camp</p>
-              </CardContent>
-            </Card>
+            <div className="flex flex-col items-center justify-center py-10 text-center">
+              <CheckCircle2 className="h-8 w-8 text-muted-foreground/30 mb-2" />
+              <p className="text-sm text-muted-foreground">All personnel in camp</p>
+            </div>
           )}
 
-          {movements.map((m) => (
-            <Card key={m.id} className="border-amber-200 bg-amber-50/30">
-              <CardContent className="p-3.5">
+          {movements.map((m, idx) => {
+            const overdue = isOverdue(m);
+            return (
+              <div key={m.id} className={`p-3.5 rounded-xl border transition-all ${
+                overdue
+                  ? 'border-destructive/30 bg-destructive/8'
+                  : 'border-border bg-card'
+              }`}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-start gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0 mt-0.5">
-                      <User className="h-4 w-4 text-amber-600" />
-                    </div>
+                    <span className="text-xs font-bold text-muted-foreground w-5 shrink-0 mt-1">{idx + 1}.</span>
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-foreground">
-                        {formatRankName(m.personnel_rank, m.personnel_name)}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold text-foreground">
+                          {formatRankName(m.personnel_rank, m.personnel_name)}
+                        </p>
+                        {overdue && <AlertCircle className="h-3.5 w-3.5 text-destructive shrink-0" />}
+                      </div>
                       <div className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground">
                         <span>{m.from_location}</span>
-                        <ArrowRight className="h-3 w-3" />
+                        <ArrowRight className="h-3 w-3 shrink-0" />
                         <span className="font-medium text-foreground">{m.to_location}</span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">{m.purpose}</p>
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <Badge variant="outline" className="text-[10px] border-amber-300 text-amber-700 bg-amber-50">
-                      Out
+                    <Badge className={`text-[10px] ${overdue ? 'bg-destructive/15 text-destructive border-destructive/25' : 'bg-amber-500/15 text-amber-400 border-amber-500/25'}`}>
+                      {overdue ? 'Overdue' : 'Out'}
                     </Badge>
                     <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground justify-end">
                       <Clock className="h-2.5 w-2.5" />
@@ -109,45 +121,44 @@ export default function LocationTracker() {
                     </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
+              </div>
+            );
+          })}
         </div>
 
-        {/* Today's log */}
+        {/* Today's full log */}
         {todayMovements.length > 0 && (
           <div className="space-y-2">
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Today's Movement Log</h2>
-            {todayMovements.map((m) => (
-              <Card key={m.id}>
-                <CardContent className="p-3">
-                  <div className="flex items-center justify-between">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium">{formatRankName(m.personnel_rank, m.personnel_name)}</p>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
-                        <span>{m.from_location}</span>
-                        <ArrowRight className="h-3 w-3" />
-                        <span>{m.to_location}</span>
-                        <span className="mx-1">·</span>
-                        <span>{formatTime(m.leave_time)}</span>
-                        {m.reached_time && <><span>→</span><span>{formatTime(m.reached_time)}</span></>}
-                      </div>
-                    </div>
-                    <Badge
-                      className={
-                        m.status === 'reached'
-                          ? 'text-[10px] bg-green-50 text-green-700 border border-green-200'
-                          : m.status === 'departed'
-                          ? 'text-[10px] bg-amber-50 text-amber-700 border border-amber-200'
-                          : 'text-[10px]'
-                      }
-                      variant="outline"
-                    >
-                      {m.status === 'reached' ? 'Returned' : m.status === 'departed' ? 'Out' : 'Cancelled'}
-                    </Badge>
+            <h2 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Today's Log</h2>
+            {todayMovements.map((m, idx) => (
+              <div key={m.id} className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card">
+                <span className="text-xs font-bold text-muted-foreground w-5 shrink-0">{idx + 1}.</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground">{formatRankName(m.personnel_rank, m.personnel_name)}</p>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5 flex-wrap">
+                    <span>{m.from_location}</span>
+                    <ArrowRight className="h-3 w-3 shrink-0" />
+                    <span>{m.to_location}</span>
+                    <span>·</span>
+                    <span>{formatTime(m.leave_time)}</span>
+                    {m.reached_time && (
+                      <>
+                        <ArrowRight className="h-3 w-3 shrink-0" />
+                        <span>{formatTime(m.reached_time)}</span>
+                      </>
+                    )}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+                <Badge className={`text-[10px] shrink-0 ${
+                  m.status === 'reached'
+                    ? 'bg-green-500/15 text-green-400 border-green-500/25'
+                    : m.status === 'departed'
+                    ? 'bg-amber-500/15 text-amber-400 border-amber-500/25'
+                    : 'bg-muted text-muted-foreground border-border'
+                }`}>
+                  {m.status === 'reached' ? 'Returned' : m.status === 'departed' ? 'Out' : 'Cancelled'}
+                </Badge>
+              </div>
             ))}
           </div>
         )}

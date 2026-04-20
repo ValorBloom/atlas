@@ -110,8 +110,10 @@ export default function MovementWizard() {
 
   const reportLines = () => {
     const date = format(new Date(), 'ddMMMMyyyy').toUpperCase();
-    const names = selectedPersonnel.map(p => formatRankName(p.rank || '', p.full_name || '')).join(', ');
-    return `📍 MOVEMENT REPORT\n${names}\nFrom: ${fromLoc}\nTo: ${toLoc}\nPurpose: ${purpose}\nLeave Time: ${formatTime(data.leave_time)}\nDate: ${date}`;
+    const numberedNames = selectedPersonnel
+      .map((p, i) => `${i + 1}. ${formatRankName(p.rank || '', p.full_name || '')}`)
+      .join('\n');
+    return `📍 MOVEMENT REPORT\n${numberedNames}\nFrom: ${fromLoc}\nTo: ${toLoc}\nPurpose: ${purpose}\nLeave Time: ${formatTime(data.leave_time)}\nDate: ${date}`;
   };
 
   const handleSubmit = async () => {

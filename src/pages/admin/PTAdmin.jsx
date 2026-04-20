@@ -163,7 +163,7 @@ export default function PTAdmin() {
 
   return (
     <div>
-      <PageHeader title="PT Admin" backTo="/" subtitle="SFT session controls" />
+      <PageHeader title="PT Admin" backTo="/" subtitle="SFT session management" />
       <div className="px-4 py-4 space-y-5">
 
         {/* Active or Create Window */}
@@ -234,19 +234,22 @@ export default function PTAdmin() {
         {/* Submission list */}
         {activeWindow && submissions.length > 0 && (
           <div className="space-y-2">
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Joined Cadets ({submissions.length})</h2>
+            <h2 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Joined Cadets ({submissions.length})</h2>
             {Object.entries(groupedByActivity).map(([activity, subs]) => (
               <div key={activity} className="space-y-1">
-                <p className="text-xs font-semibold text-primary pl-1">{activity}</p>
-                {subs.map(sub => (
-                  <div key={sub.id} className="flex items-center justify-between p-2.5 rounded-lg border bg-card text-sm">
-                    <div>
-                      <p className="font-medium">{formatRankName(sub.cadet_rank, sub.cadet_name)}</p>
-                      <p className="text-xs text-muted-foreground font-mono">
-                        {sub.time_range?.replace('-', ' – ').replace(/(\d{4})/g, '$1H') || '—'}
-                      </p>
+                <p className="text-xs font-semibold text-foreground/70 pl-1 uppercase tracking-wide">{activity}</p>
+                {subs.map((sub, idx) => (
+                  <div key={sub.id} className="flex items-center justify-between p-2.5 rounded-xl border border-border bg-card text-sm">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="text-xs font-bold text-muted-foreground w-5 shrink-0">{idx + 1}.</span>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-foreground">{formatRankName(sub.cadet_rank, sub.cadet_name)}</p>
+                        <p className="text-xs text-muted-foreground font-mono">
+                          {sub.time_range?.replace('-', ' – ').replace(/(\d{4})/g, '$1H') || '—'}
+                        </p>
+                      </div>
                     </div>
-                    <Button variant="ghost" size="sm" className="text-destructive h-7 w-7 p-0" onClick={() => handleRemoveSubmission(sub.id)}>
+                    <Button variant="ghost" size="sm" className="text-destructive/70 hover:text-destructive h-7 w-7 p-0 shrink-0" onClick={() => handleRemoveSubmission(sub.id)}>
                       <XCircle className="h-3.5 w-3.5" />
                     </Button>
                   </div>

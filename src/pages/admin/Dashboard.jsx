@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { isInstructor } from '@/lib/constants';
 import {
   Users, Shield, Activity, MapPin, FileText,
-  ClipboardList, Trophy, Upload, Trash2, Megaphone, ChevronRight, Eye
+  ClipboardList, Trophy, Upload, Trash2, Megaphone, ChevronRight, Eye, Calendar
 } from 'lucide-react';
 
 function StatCard({ icon: Icon, label, value, to }) {
@@ -149,7 +149,7 @@ export default function Dashboard() {
             <NavLink to="/admin/pt" icon={Activity} label="PT / SFT Admin" />
             <NavLink to="/actions/status/update/RSO" icon={FileText} label="Status Approvals" badge={pendingApprovals.length > 0 ? `${pendingApprovals.length}` : null} />
             <NavLink to="/admin/announcements" icon={Megaphone} label="Announcements" />
-            <NavLink to="/admin/cet" icon={FileText} label="Send CET" />
+            <NavLink to="/admin/cet" icon={Calendar} label="Send CET" />
             <NavLink to="/points" icon={Trophy} label="Points & Leaderboard" />
             <NavLink to="/admin/import" icon={Upload} label="Import Users" />
             <NavLink to="/admin/data-clear" icon={Trash2} label="Data Clear" />

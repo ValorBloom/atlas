@@ -5,7 +5,7 @@ import PageHeader from '@/components/layout/PageHeader';
 import QuickAction from '@/components/home/QuickAction';
 import {
   MapPin, Activity, FileText, Dumbbell, ClipboardList,
-  Upload, Trophy, Megaphone, Trash2, Eye, LayoutDashboard, Calendar
+  Upload, Trophy, Megaphone, Trash2, Calendar, LayoutDashboard, Users
 } from 'lucide-react';
 
 export default function Actions() {
@@ -18,13 +18,13 @@ export default function Actions() {
       <PageHeader title="Actions" subtitle="All available operations" />
       <div className="px-4 py-5 space-y-6">
 
-        {/* Standard operations — visible to all cadets & cadet admins */}
+        {/* Standard cadet operations */}
         {!instructor && (
-          <div className="space-y-3">
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Operations</h2>
-            <div className="space-y-2">
-              <QuickAction to="/actions/movement" icon={MapPin} label="Movement Report" description="Report personnel movement" variant="primary" />
-              <QuickAction to="/actions/sft" icon={Activity} label="SFT Submission" description="Submit SFT activity" variant="primary" />
+          <div className="space-y-2">
+            <h2 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Operations</h2>
+            <div className="space-y-1.5">
+              <QuickAction to="/actions/movement" icon={MapPin} label="Movement Report" description="Report departure and arrival" />
+              <QuickAction to="/actions/sft" icon={Activity} label="SFT Submission" description="Submit your SFT activity" />
               <QuickAction to="/actions/status" icon={FileText} label="Status Report" description="RSO / MA / RSI reporting" />
               <QuickAction to="/points" icon={Trophy} label="Points" description="View and manage points" />
             </div>
@@ -33,10 +33,12 @@ export default function Actions() {
 
         {/* Cadet Admin operations */}
         {cadetAdmin && (
-          <div className="space-y-3">
-            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Admin Operations</h2>
-            <div className="space-y-2">
-              <QuickAction to="/admin/parade-state" icon={ClipboardList} label="Parade State" description="Update & send parade state" variant="primary" />
+          <div className="space-y-2">
+            <h2 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Admin Operations</h2>
+            <div className="space-y-1.5">
+              <QuickAction to="/admin/pt" icon={Dumbbell} label="PT Admin" description="Open SFT session, manage & send report" />
+              <QuickAction to="/admin/parade-state" icon={ClipboardList} label="Parade State" description="Compile and send parade state" />
+              <QuickAction to="/admin/locations" icon={Users} label="Movement Logs" description="View all movements, highlight pending" />
             </div>
           </div>
         )}
@@ -44,21 +46,21 @@ export default function Actions() {
         {/* Instructor operations */}
         {instructor && (
           <>
-            <div className="space-y-3">
-              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Operations</h2>
-              <div className="space-y-2">
-                <QuickAction to="/admin/locations" icon={MapPin} label="Live Locations" description="Where is everyone" variant="primary" />
-                <QuickAction to="/admin/parade-state" icon={ClipboardList} label="Parade State" description="View, update & send" variant="primary" />
-                <QuickAction to="/actions/status/update/RSO" icon={FileText} label="Status Approvals" description="Review RSO & status reports" />
-                <QuickAction to="/admin/cet" icon={Calendar} label="Send CET" description="Daily timetable with quote" variant="primary" />
-                <QuickAction to="/admin/announcements" icon={FileText} label="Announcements" description="Post unit-wide notices" />
+            <div className="space-y-2">
+              <h2 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Operations</h2>
+              <div className="space-y-1.5">
+                <QuickAction to="/admin/locations" icon={MapPin} label="Live Locations" description="Where is everyone" />
+                <QuickAction to="/admin/parade-state" icon={ClipboardList} label="Parade State" description="View, update & send" />
+                <QuickAction to="/actions/status/update/RSO" icon={FileText} label="Status Approvals" description="Approve / reject RSO & status reports" />
+                <QuickAction to="/admin/cet" icon={Calendar} label="Send CET" description="Daily timetable with quote" />
                 <QuickAction to="/points" icon={Trophy} label="Points" description="View and manage points" />
               </div>
             </div>
-            <div className="space-y-3">
-              <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">System</h2>
-              <div className="space-y-2">
-                <QuickAction to="/admin/pt" icon={Dumbbell} label="PT Admin" description="SFT window and report controls" />
+            <div className="space-y-2">
+              <h2 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">System</h2>
+              <div className="space-y-1.5">
+                <QuickAction to="/admin/pt" icon={Dumbbell} label="PT Admin" description="SFT window and approve report" />
+                <QuickAction to="/admin/announcements" icon={Megaphone} label="Announcements" description="Post unit-wide notices" />
                 <QuickAction to="/admin/import" icon={Upload} label="Import Users" description="Mass import via CSV" />
                 <QuickAction to="/admin/data-clear" icon={Trash2} label="Data Clear" description="Controlled data operations" />
               </div>
