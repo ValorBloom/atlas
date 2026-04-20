@@ -110,6 +110,7 @@ module.exports = {
     'border-primary/20', 'border-primary/25',
     'border-amber-500/20', 'border-amber-500/25', 'border-destructive/20', 'border-destructive/25',
     'border-green-500/25',
+    'bg-violet-500/15', 'text-violet-400', 'border-violet-500/25',
     'translate-x-0', 'translate-x-5',
   ],
   plugins: [require("tailwindcss-animate")],

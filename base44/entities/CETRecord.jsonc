@@ -1,0 +1,52 @@
+{
+  "name": "CETRecord",
+  "type": "object",
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of the CET (YYYY-MM-DD)"
+    },
+    "unit": {
+      "type": "string"
+    },
+    "wdi": {
+      "type": "string",
+      "description": "Warrant/Duty Instructor name"
+    },
+    "quote": {
+      "type": "string"
+    },
+    "quote_author": {
+      "type": "string"
+    },
+    "timetable": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "time": {
+            "type": "string"
+          },
+          "activity": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "notes": {
+      "type": "string"
+    },
+    "sent_by": {
+      "type": "string"
+    },
+    "is_published": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "date",
+    "unit"
+  ]
+}

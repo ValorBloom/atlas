@@ -1,0 +1,19 @@
+{
+  "name": "HomeConfig",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "pinned_actions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of action keys to show on home screen"
+    }
+  },
+  "required": [
+    "user_id"
+  ]
+}

@@ -28,6 +28,8 @@ import Leaderboard from './pages/Leaderboard';
 import PointLogs from './pages/PointLogs';
 import EditPoints from './pages/EditPoints';
 import DrawNames from './pages/DrawNames';
+import ViewCET from './pages/ViewCET';
+import Duty from './pages/Duty';
 
 // Admin Pages
 import Dashboard from './pages/admin/Dashboard';
@@ -81,6 +83,8 @@ const AuthenticatedApp = () => {
         <Route path="/points/logs" element={<PointLogs />} />
         <Route path="/points/edit" element={<EditPoints />} />
         <Route path="/points/draw" element={<DrawNames />} />
+        <Route path="/actions/cet" element={<ViewCET />} />
+        <Route path="/actions/duty" element={<Duty />} />
         <Route path="/admin" element={<Dashboard />} />
         <Route path="/admin/locations" element={<LocationTracker />} />
         <Route path="/admin/appoint" element={<AppointAdmin />} />

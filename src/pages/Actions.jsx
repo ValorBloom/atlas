@@ -5,7 +5,7 @@ import PageHeader from '@/components/layout/PageHeader';
 import QuickAction from '@/components/home/QuickAction';
 import {
   MapPin, Activity, FileText, Dumbbell, ClipboardList,
-  Upload, Trophy, Megaphone, Trash2, Calendar, Users, CheckSquare, Shield
+  Upload, Trophy, Megaphone, Trash2, Calendar, Users, CheckSquare, Shield, CalendarDays
 } from 'lucide-react';
 
 export default function Actions() {
@@ -26,6 +26,8 @@ export default function Actions() {
               <QuickAction to="/actions/movement" icon={MapPin} label="Movement Report" description="Report departure and arrival" />
               <QuickAction to="/actions/sft" icon={Activity} label="SFT Submission" description="Submit your SFT activity" />
               <QuickAction to="/actions/status" icon={FileText} label="Status Report" description="RSO / MA / RSI reporting" />
+              <QuickAction to="/actions/cet" icon={Calendar} label="View CET" description="Daily training programme" />
+              <QuickAction to="/actions/duty" icon={CalendarDays} label="Duty Roster" description="CDO / CDS / CDG / Guard" />
               <QuickAction to="/points" icon={Trophy} label="Points" description="View leaderboard & history" />
             </div>
           </div>
@@ -39,6 +41,7 @@ export default function Actions() {
               <QuickAction to="/admin/pt" icon={Dumbbell} label="PT Admin" description="Open SFT session & submit list" />
               <QuickAction to="/admin/parade-state" icon={ClipboardList} label="Parade State" description="Compile and send parade state" />
               <QuickAction to="/admin/locations" icon={MapPin} label="Movement Log" description="View all personnel movements" />
+              <QuickAction to="/actions/duty" icon={CalendarDays} label="Duty Roster" description="Manage CDO/CDS/Guard duties" />
               <QuickAction to="/admin/announcements" icon={Megaphone} label="Announcements" description="Post unit-wide notices" />
             </div>
           </div>
