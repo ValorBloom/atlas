@@ -22,7 +22,7 @@ export default function SFTSubmission() {
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [data, setData] = useState({
-    activity: '',
+    activities: [],
     location: '',
     start_time: '',
     end_time: '',
@@ -49,9 +49,18 @@ export default function SFTSubmission() {
   const activeWindow = activeWindows[0];
   const hasSubmission = mySubmissions.length > 0;
 
+  const toggleActivity = (a) => {
+    setData(prev => ({
+      ...prev,
+      activities: prev.activities.includes(a)
+        ? prev.activities.filter(x => x !== a)
+        : [...prev.activities, a]
+    }));
+  };
+
   const canNext = () => {
     switch (step) {
-      case 0: return data.activity;
+      case 0: return data.activities.length > 0;
       case 1: return data.location;
       case 2: return TIME_REGEX.test(data.start_time) && TIME_REGEX.test(data.end_time);
       default: return true;
@@ -64,7 +73,7 @@ export default function SFTSubmission() {
       cadet_name: user?.full_name,
       cadet_rank: user?.rank,
       cadet_id: user?.id,
-      activity: data.activity,
+      activity: data.activities.join(', '),
       location: data.location,
       time_range: `${data.start_time}-${data.end_time}`,
       window_id: activeWindow.id,
@@ -106,7 +115,7 @@ export default function SFTSubmission() {
           <Alert className="bg-primary/5 border-primary/20">
             <Activity className="h-4 w-4 text-primary" />
             <AlertDescription className="text-sm">
-              You have an active submission: <strong>{mySubmissions[0].activity}</strong> at {mySubmissions[0].location}
+              Active submission: <strong>{mySubmissions[0].activity}</strong> at {mySubmissions[0].location}
             </AlertDescription>
           </Alert>
           <Button variant="destructive" className="w-full" onClick={handleQuit}>
@@ -120,16 +129,26 @@ export default function SFTSubmission() {
           <div className="px-4 py-3">
             {step === 0 && (
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Select Activity</Label>
-                {SFT_ACTIVITIES.map(a => (
-                  <button
-                    key={a}
-                    onClick={() => setData({ ...data, activity: a })}
-                    className={`w-full text-left p-3 rounded-xl border text-sm transition-all ${
-                      data.activity === a ? 'border-primary bg-primary/5 font-medium' : 'border-border bg-card'
-                    }`}
-                  >{a}</button>
-                ))}
+                <Label className="text-sm font-medium">Select Activities <span className="text-muted-foreground font-normal">(select all that apply)</span></Label>
+                {SFT_ACTIVITIES.map(a => {
+                  const checked = data.activities.includes(a);
+                  return (
+                    <button
+                      key={a}
+                      onClick={() => toggleActivity(a)}
+                      className={`w-full flex items-center gap-3 p-3 rounded-xl border text-sm transition-all ${
+                        checked ? 'border-primary bg-primary/5 font-medium' : 'border-border bg-card'
+                      }`}
+                    >
+                      <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${
+                        checked ? 'border-primary bg-primary' : 'border-border'
+                      }`}>
+                        {checked && <Check className="h-3 w-3 text-white" />}
+                      </div>
+                      <span className="text-left">{a}</span>
+                    </button>
+                  );
+                })}
               </div>
             )}
 
@@ -179,11 +198,11 @@ export default function SFTSubmission() {
                 <Card className="bg-muted/30">
                   <CardContent className="p-4">
                     <pre className="text-xs whitespace-pre-wrap font-mono leading-relaxed">
-{`🏃 SFT SUBMISSION
-${user?.rank} ${user?.full_name}
-Activity: ${data.activity}
-Location: ${data.location}
-Time: ${formatTime(data.start_time)} – ${formatTime(data.end_time)}`}
+                    {`🏃 SFT SUBMISSION
+                    ${user?.rank} ${user?.full_name}
+                    Activities: ${data.activities.join(', ')}
+                    Location: ${data.location}
+                    Time: ${formatTime(data.start_time)} – ${formatTime(data.end_time)}`}
                     </pre>
                   </CardContent>
                 </Card>
