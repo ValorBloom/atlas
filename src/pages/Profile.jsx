@@ -82,31 +82,26 @@ export default function Profile() {
 
       <div className="px-4 py-5 space-y-4">
 
-        {/* ── Identity Hero — military card ── */}
-        <div className="relative rounded-2xl overflow-hidden border border-primary/20"
-          style={{ background: 'linear-gradient(135deg, hsl(222,24%,10%) 0%, hsl(222,24%,13%) 100%)' }}>
-
+        {/* ── Identity Hero — military card (light + dark mode) ── */}
+        <div className="relative rounded-2xl overflow-hidden border border-primary/30 bg-primary/5 dark:bg-[hsl(222,24%,10%)]">
           {/* Grid texture */}
-          <div className="absolute inset-0 opacity-[0.05]"
+          <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
             style={{
               backgroundImage: 'linear-gradient(hsl(217,91%,55%) 1px, transparent 1px), linear-gradient(90deg, hsl(217,91%,55%) 1px, transparent 1px)',
               backgroundSize: '24px 24px'
             }} />
-
           {/* Corner brackets */}
-          <div className="absolute top-3 left-3 w-5 h-5 border-t-2 border-l-2 border-primary/50 rounded-tl" />
-          <div className="absolute top-3 right-3 w-5 h-5 border-t-2 border-r-2 border-primary/50 rounded-tr" />
-          <div className="absolute bottom-3 left-3 w-5 h-5 border-b-2 border-l-2 border-primary/50 rounded-bl" />
-          <div className="absolute bottom-3 right-3 w-5 h-5 border-b-2 border-r-2 border-primary/50 rounded-br" />
+          <div className="absolute top-3 left-3 w-5 h-5 border-t-2 border-l-2 border-primary/40 rounded-tl" />
+          <div className="absolute top-3 right-3 w-5 h-5 border-t-2 border-r-2 border-primary/40 rounded-tr" />
+          <div className="absolute bottom-3 left-3 w-5 h-5 border-b-2 border-l-2 border-primary/40 rounded-bl" />
+          <div className="absolute bottom-3 right-3 w-5 h-5 border-b-2 border-r-2 border-primary/40 rounded-br" />
 
           <div className="relative px-5 py-5">
             <div className="flex items-start gap-4">
               {/* Avatar */}
-              <div className="w-16 h-16 rounded-xl flex items-center justify-center shrink-0 border border-primary/30"
-                style={{ background: 'linear-gradient(135deg, hsl(217,91%,20%) 0%, hsl(222,24%,16%) 100%)' }}>
+              <div className="w-16 h-16 rounded-xl flex items-center justify-center shrink-0 border border-primary/25 bg-primary/15">
                 <span className="text-2xl font-bold text-primary">{initials || '?'}</span>
               </div>
-
               {/* Info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
@@ -118,7 +113,7 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* Divider */}
+            {/* Stats row */}
             <div className="border-t border-primary/15 mt-4 pt-3 grid grid-cols-3 gap-3">
               <div>
                 <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Rank</p>
@@ -175,7 +170,7 @@ export default function Profile() {
             {/* Unit */}
             <div className="flex items-center justify-between px-4 py-3">
               <span className="text-xs text-muted-foreground">Unit</span>
-              {editing && !instructor ? (
+              {editing ? (
                 <Select value={form.unit} onValueChange={(v) => setForm({ ...form, unit: v, group: '' })}>
                   <SelectTrigger className="h-8 w-32 text-xs bg-background border-border"><SelectValue /></SelectTrigger>
                   <SelectContent>{UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>

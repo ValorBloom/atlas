@@ -3,11 +3,10 @@ import { Link, useLocation } from 'react-router-dom';
 import { Home, Zap, Bell, User, Shield, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const navItems = [
+const baseNavItems = [
   { path: '/', icon: Home, label: 'Home' },
   { path: '/actions', icon: Zap, label: 'Ops' },
   { path: '/notifications', icon: Bell, label: 'Alerts' },
-  { path: '/profile', icon: User, label: 'Profile' },
 ];
 
 export default function BottomNav({ isInstructor, isCadetAdmin }) {
@@ -18,7 +17,11 @@ export default function BottomNav({ isInstructor, isCadetAdmin }) {
     ? { path: '/admin/pt', icon: Star, label: 'Admin' }
     : null;
 
-  const items = adminItem ? [...navItems, adminItem] : navItems;
+  // Profile is always last
+  const profileItem = { path: '/profile', icon: User, label: 'Profile' };
+  const items = adminItem
+    ? [...baseNavItems, adminItem, profileItem]
+    : [...baseNavItems, profileItem];
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border safe-area-bottom">

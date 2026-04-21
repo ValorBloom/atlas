@@ -24,7 +24,7 @@ export default function StatusUpdate() {
   const cadetAdmin = isCadetAdmin(user);
 
   const [selected, setSelected] = useState(null);
-  const [mode, setMode] = useState(''); // 'diagnosis' | 'approve' | 'resolve'
+  const [mode, setMode] = useState(''); // 'diagnosis' | 'approve' | 'cancel'
   const [diagnosis, setDiagnosis] = useState('');
   const [mcDetails, setMcDetails] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -229,8 +229,8 @@ export default function StatusUpdate() {
                   <div className="space-y-2">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">What would you like to do?</p>
                     <div className="grid gap-2">
-                      {/* Cadet: add diagnosis after doctor visit */}
-                      {!instructor && (type === 'RSO' || type === 'RSI') && (
+                      {/* Cadet: post-consult update */}
+                      {!instructor && !cadetAdmin && (type === 'RSO' || type === 'RSI') && (
                         <button
                           onClick={() => setMode('diagnosis')}
                           className="flex items-center gap-3 p-3.5 rounded-xl border border-border bg-card hover:bg-muted/30 transition-all text-left"
@@ -244,35 +244,49 @@ export default function StatusUpdate() {
                           </div>
                         </button>
                       )}
-                      {/* Instructor: approve/reject */}
-                      {(instructor || cadetAdmin) && (
+                      {/* Cadet: cancel own request */}
+                      {!instructor && !cadetAdmin && (
                         <button
-                          onClick={() => setMode('approve')}
-                          className="flex items-center gap-3 p-3.5 rounded-xl border border-border bg-card hover:bg-muted/30 transition-all text-left"
+                          onClick={() => setMode('cancel')}
+                          className="flex items-center gap-3 p-3.5 rounded-xl border border-destructive/20 bg-destructive/5 hover:bg-destructive/10 transition-all text-left"
                         >
-                          <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                            <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+                          <div className="w-8 h-8 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0">
+                            <Check className="h-4 w-4 text-destructive" />
                           </div>
                           <div>
-                            <p className="text-sm font-medium">Approve / Reject / Resolve</p>
-                            <p className="text-xs text-muted-foreground">Change the status of this record</p>
+                            <p className="text-sm font-medium text-destructive">Cancel Request</p>
+                            <p className="text-xs text-muted-foreground">Withdraw this status report</p>
                           </div>
                         </button>
                       )}
-                      {/* Anyone can resolve own */}
-                      {!instructor && !cadetAdmin && (
-                        <button
-                          onClick={() => { setMode('approve'); setNewStatus('resolved'); }}
-                          className="flex items-center gap-3 p-3.5 rounded-xl border border-border bg-card hover:bg-muted/30 transition-all text-left"
-                        >
-                          <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                            <Check className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium">Mark as Resolved</p>
-                            <p className="text-xs text-muted-foreground">Status has ended / you've recovered</p>
-                          </div>
-                        </button>
+                      {/* Instructor / Cadet Admin: approve or reject only */}
+                      {(instructor || cadetAdmin) && (
+                        <>
+                          <button
+                            onClick={() => { setMode('approve'); setNewStatus('approved'); }}
+                            className="flex items-center gap-3 p-3.5 rounded-xl border border-green-500/25 bg-green-500/8 hover:bg-green-500/12 transition-all text-left"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-green-500/15 flex items-center justify-center shrink-0">
+                              <ShieldCheck className="h-4 w-4 text-green-400" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-green-400">Approve</p>
+                              <p className="text-xs text-muted-foreground">Approve this {type} request</p>
+                            </div>
+                          </button>
+                          <button
+                            onClick={() => { setMode('approve'); setNewStatus('rejected'); }}
+                            className="flex items-center gap-3 p-3.5 rounded-xl border border-destructive/20 bg-destructive/5 hover:bg-destructive/10 transition-all text-left"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0">
+                              <Check className="h-4 w-4 text-destructive" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-destructive">Reject</p>
+                              <p className="text-xs text-muted-foreground">Reject this {type} request</p>
+                            </div>
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>
@@ -312,31 +326,51 @@ export default function StatusUpdate() {
                   </div>
                 )}
 
-                {/* Approval mode */}
+                {/* Cancel mode (cadet only) */}
+                {mode === 'cancel' && (
+                  <div className="space-y-3">
+                    <p className="text-xs font-semibold text-destructive uppercase tracking-wide">Cancel Request</p>
+                    <p className="text-xs text-muted-foreground">This will withdraw your {type} request. This cannot be undone.</p>
+                    <div className="flex gap-2">
+                      <Button variant="outline" className="flex-1" onClick={() => setMode('')}>Go Back</Button>
+                      <Button variant="destructive" className="flex-1" onClick={async () => {
+                        setSaving(true);
+                        await base44.entities.StatusReport.update(selected.id, { status: 'resolved' });
+                        await base44.entities.AuditLog.create({
+                          action: `status_cancelled_${type.toLowerCase()}`,
+                          category: 'status',
+                          details: `${type} cancelled by ${selected.personnel_name}`,
+                          performed_by: user?.email,
+                          unit: user?.unit,
+                        });
+                        setSaving(false);
+                        toast.success('Request cancelled');
+                        queryClient.invalidateQueries({ queryKey: ['status-own'] });
+                        setSelected(null); setMode('');
+                      }} disabled={saving}>
+                        {saving ? 'Cancelling...' : 'Yes, Cancel'}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Approval mode (instructor pre-selects approve or reject) */}
                 {mode === 'approve' && (
                   <div className="space-y-3">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Change Status</p>
-                    <Select value={newStatus} onValueChange={setNewStatus}>
-                      <SelectTrigger><SelectValue placeholder="Select new status" /></SelectTrigger>
-                      <SelectContent>
-                        {selected.status === 'pending_approval' && (
-                          <>
-                            <SelectItem value="approved">Approve</SelectItem>
-                            <SelectItem value="rejected">Reject</SelectItem>
-                          </>
-                        )}
-                        <SelectItem value="resolved">Mark Resolved</SelectItem>
-                        <SelectItem value="active">Set Active</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <p className={`text-xs font-semibold uppercase tracking-wide ${newStatus === 'approved' ? 'text-green-400' : 'text-destructive'}`}>
+                      {newStatus === 'approved' ? 'Approving' : 'Rejecting'} — {formatRankName(selected.personnel_rank, selected.personnel_name)}
+                    </p>
                     <div className="space-y-1.5">
-                      <Label className="text-xs">Notes (optional)</Label>
-                      <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add notes..." className="min-h-[60px]" />
+                      <Label className="text-xs">Notes <span className="text-muted-foreground">(optional)</span></Label>
+                      <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add any notes..." className="min-h-[60px]" />
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" className="flex-1" onClick={() => setMode('')}>Cancel</Button>
-                      <Button className="flex-1" onClick={handleApprovalUpdate}
-                        disabled={!newStatus || saving}>
+                      <Button variant="outline" className="flex-1" onClick={() => setMode('')}>Back</Button>
+                      <Button
+                        className={`flex-1 ${newStatus === 'rejected' ? 'bg-destructive hover:bg-destructive/90' : ''}`}
+                        onClick={handleApprovalUpdate}
+                        disabled={saving}
+                      >
                         <Check className="h-4 w-4 mr-1" />{saving ? 'Saving...' : 'Confirm'}
                       </Button>
                     </div>

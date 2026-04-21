@@ -42,7 +42,9 @@ function InstructorParadeState({ user }) {
 
   const lastParadeLog = auditLogs[0] || null;
   const allStatuses = [...activeStatuses, ...approvedStatuses];
-  const totalStrength = allUsers.length;
+  // Parade state is cadets-only strength
+  const cadets = allUsers.filter(u => u.role === 'cadet' || u.role === 'cadet_admin');
+  const totalStrength = cadets.length;
   const rsoList = allStatuses.filter(s => s.type === 'RSO');
   const maList = allStatuses.filter(s => s.type === 'MA');
   const rsiList = allStatuses.filter(s => s.type === 'RSI');
@@ -64,7 +66,7 @@ function InstructorParadeState({ user }) {
           <div>
             <p className="text-xs font-medium text-foreground">Last parade state sent</p>
             <p className="text-xs text-muted-foreground">
-              By {lastParadeLog.performed_by?.split('@')[0]} · {format(parseISO(lastParadeLog.created_date), 'dd MMM, HH:mm')}
+              By {lastParadeLog.performed_by?.split('@')[0]} · {format(parseISO(lastParadeLog.created_date), 'dd MMM, HHmm')}H
             </p>
           </div>
         </div>
@@ -212,7 +214,9 @@ function AdminParadeState({ user }) {
 
   const lastParadeLog = auditLogs[0] || null;
   const allStatuses = [...activeStatuses, ...approvedStatuses];
-  const totalStrength = allUsers.length;
+  // Parade state uses cadets-only strength
+  const cadets = allUsers.filter(u => u.role === 'cadet' || u.role === 'cadet_admin');
+  const totalStrength = cadets.length;
   const outOfCampNum = parseInt(outOfCamp) || 0;
   const othersNum = parseInt(othersCount) || 0;
   const permanentNum = parseInt(permanentStatusCount) || 0;
@@ -231,7 +235,7 @@ function AdminParadeState({ user }) {
     try { return format(parseISO(d), 'ddMMyyyy'); } catch { return d || '—'; }
   };
   const nowDate = () => format(new Date(), 'ddMMyyyy').toUpperCase();
-  const nowTime = () => format(new Date(), 'HHmm');
+  const nowTime = () => format(new Date(), 'HHmm') + 'H';
 
   const formatEntry = (s, idx) => {
     const name = formatRankName(s.personnel_rank, s.personnel_name);
@@ -263,11 +267,11 @@ function AdminParadeState({ user }) {
     const sep = '--------------------------------------------------------';
     let r = '';
     r += `PARADE STATE - ${unit}\n`;
-    r += `Date: ${nowDate()} Time: ${nowTime()}H\n`;
+    r += `Date: ${nowDate()} Time: ${nowTime()}\n`;
     r += sep + '\n\n';
-    r += `TOTAL STRENGTH: ${totalStrength}\n\n`;
-    r += `CURRENT STRENGTH: ${inCamp}\n`;
-    r += `OUT OF CAMP: ${outOfCampNum}\n\n`;
+    r += `TOTAL STRENGTH: ${totalStrength}\n`;
+    r += `CURRENT STRENGTH: ${inCamp} (In Camp)\n`;
+    r += `OUT OF CAMP: ${outOfCampNum} (Out of Camp)\n\n`;
     r += sep + '\n';
 
     // MA
@@ -359,7 +363,7 @@ function AdminParadeState({ user }) {
           <div>
             <p className="text-xs font-medium text-foreground">Last sent</p>
             <p className="text-xs text-muted-foreground">
-              By {lastParadeLog.performed_by?.split('@')[0]} · {format(parseISO(lastParadeLog.created_date), 'dd MMM, HH:mm')}
+              By {lastParadeLog.performed_by?.split('@')[0]} · {format(parseISO(lastParadeLog.created_date), 'dd MMM, HHmm')}H
             </p>
           </div>
         </div>

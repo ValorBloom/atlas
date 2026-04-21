@@ -68,7 +68,7 @@ function NotifItem({ notif, onRead, onClick }) {
           </div>
           <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 leading-relaxed">{notif.message}</p>
           <p className="text-[10px] text-muted-foreground/50 mt-1.5">
-            {format(new Date(notif.created_date), 'dd MMM, HH:mm')}
+            {format(new Date(notif.created_date), 'dd MMM, HHmm')}H
           </p>
         </div>
       </div>
@@ -76,9 +76,52 @@ function NotifItem({ notif, onRead, onClick }) {
   );
 }
 
+// Parse structured fields from a notification message
+function parseNotifFields(message = '') {
+  const fields = [];
+  const lines = message.split('\n');
+  const fieldPatterns = [
+    { key: 'WHO', label: 'Personnel' },
+    { key: 'NAME', label: 'Name' },
+    { key: 'SYMPTOMS', label: 'Symptoms' },
+    { key: 'DIAGNOSIS', label: 'Diagnosis' },
+    { key: 'STATUS', label: 'Status' },
+    { key: 'APPROVED BY', label: 'Approved By' },
+    { key: 'ENDORSED BY', label: 'Endorsed By' },
+    { key: 'MC', label: 'MC Details' },
+    { key: 'END DATE', label: 'End Date' },
+    { key: 'DATE', label: 'Date' },
+    { key: 'TIME OF APPOINTMENT', label: 'Appointment' },
+    { key: 'LOCATION', label: 'Location' },
+  ];
+  lines.forEach(line => {
+    for (const p of fieldPatterns) {
+      const regex = new RegExp(`^${p.key}:\\s*(.+)`, 'i');
+      const match = line.match(regex);
+      if (match) {
+        fields.push({ label: p.label, value: match[1].trim() });
+        return;
+      }
+    }
+  });
+  // If no structured fields, return raw message
+  if (fields.length === 0) return null;
+  return fields;
+}
+
+// Extract notes section (lines after [note] markers)
+function extractNotes(message = '') {
+  const noteMatch = message.match(/\[([^\]]+)\]\s*(.*)/s);
+  if (noteMatch) return noteMatch[0];
+  return null;
+}
+
 function NotifDetail({ notif, onBack }) {
   const Icon = typeIcons[notif.type] || Info;
   const colors = typeColors[notif.type] || typeColors.info;
+  const parsedFields = parseNotifFields(notif.message);
+  const hasStructured = parsedFields && parsedFields.length > 0;
+
   return (
     <div className="pb-24">
       <PageHeader
@@ -90,8 +133,9 @@ function NotifDetail({ notif, onBack }) {
           </Button>
         }
       />
-      <div className="px-4 py-5 space-y-4">
-        <div className="bg-card border border-border rounded-xl p-4 space-y-3">
+      <div className="px-4 py-5 space-y-3">
+        {/* Header card */}
+        <div className="bg-card border border-border rounded-xl p-4">
           <div className="flex items-start gap-3">
             <div className={cn('p-2 rounded-xl shrink-0', colors)}>
               <Icon className="h-5 w-5" />
@@ -104,15 +148,43 @@ function NotifDetail({ notif, onBack }) {
                 )}
                 <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
                   <Clock className="h-2.5 w-2.5" />
-                  {format(new Date(notif.created_date), 'dd MMM yyyy, HH:mm')}
+                  {format(new Date(notif.created_date), 'dd MMM yyyy, HHmm')}H
                 </span>
               </div>
             </div>
           </div>
-          <div className="pt-3 border-t border-border">
+        </div>
+
+        {/* Structured fields if available */}
+        {hasStructured ? (
+          <div className="bg-card border border-border rounded-xl overflow-hidden">
+            <div className="px-4 py-2.5 border-b border-border bg-muted/30">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Details</p>
+            </div>
+            <div className="divide-y divide-border">
+              {parsedFields.map((f, i) => (
+                <div key={i} className="flex items-start justify-between gap-3 px-4 py-2.5">
+                  <span className="text-xs text-muted-foreground shrink-0">{f.label}</span>
+                  <span className="text-xs font-medium text-foreground text-right">{f.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="bg-card border border-border rounded-xl p-4">
             <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{notif.message}</p>
           </div>
-        </div>
+        )}
+
+        {/* Notes section — clearly labelled */}
+        {hasStructured && notif.message.includes('[') && (
+          <div className="bg-amber-500/8 border border-amber-500/20 rounded-xl p-4">
+            <p className="text-[9px] font-bold text-amber-400 uppercase tracking-widest mb-1.5">Notes</p>
+            <p className="text-xs text-foreground leading-relaxed whitespace-pre-wrap">
+              {notif.message.split('\n').filter(l => l.startsWith('[') || l.trim() === '').join('\n').trim() || notif.message}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

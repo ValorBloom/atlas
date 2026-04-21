@@ -38,9 +38,9 @@ function SectionLabel({ children }) {
 }
 
 // Minimal Atlas mark
-function AtlasMark() {
+function AtlasMark({ className = "text-primary/60" }) {
   return (
-    <svg width="18" height="18" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-primary/60">
+    <svg width="18" height="18" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
       <ellipse cx="32" cy="32" rx="28" ry="20" stroke="currentColor" strokeWidth="3" />
       <ellipse cx="32" cy="32" rx="12" ry="9" stroke="currentColor" strokeWidth="2.5" />
       <rect x="4" y="27" width="12" height="10" rx="3" stroke="currentColor" strokeWidth="2.5" />
@@ -315,30 +315,32 @@ export default function Home() {
           )}
         </div>
 
-        {/* ── Daily CET Quote (toggleable) ── */}
-        {todayCET?.quote && (
-          <div className="relative p-4 rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <p className="text-[9px] font-bold text-primary uppercase tracking-[0.2em] mb-1.5">Daily Quote</p>
+        {/* ── Daily CET Quote bar (always shown if CET published, toggleable) ── */}
+        {todayCET?.quote ? (
+          <div className="rounded-xl border border-primary/25 bg-primary/8 overflow-hidden">
+            <div className="flex items-stretch">
+              {/* Accent bar */}
+              <div className="w-1 bg-primary/50 shrink-0" />
+              <div className="flex-1 px-3 py-3 min-w-0">
+                <p className="text-[9px] font-bold text-primary uppercase tracking-[0.2em] mb-1">Quote of the Day</p>
                 {showQuote ? (
                   <>
                     <p className="text-sm italic text-foreground leading-relaxed">"{todayCET.quote}"</p>
-                    {todayCET.quote_author && <p className="text-xs text-primary/60 mt-1.5">— {todayCET.quote_author}</p>}
+                    {todayCET.quote_author && <p className="text-xs text-primary/60 mt-1">— {todayCET.quote_author}</p>}
                   </>
                 ) : (
-                  <p className="text-xs text-muted-foreground italic">Quote hidden</p>
+                  <p className="text-xs text-muted-foreground">Hidden — tap eye to show</p>
                 )}
               </div>
               <button
                 onClick={() => setShowQuote(v => !v)}
-                className="shrink-0 w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center text-primary/60 hover:text-primary transition-colors mt-0.5"
+                className="px-3 flex items-center text-primary/50 hover:text-primary transition-colors"
               >
-                {showQuote ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                {showQuote ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
           </div>
-        )}
+        ) : null}
 
         {/* ── Quick Actions (customizable grid) ── */}
         <div className="space-y-2">
