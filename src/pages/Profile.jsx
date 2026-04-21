@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RANKS, UNITS, isInstructor, isCadetAdmin, getGroupLabel, getGroupOptions } from '@/lib/constants';
-import { LogOut, Trash2, Moon, Sun, ChevronRight, Bell, Shield, Upload, Star } from 'lucide-react';
+import { LogOut, Trash2, Moon, Sun, ChevronRight, Bell, Shield, Upload, Star, KeyRound, Eye, EyeOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useTheme } from '@/lib/ThemeContext';
@@ -35,6 +35,10 @@ export default function Profile() {
   const [showDelete, setShowDelete] = useState(false);
   const [deleteInput, setDeleteInput] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
+  const [showPw, setShowPw] = useState(false);
+  const [pwSaving, setPwSaving] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -53,6 +57,16 @@ export default function Profile() {
     setSaving(false);
     setEditing(false);
     toast.success('Profile updated');
+  };
+
+  const handleChangePassword = async () => {
+    if (pwForm.next !== pwForm.confirm || pwForm.next.length < 6) return;
+    setPwSaving(true);
+    await base44.auth.updateMe({ password: pwForm.next });
+    setPwSaving(false);
+    setShowChangePassword(false);
+    setPwForm({ current: '', next: '', confirm: '' });
+    toast.success('Password updated');
   };
 
   const handleDeleteAccount = async () => {
@@ -252,6 +266,58 @@ export default function Profile() {
             </div>
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
           </Link>
+
+          {/* Change Password */}
+          <button
+            onClick={() => setShowChangePassword(!showChangePassword)}
+            className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors border-b border-border"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                <KeyRound className="h-3.5 w-3.5 text-foreground/60" />
+              </div>
+              <div className="text-left">
+                <p className="text-sm font-medium">Change Password</p>
+                <p className="text-xs text-muted-foreground">Update your login password</p>
+              </div>
+            </div>
+            <ChevronRight className={cn('h-4 w-4 text-muted-foreground transition-transform', showChangePassword && 'rotate-90')} />
+          </button>
+
+          {showChangePassword && (
+            <div className="px-4 pb-4 pt-2 space-y-2.5 border-b border-border bg-muted/10">
+              <div className="relative">
+                <Input
+                  type={showPw ? 'text' : 'password'}
+                  placeholder="New password (min 6 chars)"
+                  value={pwForm.next}
+                  onChange={e => setPwForm({ ...pwForm, next: e.target.value })}
+                  className="h-9 text-xs pr-9"
+                />
+                <button onClick={() => setShowPw(v => !v)} className="absolute right-2.5 top-2 text-muted-foreground">
+                  {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <Input
+                type={showPw ? 'text' : 'password'}
+                placeholder="Confirm new password"
+                value={pwForm.confirm}
+                onChange={e => setPwForm({ ...pwForm, confirm: e.target.value })}
+                className="h-9 text-xs"
+              />
+              {pwForm.confirm && pwForm.next !== pwForm.confirm && (
+                <p className="text-xs text-destructive">Passwords do not match</p>
+              )}
+              <Button
+                size="sm"
+                className="w-full h-8 text-xs"
+                disabled={pwForm.next.length < 6 || pwForm.next !== pwForm.confirm || pwSaving}
+                onClick={handleChangePassword}
+              >
+                {pwSaving ? 'Saving…' : 'Update Password'}
+              </Button>
+            </div>
+          )}
 
           {/* About Atlas */}
           <div className="flex items-center justify-between px-4 py-3">

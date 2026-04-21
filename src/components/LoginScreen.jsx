@@ -20,7 +20,7 @@ export default function LoginScreen({ onLogin }) {
           <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
             <Anchor className="w-4 h-4 text-blue-400" />
           </div>
-          <span className="text-white font-semibold text-sm tracking-wide">ANCHOR</span>
+          <span className="text-white font-semibold text-sm tracking-wide">ATLAS</span>
         </div>
         <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20">
           <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
@@ -44,7 +44,7 @@ export default function LoginScreen({ onLogin }) {
         {/* Title */}
         <div className="space-y-2">
           <h1 className="text-3xl font-bold text-white tracking-tight">
-            Anchor
+            Atlas
           </h1>
           <p className="text-sm text-slate-400 leading-relaxed max-w-xs">
             Unit management platform for cadets and instructors
@@ -71,7 +71,7 @@ export default function LoginScreen({ onLogin }) {
           className="w-full h-14 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-500 text-white font-semibold text-base shadow-xl shadow-blue-600/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
         >
           <Lock className="w-4 h-4" />
-          Sign in with Anchor
+          Sign in with Atlas
         </button>
         <p className="text-center text-[11px] text-slate-500">
           By signing in, you agree to unit usage policies

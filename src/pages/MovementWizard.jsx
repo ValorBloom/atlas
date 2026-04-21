@@ -109,11 +109,18 @@ export default function MovementWizard() {
   };
 
   const reportLines = () => {
-    const date = format(new Date(), 'ddMMMMyyyy').toUpperCase();
+    const date = format(new Date(), 'dd/MM/yy');
     const numberedNames = selectedPersonnel
       .map((p, i) => `${i + 1}. ${formatRankName(p.rank || '', p.full_name || '')}`)
       .join('\n');
-    return `📍 MOVEMENT REPORT\n${numberedNames}\nFrom: ${fromLoc}\nTo: ${toLoc}\nPurpose: ${purpose}\nLeave Time: ${formatTime(data.leave_time)}\nDate: ${date}`;
+    return `${numberedNames}\n\nMOVEMENT FROM ${fromLoc.toUpperCase()} TO ${toLoc.toUpperCase()} FOR ${purpose.toUpperCase()} @${formatTime(data.leave_time)}\nDate: ${date}`;
+  };
+
+  const instructorNotificationMessage = () => {
+    const numberedNames = selectedPersonnel
+      .map((p, i) => `${i + 1}. ${formatRankName(p.rank || '', p.full_name || '')}`)
+      .join('\n');
+    return `Dear Instructors,\n\n${numberedNames}\n\nMOVEMENT FROM ${fromLoc.toUpperCase()} TO ${toLoc.toUpperCase()} FOR ${purpose.toUpperCase()} @${formatTime(data.leave_time)}`;
   };
 
   const handleSubmit = async () => {
@@ -135,10 +142,13 @@ export default function MovementWizard() {
       });
     }
 
-    const names = selectedPersonnel.map(p => formatRankName(p.rank || '', p.full_name || '')).join(', ');
+    const numberedNames = selectedPersonnel
+      .map((p, i) => `${i + 1}. ${formatRankName(p.rank || '', p.full_name || '')}`)
+      .join('\n');
+    // Instructor notification
     await base44.entities.Notification.create({
       title: 'Movement Reported',
-      message: `${names} departed from ${fromLoc} to ${toLoc}`,
+      message: instructorNotificationMessage(),
       type: 'info',
       category: 'movement',
       recipient_unit: user?.unit,
@@ -165,8 +175,8 @@ export default function MovementWizard() {
 
     setSaving(false);
     toast.success(`${selectedPersonnel.length > 1 ? selectedPersonnel.length + ' movements' : 'Movement'} reported`);
-    queryClient.invalidateQueries({ queryKey: ['movement-pending'] });
-    // Switch to reached tab
+    await queryClient.invalidateQueries({ queryKey: ['movement-pending'] });
+    // Switch to reached tab so user can update reached time
     setTab('reached');
     // Reset report form
     setStep(0);
