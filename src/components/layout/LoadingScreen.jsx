@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { Anchor } from 'lucide-react';
 
 const tips = [
   "Fall in — loading your unit data",
@@ -9,10 +8,31 @@ const tips = [
   "Checking personnel status",
 ];
 
+// Atlas vertebra SVG — the C1 bone connecting spine to skull
+function AtlasIcon({ size = 32 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Outer ring */}
+      <ellipse cx="32" cy="32" rx="28" ry="20" stroke="currentColor" strokeWidth="2.5" />
+      {/* Inner foramen / hole */}
+      <ellipse cx="32" cy="32" rx="12" ry="9" stroke="currentColor" strokeWidth="2" />
+      {/* Lateral masses — left */}
+      <rect x="4" y="27" width="12" height="10" rx="3" stroke="currentColor" strokeWidth="2" />
+      {/* Lateral masses — right */}
+      <rect x="48" y="27" width="12" height="10" rx="3" stroke="currentColor" strokeWidth="2" />
+      {/* Posterior arch notch */}
+      <path d="M20 46 Q32 54 44 46" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      {/* Anterior arch */}
+      <path d="M20 18 Q32 10 44 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export default function LoadingScreen() {
   const [tip, setTip] = useState(tips[0]);
   const [fade, setFade] = useState(true);
   const [dots, setDots] = useState(0);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     let i = 0;
@@ -32,48 +52,78 @@ export default function LoadingScreen() {
     return () => clearInterval(d);
   }, []);
 
+  useEffect(() => {
+    const p = setInterval(() => setProgress(prev => Math.min(prev + Math.random() * 15, 92)), 400);
+    return () => clearInterval(p);
+  }, []);
+
   return (
-    <div className="fixed inset-0 bg-background flex flex-col items-center justify-center gap-8">
-      {/* Logo mark */}
-      <div className="relative">
-        <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-lg shadow-primary/20">
-          <Anchor className="text-primary" style={{ width: 28, height: 28 }} />
+    <div className="fixed inset-0 flex flex-col items-center justify-center gap-8"
+      style={{ background: 'hsl(222, 24%, 7%)' }}>
+
+      {/* Background grid — military feel */}
+      <div className="absolute inset-0 opacity-[0.04]"
+        style={{
+          backgroundImage: 'linear-gradient(hsl(217,91%,55%) 1px, transparent 1px), linear-gradient(90deg, hsl(217,91%,55%) 1px, transparent 1px)',
+          backgroundSize: '40px 40px'
+        }} />
+
+      {/* Radial glow */}
+      <div className="absolute w-72 h-72 rounded-full pointer-events-none"
+        style={{ background: 'radial-gradient(circle, hsl(217,91%,55%,0.12) 0%, transparent 70%)' }} />
+
+      {/* Logo */}
+      <div className="relative flex flex-col items-center gap-3">
+        <div className="relative w-20 h-20 rounded-3xl flex items-center justify-center"
+          style={{
+            background: 'linear-gradient(135deg, hsl(217,91%,20%) 0%, hsl(222,24%,12%) 100%)',
+            boxShadow: '0 0 0 1px hsl(217,91%,55%,0.3), 0 20px 40px hsl(217,91%,55%,0.15)'
+          }}>
+          <div className="text-primary">
+            <AtlasIcon size={38} />
+          </div>
+          {/* Corner accents */}
+          <div className="absolute top-1.5 left-1.5 w-2 h-2 border-t-2 border-l-2 border-primary/60 rounded-tl" />
+          <div className="absolute top-1.5 right-1.5 w-2 h-2 border-t-2 border-r-2 border-primary/60 rounded-tr" />
+          <div className="absolute bottom-1.5 left-1.5 w-2 h-2 border-b-2 border-l-2 border-primary/60 rounded-bl" />
+          <div className="absolute bottom-1.5 right-1.5 w-2 h-2 border-b-2 border-r-2 border-primary/60 rounded-br" />
         </div>
-        {/* Pulse rings */}
-        <div className="absolute inset-0 rounded-2xl bg-primary/15 animate-ping" style={{ animationDuration: '2s' }} />
+
+        {/* Outer pulse ring */}
+        <div className="absolute top-0 left-0 w-20 h-20 rounded-3xl border border-primary/30 animate-ping"
+          style={{ animationDuration: '2.4s' }} />
       </div>
 
       {/* App name */}
-      <div className="text-center space-y-1">
-        <h1 className="text-xl font-bold text-foreground tracking-tight">Anchor</h1>
-        <p className="text-xs text-muted-foreground">OCS Operations Platform</p>
+      <div className="text-center space-y-1.5 relative">
+        <div className="flex items-center justify-center gap-2">
+          <div className="h-px w-8 bg-gradient-to-r from-transparent to-primary/40" />
+          <h1 className="text-2xl font-bold tracking-[0.15em] uppercase"
+            style={{ color: 'hsl(210,20%,94%)', letterSpacing: '0.18em' }}>
+            ATLAS
+          </h1>
+          <div className="h-px w-8 bg-gradient-to-l from-transparent to-primary/40" />
+        </div>
+        <p className="text-[10px] tracking-[0.25em] uppercase" style={{ color: 'hsl(220,10%,45%)' }}>
+          OCS Operations Platform
+        </p>
       </div>
 
       {/* Progress bar */}
-      <div className="w-40 h-0.5 bg-border rounded-full overflow-hidden">
-        <div
-          className="h-full bg-primary rounded-full"
-          style={{
-            width: '60%',
-            animation: 'loadbar 1.6s ease-in-out infinite alternate',
-          }}
-        />
+      <div className="w-48 space-y-1.5">
+        <div className="w-full h-0.5 rounded-full overflow-hidden" style={{ background: 'hsl(222,18%,18%)' }}>
+          <div
+            className="h-full bg-primary rounded-full transition-all duration-500"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <p
+          className="text-[10px] text-center tracking-wider transition-opacity duration-300"
+          style={{ opacity: fade ? 0.6 : 0, color: 'hsl(220,10%,45%)' }}
+        >
+          {tip}{'.'.repeat(dots)}
+        </p>
       </div>
-
-      {/* Rotating tip */}
-      <p
-        className="text-xs text-muted-foreground px-8 text-center transition-opacity duration-300"
-        style={{ opacity: fade ? 1 : 0 }}
-      >
-        {tip}{'.'.repeat(dots)}
-      </p>
-
-      <style>{`
-        @keyframes loadbar {
-          0% { transform: translateX(-100%); width: 40%; }
-          100% { transform: translateX(200%); width: 60%; }
-        }
-      `}</style>
     </div>
   );
 }

@@ -74,134 +74,130 @@ export default function Dashboard() {
   }
 
   const cadets = allUsers.filter(u => u.role === 'cadet' || u.role === 'cadet_admin');
-  const instructors = allUsers.filter(u => u.role === 'instructor');
   const outNow = activeMovements.length;
-  const inCamp = Math.max(allUsers.length - outNow, 0);
+  const cadetTotal = cadets.length;
+  const cadetInCamp = Math.max(cadetTotal - outNow, 0);
+  const pctInCamp = cadetTotal > 0 ? Math.round((cadetInCamp / cadetTotal) * 100) : 0;
   const rsoCount = activeStatuses.filter(s => s.type === 'RSO').length;
   const maCount = activeStatuses.filter(s => s.type === 'MA').length;
   const rsiCount = activeStatuses.filter(s => s.type === 'RSI').length;
+  const effectiveStrength = cadetInCamp - rsoCount - rsiCount - maCount;
 
   return (
-    <div>
-      <PageHeader title="Instructor Dashboard" subtitle={user?.unit} />
-      <div className="px-4 py-4 space-y-5">
+    <div className="pb-24">
+      {/* Header */}
+      <div className="px-4 pt-8 pb-4 space-y-1">
+        <p className="text-[10px] text-muted-foreground tracking-[0.2em] uppercase">Instructor · {user?.unit}</p>
+        <h1 className="text-2xl font-bold tracking-tight">Command Centre</h1>
+      </div>
 
-        {/* Alerts */}
-        {pendingApprovals.length > 0 && (
-          <Link to="/actions/status/update/RSO">
-            <div className="p-3.5 rounded-xl border border-amber-500/25 bg-amber-500/8 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center">
-                  <FileText className="h-4 w-4 text-amber-400" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-amber-300">{pendingApprovals.length} Pending RSO Approval{pendingApprovals.length > 1 ? 's' : ''}</p>
-                  <p className="text-xs text-amber-500/70">Requires your review</p>
-                </div>
-              </div>
-              <ChevronRight className="h-4 w-4 text-amber-500/50" />
-            </div>
-          </Link>
-        )}
+      <div className="px-4 space-y-4">
 
-        {outNow > 0 && (
-          <Link to="/admin/locations">
-            <div className="p-3.5 rounded-xl border border-primary/20 bg-primary/8 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
-                  <MapPin className="h-4 w-4 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-primary">{outNow} personnel out of camp</p>
-                  <p className="text-xs text-muted-foreground">Tap to view movement log</p>
-                </div>
-              </div>
-              <ChevronRight className="h-4 w-4 text-primary/40" />
-            </div>
-          </Link>
-        )}
-
-        {/* Unit Overview */}
-        <div className="space-y-3">
-          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Unit Overview</h2>
-
-          {/* Strength bar */}
-          <Card>
-            <CardContent className="p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground">Current Strength</p>
-                  <p className="text-2xl font-bold">{inCamp}<span className="text-base font-normal text-muted-foreground">/{allUsers.length}</span></p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-muted-foreground">In Camp</p>
-                  <p className="text-sm font-semibold text-green-400">{inCamp}</p>
-                </div>
-              </div>
-              <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-primary rounded-full transition-all"
-                  style={{ width: allUsers.length > 0 ? `${(inCamp / allUsers.length) * 100}%` : '0%' }}
-                />
-              </div>
-              <div className="grid grid-cols-3 gap-2 pt-1">
-                <div className="text-center p-2 rounded-lg bg-muted/40">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Cadets</p>
-                  <p className="text-lg font-bold">{cadets.length}</p>
-                </div>
-                <div className="text-center p-2 rounded-lg bg-muted/40">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Instructors</p>
-                  <p className="text-lg font-bold">{instructors.length}</p>
-                </div>
-                <div className="text-center p-2 rounded-lg bg-destructive/8 border border-destructive/15">
-                  <p className="text-[10px] text-destructive/70 uppercase tracking-wider">Out</p>
-                  <p className="text-lg font-bold text-destructive">{outNow}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Status breakdown */}
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { label: 'RSO', value: rsoCount, color: 'text-destructive', bg: 'bg-destructive/8 border-destructive/20' },
-              { label: 'RSI', value: rsiCount, color: 'text-amber-400', bg: 'bg-amber-500/8 border-amber-500/20' },
-              { label: 'MA', value: maCount, color: 'text-primary', bg: 'bg-primary/8 border-primary/20' },
-            ].map(({ label, value, color, bg }) => (
-              <Card key={label} className={`border ${bg}`}>
-                <CardContent className="p-3 text-center">
-                  <p className={`text-[10px] font-semibold uppercase tracking-wider ${color}`}>{label}</p>
-                  <p className="text-2xl font-bold mt-0.5">{value}</p>
-                </CardContent>
-              </Card>
-            ))}
+        {/* Alert strip — only visible when needed */}
+        {(pendingApprovals.length > 0 || outNow > 0) && (
+          <div className="space-y-1.5">
+            {pendingApprovals.length > 0 && (
+              <Link to="/actions/status/update/RSO" className="flex items-center gap-3 p-3 rounded-xl border border-amber-500/25 bg-amber-500/8">
+                <FileText className="h-4 w-4 text-amber-400 shrink-0" />
+                <p className="text-xs font-semibold text-amber-300 flex-1">{pendingApprovals.length} status pending approval</p>
+                <ChevronRight className="h-3.5 w-3.5 text-amber-500/50" />
+              </Link>
+            )}
+            {outNow > 0 && (
+              <Link to="/admin/locations" className="flex items-center gap-3 p-3 rounded-xl border border-primary/20 bg-primary/8">
+                <MapPin className="h-4 w-4 text-primary shrink-0" />
+                <p className="text-xs font-semibold text-primary flex-1">{outNow} personnel out of camp</p>
+                <ChevronRight className="h-3.5 w-3.5 text-primary/40" />
+              </Link>
+            )}
           </div>
+        )}
 
-          {/* SFT status */}
-          <Link to="/admin/pt" className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card hover:bg-muted/30 transition-colors">
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${activeWindows.length > 0 ? 'bg-green-500/15' : 'bg-muted'}`}>
+        {/* Unit Strength — cadets only */}
+        <Card className="border-primary/15 overflow-hidden">
+          <CardContent className="p-0">
+            <div className="px-4 pt-4 pb-3 flex items-end justify-between">
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Cadet Strength</p>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-bold tabular-nums text-foreground">{cadetInCamp}</span>
+                  <span className="text-base text-muted-foreground font-medium">/ {cadetTotal}</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">{pctInCamp}% in camp</p>
+              </div>
+              <div className="text-right pb-1">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Effective</p>
+                <p className="text-2xl font-bold text-green-400 tabular-nums">{Math.max(effectiveStrength, 0)}</p>
+              </div>
+            </div>
+            {/* Segmented bar */}
+            <div className="px-4 pb-4 space-y-1.5">
+              <div className="w-full h-2.5 bg-muted rounded-full overflow-hidden flex gap-0.5">
+                <div className="h-full bg-green-500 rounded-l-full transition-all" style={{ width: `${cadetTotal > 0 ? (Math.max(effectiveStrength,0)/cadetTotal)*100 : 0}%` }} />
+                {(rsoCount + rsiCount + maCount) > 0 && (
+                  <div className="h-full bg-destructive/60 transition-all" style={{ width: `${cadetTotal > 0 ? ((rsoCount+rsiCount+maCount)/cadetTotal)*100 : 0}%` }} />
+                )}
+                {outNow > 0 && (
+                  <div className="h-full bg-amber-500/50 rounded-r-full transition-all" style={{ width: `${cadetTotal > 0 ? (outNow/cadetTotal)*100 : 0}%` }} />
+                )}
+              </div>
+              <div className="flex gap-3 text-[10px] text-muted-foreground">
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500 inline-block" />Effective</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-destructive/60 inline-block" />Status</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500/50 inline-block" />Out</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 4-tile status grid */}
+        <div className="grid grid-cols-4 gap-2">
+          {[
+            { label: 'RSO', value: rsoCount, color: 'text-destructive', bg: 'bg-destructive/8 border-destructive/20' },
+            { label: 'RSI', value: rsiCount, color: 'text-amber-400', bg: 'bg-amber-500/8 border-amber-500/20' },
+            { label: 'MA', value: maCount, color: 'text-primary', bg: 'bg-primary/8 border-primary/20' },
+            { label: 'Out', value: outNow, color: 'text-orange-400', bg: 'bg-orange-500/8 border-orange-500/20' },
+          ].map(({ label, value, color, bg }) => (
+            <div key={label} className={`rounded-xl border p-2.5 text-center ${bg}`}>
+              <p className={`text-[9px] font-bold uppercase tracking-widest ${color}`}>{label}</p>
+              <p className="text-xl font-bold mt-0.5">{value}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* SFT & quick tools row */}
+        <div className="grid grid-cols-2 gap-2">
+          <Link to="/admin/pt" className="flex items-center gap-2.5 p-3 rounded-xl border border-border bg-card hover:bg-muted/30 transition-colors">
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${activeWindows.length > 0 ? 'bg-green-500/15' : 'bg-muted'}`}>
               <Activity className={`h-4 w-4 ${activeWindows.length > 0 ? 'text-green-400' : 'text-muted-foreground'}`} />
             </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium">SFT Window</p>
-              <p className="text-xs text-muted-foreground">{activeWindows.length > 0 ? `${activeWindows.length} active session` : 'No active session'}</p>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold truncate">SFT</p>
+              <p className="text-[10px] text-muted-foreground">{activeWindows.length > 0 ? 'Live session' : 'No session'}</p>
             </div>
-            {activeWindows.length > 0 && <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />}
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            {activeWindows.length > 0 && <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse ml-auto shrink-0" />}
+          </Link>
+          <Link to="/admin/parade-state" className="flex items-center gap-2.5 p-3 rounded-xl border border-border bg-card hover:bg-muted/30 transition-colors">
+            <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+              <ClipboardList className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold">Parade State</p>
+              <p className="text-[10px] text-muted-foreground">View report</p>
+            </div>
           </Link>
         </div>
 
-        {/* Quick Links */}
+        {/* Management links */}
         <div className="space-y-2">
-          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Management</h2>
+          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Management</p>
           <div className="space-y-1.5">
             <NavLink to="/admin/locations" icon={MapPin} label="Movement Log" badge={outNow > 0 ? `${outNow} out` : null} />
-            <NavLink to="/admin/parade-state" icon={ClipboardList} label="Parade State" />
-            <NavLink to="/admin/pt" icon={Activity} label="PT / SFT Admin" />
             <NavLink to="/actions/status/update/RSO" icon={FileText} label="Status Approvals" badge={pendingApprovals.length > 0 ? `${pendingApprovals.length}` : null} />
-            <NavLink to="/admin/announcements" icon={Megaphone} label="Announcements" />
             <NavLink to="/admin/cet" icon={Calendar} label="Send CET" />
+            <NavLink to="/admin/announcements" icon={Megaphone} label="Announcements" />
             <NavLink to="/points" icon={Trophy} label="Points & Leaderboard" />
+            <NavLink to="/admin/appoint" icon={Users} label="Appoint Cadet Admin" />
             <NavLink to="/admin/import" icon={Upload} label="Import Users" />
             <NavLink to="/admin/data-clear" icon={Trash2} label="Data Clear" />
           </div>
