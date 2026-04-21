@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import PageHeader from '@/components/layout/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { isInstructor } from '@/lib/constants';
+import { isInstructor, isCadetAdmin } from '@/lib/constants';
 import {
   Users, Shield, Activity, MapPin, FileText,
   ClipboardList, Trophy, Upload, Trash2, Megaphone, ChevronRight, Calendar, UserX
@@ -29,6 +29,7 @@ function NavLink({ to, icon: Icon, label, badge }) {
 export default function Dashboard() {
   const { user } = useOutletContext();
   const instructor = isInstructor(user);
+  const cadetAdmin = isCadetAdmin(user);
 
   const { data: allUsers = [] } = useQuery({
     queryKey: ['all-users', user?.unit],
@@ -61,13 +62,45 @@ export default function Dashboard() {
     enabled: !!user?.unit && instructor,
   });
 
-  if (!instructor) {
+  if (!instructor && !cadetAdmin) {
     return (
       <div>
         <PageHeader title="Admin" backTo="/" />
         <div className="px-4 py-16 text-center">
           <Shield className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">Instructor access required.</p>
+          <p className="text-sm text-muted-foreground">Admin access required.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Cadet admin gets a focused view
+  if (cadetAdmin && !instructor) {
+    return (
+      <div className="pb-24">
+        <div className="px-4 pt-8 pb-4 space-y-1">
+          <p className="text-[10px] text-muted-foreground tracking-[0.2em] uppercase">Cadet Admin · {user?.unit}</p>
+          <h1 className="text-2xl font-bold tracking-tight">Admin Panel</h1>
+        </div>
+        <div className="px-4 space-y-4">
+          {activeMovements.length > 0 && (
+            <Link to="/admin/locations" className="flex items-center gap-3 p-3 rounded-xl border border-primary/20 bg-primary/8">
+              <MapPin className="h-4 w-4 text-primary shrink-0" />
+              <p className="text-xs font-semibold text-primary flex-1">{activeMovements.length} movement{activeMovements.length > 1 ? 's' : ''} pending return</p>
+              <ChevronRight className="h-3.5 w-3.5 text-primary/40" />
+            </Link>
+          )}
+          <div className="space-y-2">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Tools</p>
+            <div className="space-y-1.5">
+              <NavLink to="/admin/pt" icon={Activity} label="PT Admin" />
+              <NavLink to="/admin/parade-state" icon={ClipboardList} label="Parade State" />
+              <NavLink to="/admin/locations" icon={MapPin} label="Movement Log" badge={activeMovements.length > 0 ? `${activeMovements.length}` : null} />
+              <NavLink to="/admin/announcements" icon={Megaphone} label="Announcements" />
+              <NavLink to="/actions/cet" icon={Calendar} label="View CET" />
+              <NavLink to="/points" icon={Trophy} label="Points" />
+            </div>
+          </div>
         </div>
       </div>
     );

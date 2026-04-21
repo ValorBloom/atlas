@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Zap, Bell, User, Shield, Star } from 'lucide-react';
+import { Home, Zap, Bell, User, Shield, LayoutDashboard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const baseNavItems = [
@@ -14,7 +14,7 @@ export default function BottomNav({ isInstructor, isCadetAdmin }) {
   const adminItem = isInstructor
     ? { path: '/admin', icon: Shield, label: 'Instructor' }
     : isCadetAdmin
-    ? { path: '/admin/pt', icon: Star, label: 'Admin' }
+    ? { path: '/admin', icon: LayoutDashboard, label: 'Admin' }
     : null;
 
   // Profile is always last

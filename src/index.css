@@ -127,6 +127,13 @@ a, button {
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Scan line animation for login screen */
+@keyframes scan {
+  0% { top: -2px; }
+  100% { top: 100%; }
+}
+.animate-scan { animation: scan 2.5s linear infinite; }
+
 /* Subtle pulse for unread badges */
 @keyframes pulse-soft {
   0%, 100% { opacity: 1; }

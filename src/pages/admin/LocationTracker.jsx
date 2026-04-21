@@ -49,8 +49,8 @@ export default function LocationTracker() {
               <MapPin className="h-4 w-4 text-destructive" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-destructive/90">{pending.length} still out of camp</p>
-              <p className="text-xs text-muted-foreground">Awaiting return report</p>
+              <p className="text-sm font-semibold text-destructive/90">{pending.length} movement{pending.length > 1 ? 's' : ''} pending return</p>
+              <p className="text-xs text-muted-foreground">Awaiting reached time update</p>
             </div>
           </div>
         )}
@@ -72,7 +72,7 @@ export default function LocationTracker() {
         {/* Pending (Out) list — highlighted */}
         {pending.length > 0 && (
           <div className="space-y-2">
-            <h2 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Currently Out ({pending.length})</h2>
+            <h2 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Pending Return ({pending.length})</h2>
             {pending.map((m, idx) => {
               const overdue = isOverdue(m);
               return (
@@ -99,7 +99,7 @@ export default function LocationTracker() {
                     </div>
                     <div className="text-right shrink-0">
                       <Badge className={`text-[10px] ${overdue ? 'bg-destructive/15 text-destructive border-destructive/25' : 'bg-amber-500/15 text-amber-400 border-amber-500/25'}`}>
-                        {overdue ? 'Overdue' : 'Out'}
+                        {overdue ? 'Overdue' : 'Away'}
                       </Badge>
                       <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground justify-end">
                         <Clock className="h-2.5 w-2.5" />
@@ -146,7 +146,7 @@ export default function LocationTracker() {
                     ? 'bg-amber-500/15 text-amber-400 border-amber-500/25'
                     : 'bg-muted text-muted-foreground border-border'
                 }`}>
-                  {m.status === 'reached' ? 'Returned' : m.status === 'departed' ? 'Out' : 'Cancelled'}
+                  {m.status === 'reached' ? 'Returned' : m.status === 'departed' ? 'Away' : 'Cancelled'}
                 </Badge>
               </div>
             ))}

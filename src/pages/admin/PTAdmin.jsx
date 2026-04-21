@@ -143,10 +143,10 @@ export default function PTAdmin() {
       performed_by: user?.email,
       unit: user?.unit,
     });
-    // Notify instructors
+    // Notify instructors with full report
     await base44.entities.Notification.create({
-      title: '🏃 SFT Submitted for Approval',
-      message: `${formatRankName(user?.rank, user?.full_name)} submitted SFT list (${submissions.length} cadets) for ${format(new Date(), 'dd MMM')}`,
+      title: '🏃 SFT List for Approval',
+      message: report,
       type: 'info',
       category: 'sft',
       recipient_unit: user?.unit,
