@@ -48,5 +48,55 @@
   "required": [
     "date",
     "unit"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "instructor"
+      },
+      "data.unit": "{{user.unit}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.unit": "{{user.unit}}",
+          "data.is_published": true
+        },
+        {
+          "user_condition": {
+            "role": "instructor"
+          },
+          "data.unit": "{{user.unit}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}",
+          "data.unit": "{{user.unit}}"
+        },
+        {
+          "user_condition": {
+            "role": "instructor"
+          },
+          "data.unit": "{{user.unit}}"
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}",
+          "data.unit": "{{user.unit}}"
+        },
+        {
+          "user_condition": {
+            "role": "instructor"
+          },
+          "data.unit": "{{user.unit}}"
+        }
+      ]
+    }
+  }
 }

@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
-  CADET_RANKS, INSTRUCTOR_RANKS, UNITS, ADMIN_PIN,
+  CADET_RANKS, INSTRUCTOR_RANKS, UNITS, ADMIN_PIN, UNIT_PINS,
   getGroupLabel, getGroupOptions, getSectionOptions, UNIT_GROUPS
 } from '@/lib/constants';
 import { AlertTriangle, ChevronRight, Lock, User, Shield } from 'lucide-react';
@@ -33,9 +33,10 @@ export default function Setup() {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     unit: '', rank: '', role: 'cadet', phone_number: '', admin_pin: '',
-    platoon: '', section: ''
+    unit_pin: '', platoon: '', section: ''
   });
   const [pinError, setPinError] = useState('');
+  const [unitPinError, setUnitPinError] = useState('');
   const [saving, setSaving] = useState(false);
 
   const isCadet = form.role === 'cadet';
@@ -47,10 +48,16 @@ export default function Setup() {
 
   const rankOptions = isCadet ? CADET_RANKS : INSTRUCTOR_RANKS;
 
-  const handleUnitChange = (v) => setForm({ ...form, unit: v, platoon: '', section: '' });
+  const handleUnitChange = (v) => setForm({ ...form, unit: v, platoon: '', section: '', unit_pin: '' });
 
   const handleSubmit = async () => {
     if (!form.unit || !form.rank) return;
+
+    // Validate unit PIN for everyone
+    if (form.unit_pin !== UNIT_PINS[form.unit]) {
+      setUnitPinError('Invalid unit PIN.');
+      return;
+    }
 
     if (form.role === 'instructor') {
       if (form.admin_pin !== ADMIN_PIN) {
@@ -248,10 +255,30 @@ export default function Setup() {
               )}
             </div>
 
+            {/* Unit PIN — required for all users */}
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                <Lock className="h-3.5 w-3.5" /> Unit PIN
+              </Label>
+              <Input
+                type="password"
+                placeholder={`Enter ${form.unit} unit PIN`}
+                value={form.unit_pin}
+                onChange={(e) => { setForm({ ...form, unit_pin: e.target.value }); setUnitPinError(''); }}
+                className="h-11 bg-card border-border font-mono tracking-widest"
+              />
+              {unitPinError && (
+                <Alert variant="destructive" className="py-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription className="text-xs">{unitPinError}</AlertDescription>
+                </Alert>
+              )}
+            </div>
+
             {form.role === 'instructor' && (
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-                  <Lock className="h-3.5 w-3.5" /> Auth Code
+                  <Lock className="h-3.5 w-3.5" /> Instructor Auth Code
                 </Label>
                 <Input
                   type="password"
