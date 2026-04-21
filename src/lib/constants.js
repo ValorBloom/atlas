@@ -2,6 +2,19 @@
 
 export const ADMIN_PIN = "SAF2040";
 
+// Unit-join PINs — required for ALL users (cadet and instructor) when selecting a unit
+export const UNIT_PINS = {
+  Alpha:   "482731",
+  Charlie: "615284",
+  Delta:   "903617",
+  Echo:    "274958",
+  Sierra:  "531846",
+  Tango:   "768129",
+  Air:     "040475",
+  Mids:    "050567",
+  DIS:     "281022",
+};
+
 export const CADET_RANKS = ["SCT", "OCT", "ME4T"];
 
 export const INSTRUCTOR_RANKS = [
