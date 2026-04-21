@@ -141,7 +141,7 @@ export default function StatusReport() {
         {type === 'MA' && step === 0 && (
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Appointment Type</Label>
+              <Label className="text-sm text-muted-foreground uppercase tracking-wide">Appointment Type</Label>
               <Input
                 placeholder="e.g. DENTAL, MEDICAL, SPECIALIST"
                 value={data.appointment_type}
@@ -149,7 +149,7 @@ export default function StatusReport() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Location / Clinic</Label>
+              <Label className="text-sm text-muted-foreground uppercase tracking-wide">Location / Clinic</Label>
               <Input
                 placeholder="e.g. ROYCE DENTAL CLINIC - YISHUN"
                 value={data.location}
@@ -158,12 +158,12 @@ export default function StatusReport() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Date</Label>
+                <Label className="text-sm text-muted-foreground uppercase tracking-wide">Date</Label>
                 <Input type="date" value={data.appointment_date}
                   onChange={(e) => setData({ ...data, appointment_date: e.target.value })} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Time (HHmm)</Label>
+                <Label className="text-sm text-muted-foreground uppercase tracking-wide">Time (HHmm)</Label>
                 <Input placeholder="1100" value={data.appointment_time} maxLength={4}
                   onChange={(e) => setData({ ...data, appointment_time: e.target.value })} />
               </div>
@@ -198,7 +198,7 @@ export default function StatusReport() {
         {type !== 'MA' && step === 0 && (
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Symptoms</Label>
+              <Label className="text-sm text-muted-foreground uppercase tracking-wide">Symptoms</Label>
               <Textarea
                 placeholder={type === 'RSI' ? 'e.g. Fever, Headache, Bodyache' : 'e.g. Knee pain, Swollen ankle'}
                 value={data.symptoms}
@@ -207,12 +207,12 @@ export default function StatusReport() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Date</Label>
+              <Label className="text-sm text-muted-foreground uppercase tracking-wide">Date</Label>
               <Input type="date" value={data.start_date}
                 onChange={(e) => setData({ ...data, start_date: e.target.value })} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Additional Notes (optional)</Label>
+              <Label className="text-sm text-muted-foreground uppercase tracking-wide">Additional Notes (optional)</Label>
               <Textarea
                 placeholder="Any other relevant info..."
                 value={data.details}

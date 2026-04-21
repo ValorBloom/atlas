@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 import PageHeader from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { MobileSelect, MobileSelectItem } from '@/components/ui/MobileSelect';
 import { RANKS, UNITS, isInstructor, isCadetAdmin, getGroupLabel, getGroupOptions } from '@/lib/constants';
 import { LogOut, Trash2, Moon, Sun, ChevronRight, Bell, Shield, Upload, Star, KeyRound, Eye, EyeOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -123,7 +123,7 @@ export default function Profile() {
                   <span className="text-[9px] tracking-[0.2em] uppercase text-primary/70 font-semibold">ATLAS ID</span>
                 </div>
                 <p className="text-base font-bold text-foreground leading-tight truncate">{fullName || 'Unknown'}</p>
-                <p className="text-xs text-muted-foreground truncate mt-0.5">{user?.email}</p>
+                <p className="text-sm text-muted-foreground truncate mt-0.5">{user?.email}</p>
               </div>
             </div>
 
@@ -131,20 +131,20 @@ export default function Profile() {
             <div className="border-t border-primary/15 mt-4 pt-3 grid grid-cols-3 gap-3">
               <div>
                 <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Rank</p>
-                <p className="text-xs font-bold text-foreground mt-0.5">{user?.rank || '—'}</p>
+                <p className="text-sm font-bold text-foreground mt-0.5">{user?.rank || '—'}</p>
               </div>
               <div>
                 <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Unit</p>
-                <p className="text-xs font-bold text-foreground mt-0.5">{user?.unit || '—'}</p>
+                <p className="text-sm font-bold text-foreground mt-0.5">{user?.unit || '—'}</p>
               </div>
               <div>
                 <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Role</p>
-                <p className="text-xs font-bold text-foreground mt-0.5">{roleLabel}</p>
+                <p className="text-sm font-bold text-foreground mt-0.5">{roleLabel}</p>
               </div>
               {user?.group && (
                 <div className="col-span-3 pt-1 border-t border-primary/10">
                   <p className="text-[9px] text-muted-foreground uppercase tracking-wider">{groupLabel}</p>
-                  <p className="text-xs font-bold text-foreground mt-0.5">{user.group}</p>
+                  <p className="text-sm font-bold text-foreground mt-0.5">{user.group}</p>
                 </div>
               )}
             </div>
@@ -170,59 +170,54 @@ export default function Profile() {
           <div className="divide-y divide-border">
             {/* Rank */}
             <div className="flex items-center justify-between px-4 py-3">
-              <span className="text-xs text-muted-foreground">Rank</span>
+              <span className="text-sm text-muted-foreground">Rank</span>
               {editing ? (
-                <Select value={form.rank} onValueChange={(v) => setForm({ ...form, rank: v })}>
-                  <SelectTrigger className="h-8 w-32 text-xs bg-background border-border"><SelectValue /></SelectTrigger>
-                  <SelectContent>{RANKS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
-                </Select>
+                <MobileSelect value={form.rank} onValueChange={(v) => setForm({ ...form, rank: v })} placeholder="Rank" className="h-9 w-36 text-sm bg-background border-border">
+                  {RANKS.map(r => <MobileSelectItem key={r} value={r}>{r}</MobileSelectItem>)}
+                </MobileSelect>
               ) : (
-                <span className="text-xs font-medium">{user?.rank || '—'}</span>
+                <span className="text-sm font-medium">{user?.rank || '—'}</span>
               )}
             </div>
 
             {/* Unit */}
             <div className="flex items-center justify-between px-4 py-3">
-              <span className="text-xs text-muted-foreground">Unit</span>
+              <span className="text-sm text-muted-foreground">Unit</span>
               {editing ? (
-                <Select value={form.unit} onValueChange={(v) => setForm({ ...form, unit: v, group: '' })}>
-                  <SelectTrigger className="h-8 w-32 text-xs bg-background border-border"><SelectValue /></SelectTrigger>
-                  <SelectContent>{UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
-                </Select>
+                <MobileSelect value={form.unit} onValueChange={(v) => setForm({ ...form, unit: v, group: '' })} placeholder="Unit" className="h-9 w-36 text-sm bg-background border-border">
+                  {UNITS.map(u => <MobileSelectItem key={u} value={u}>{u}</MobileSelectItem>)}
+                </MobileSelect>
               ) : (
-                <span className="text-xs font-medium">{user?.unit || '—'}</span>
+                <span className="text-sm font-medium">{user?.unit || '—'}</span>
               )}
             </div>
 
             {/* Group (platoon / flight / byte etc.) */}
             <div className="flex items-center justify-between px-4 py-3">
-              <span className="text-xs text-muted-foreground">{getGroupLabel(form.unit || user?.unit)}</span>
+              <span className="text-sm text-muted-foreground">{getGroupLabel(form.unit || user?.unit)}</span>
               {editing ? (
-                <Select value={form.group} onValueChange={(v) => setForm({ ...form, group: v })}>
-                  <SelectTrigger className="h-8 w-40 text-xs bg-background border-border"><SelectValue placeholder="Select…" /></SelectTrigger>
-                  <SelectContent>
-                    {(getGroupOptions(form.unit || user?.unit) || []).map(g => (
-                      <SelectItem key={g} value={g}>{g}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <MobileSelect value={form.group} onValueChange={(v) => setForm({ ...form, group: v })} placeholder="Select…" className="h-9 w-44 text-sm bg-background border-border">
+                  {(getGroupOptions(form.unit || user?.unit) || []).map(g => (
+                    <MobileSelectItem key={g} value={g}>{g}</MobileSelectItem>
+                  ))}
+                </MobileSelect>
               ) : (
-                <span className="text-xs font-medium">{user?.group || '—'}</span>
+                <span className="text-sm font-medium">{user?.group || '—'}</span>
               )}
             </div>
 
             {/* Phone */}
             <div className="flex items-center justify-between px-4 py-3">
-              <span className="text-xs text-muted-foreground">Phone</span>
+              <span className="text-sm text-muted-foreground">Phone</span>
               {editing ? (
                 <Input
-                  className="h-8 w-36 text-xs bg-background border-border"
+                  className="h-9 w-36 text-sm bg-background border-border"
                   value={form.phone_number}
                   onChange={(e) => setForm({ ...form, phone_number: e.target.value })}
                   placeholder="e.g. 91234567"
                 />
               ) : (
-                <span className="text-xs font-medium">{user?.phone_number || '—'}</span>
+                <span className="text-sm font-medium">{user?.phone_number || '—'}</span>
               )}
             </div>
           </div>

@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { MobileSelect, MobileSelectItem } from '@/components/ui/MobileSelect';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   CADET_RANKS, INSTRUCTOR_RANKS, UNITS, ADMIN_PIN, UNIT_PINS,
@@ -113,15 +113,10 @@ export default function Setup() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Unit</Label>
-              <Select value={form.unit} onValueChange={handleUnitChange}>
-                <SelectTrigger className="h-11 bg-card border-border">
-                  <SelectValue placeholder="Select unit" />
-                </SelectTrigger>
-                <SelectContent>
-                  {UNITS.map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label className="text-sm text-muted-foreground uppercase tracking-wide">Unit</Label>
+              <MobileSelect value={form.unit} onValueChange={handleUnitChange} placeholder="Select unit" className="h-11 bg-card border-border text-sm">
+                {UNITS.map(u => <MobileSelectItem key={u} value={u}>{u}</MobileSelectItem>)}
+              </MobileSelect>
             </div>
 
             <div className="space-y-1.5">
@@ -146,29 +141,19 @@ export default function Setup() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Rank</Label>
-              <Select value={form.rank} onValueChange={(v) => setForm({ ...form, rank: v })}>
-                <SelectTrigger className="h-11 bg-card border-border">
-                  <SelectValue placeholder="Select rank" />
-                </SelectTrigger>
-                <SelectContent>
-                  {rankOptions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label className="text-sm text-muted-foreground uppercase tracking-wide">Rank</Label>
+              <MobileSelect value={form.rank} onValueChange={(v) => setForm({ ...form, rank: v })} placeholder="Select rank" className="h-11 bg-card border-border text-sm">
+                {rankOptions.map(r => <MobileSelectItem key={r} value={r}>{r}</MobileSelectItem>)}
+              </MobileSelect>
             </div>
 
             {/* Platoon/Group — only for cadets */}
             {isCadet && form.unit && hasGroups && (
               <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wide">{groupLabel}</Label>
-                <Select value={form.platoon} onValueChange={(v) => setForm({ ...form, platoon: v, section: '' })}>
-                  <SelectTrigger className="h-11 bg-card border-border">
-                    <SelectValue placeholder={`Select ${groupLabel}`} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {groupOptions.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <Label className="text-sm text-muted-foreground uppercase tracking-wide">{groupLabel}</Label>
+                <MobileSelect value={form.platoon} onValueChange={(v) => setForm({ ...form, platoon: v, section: '' })} placeholder={`Select ${groupLabel}`} className="h-11 bg-card border-border text-sm">
+                  {groupOptions.map(g => <MobileSelectItem key={g} value={g}>{g}</MobileSelectItem>)}
+                </MobileSelect>
               </div>
             )}
 
@@ -176,26 +161,16 @@ export default function Setup() {
             {isCadet && form.unit && !UNIT_GROUPS[form.unit] && (
               <>
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Platoon</Label>
-                  <Select value={form.platoon} onValueChange={(v) => setForm({ ...form, platoon: v })}>
-                    <SelectTrigger className="h-11 bg-card border-border">
-                      <SelectValue placeholder="Select platoon" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[1,2,3,4].map(p => <SelectItem key={p} value={`Platoon ${p}`}>Platoon {p}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-sm text-muted-foreground uppercase tracking-wide">Platoon</Label>
+                  <MobileSelect value={form.platoon} onValueChange={(v) => setForm({ ...form, platoon: v })} placeholder="Select platoon" className="h-11 bg-card border-border text-sm">
+                    {[1,2,3,4].map(p => <MobileSelectItem key={p} value={`Platoon ${p}`}>Platoon {p}</MobileSelectItem>)}
+                  </MobileSelect>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Section</Label>
-                  <Select value={form.section} onValueChange={(v) => setForm({ ...form, section: v })}>
-                    <SelectTrigger className="h-11 bg-card border-border">
-                      <SelectValue placeholder="Select section" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[1,2,3,4].map(s => <SelectItem key={s} value={`Section ${s}`}>Section {s}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-sm text-muted-foreground uppercase tracking-wide">Section</Label>
+                  <MobileSelect value={form.section} onValueChange={(v) => setForm({ ...form, section: v })} placeholder="Select section" className="h-11 bg-card border-border text-sm">
+                    {[1,2,3,4].map(s => <MobileSelectItem key={s} value={`Section ${s}`}>Section {s}</MobileSelectItem>)}
+                  </MobileSelect>
                 </div>
               </>
             )}
