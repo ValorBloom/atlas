@@ -12,11 +12,6 @@
       "default": "cadet",
       "description": "User role"
     },
-    "is_admin": {
-      "type": "boolean",
-      "default": false,
-      "description": "Whether user has instructor-level privileges"
-    },
     "unit": {
       "type": "string",
       "description": "Unit assignment"
@@ -32,10 +27,6 @@
     "platoon": {
       "type": "string",
       "description": "Platoon / Flight / Byte / Division"
-    },
-    "section": {
-      "type": "string",
-      "description": "Section number (for standard units)"
     }
   },
   "required": [

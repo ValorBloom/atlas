@@ -50,7 +50,7 @@ const AuthenticatedApp = () => {
       <div className="fixed inset-0 flex items-center justify-center bg-[#0a0e1a]">
         <div className="text-center space-y-3">
           <div className="w-8 h-8 border-2 border-blue-900 border-t-blue-500 rounded-full animate-spin mx-auto"></div>
-          <p className="text-xs text-slate-500">Loading Anchor...</p>
+          <p className="text-xs text-slate-500">Loading Atlas...</p>
         </div>
       </div>
     );

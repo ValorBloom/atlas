@@ -494,61 +494,128 @@ export default function MovementWizard() {
                 <CheckCircle2 className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
                 <p className="text-sm text-muted-foreground">No pending movements.</p>
               </div>
-            ) : (
-              <>
-                <Label className="text-sm font-medium">Pending Movements ({pendingLogs.length})</Label>
-                <div className="space-y-2">
-                  {pendingLogs.map(log => (
-                    <div key={log.id} className="border border-border rounded-xl overflow-hidden">
-                      <button
-                        onClick={() => {
-                          setSelectedLog(selectedLog?.id === log.id ? null : log);
-                          setReachedTime('');
-                        }}
-                        className={`w-full text-left p-3 text-sm transition-all flex items-center justify-between ${
-                          selectedLog?.id === log.id ? 'bg-primary/5 border-primary' : 'bg-card hover:bg-muted/30'
-                        }`}
-                      >
-                        <div>
-                          <p className="font-medium">{formatRankName(log.personnel_rank, log.personnel_name)}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {log.from_location} → {log.to_location} · Left {formatTime(log.leave_time)}
-                          </p>
-                        </div>
-                        {selectedLog?.id === log.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
-                      </button>
+            ) : (() => {
+              // Group logs by same trip (from → to, same leave_time, same reported_by)
+              const groups = [];
+              const assigned = new Set();
+              pendingLogs.forEach(log => {
+                if (assigned.has(log.id)) return;
+                const group = pendingLogs.filter(l =>
+                  l.from_location === log.from_location &&
+                  l.to_location === log.to_location &&
+                  l.leave_time === log.leave_time &&
+                  l.reported_by === log.reported_by
+                );
+                group.forEach(l => assigned.add(l.id));
+                groups.push(group);
+              });
 
-                      {selectedLog?.id === log.id && (
-                        <div className="px-3 pb-3 pt-2 border-t border-border space-y-3 bg-card">
-                          <Label className="text-xs font-medium text-muted-foreground">Reached Time (HHmm)</Label>
-                          <div className="flex items-center gap-2">
-                            <Input
-                              placeholder="e.g. 0900"
-                              maxLength={4}
-                              value={reachedTime}
-                              onChange={e => setReachedTime(e.target.value.replace(/\D/g, ''))}
-                              className="text-center font-mono tracking-wider"
-                            />
-                            <Button variant="outline" size="sm" onClick={() => setReachedTime(getCurrentTimeSG())}>
-                              <Clock className="h-3.5 w-3.5 mr-1" />Now
-                            </Button>
-                          </div>
-                          <Button
-                            className="w-full"
-                            size="sm"
-                            onClick={handleReached}
-                            disabled={!TIME_REGEX.test(reachedTime) || reachedSaving}
+              return (
+                <>
+                  <p className="text-sm font-medium text-foreground">
+                    Pending Movements <span className="text-muted-foreground font-normal">({pendingLogs.length} personnel)</span>
+                  </p>
+                  <div className="space-y-2">
+                    {groups.map((group, gi) => {
+                      const rep = group[0];
+                      const isGroupSelected = selectedLog?.id === rep.id;
+                      return (
+                        <div key={gi} className="border border-border rounded-xl overflow-hidden">
+                          <button
+                            onClick={() => {
+                              setSelectedLog(isGroupSelected ? null : rep);
+                              setReachedTime('');
+                            }}
+                            className={`w-full text-left p-3 text-sm transition-all flex items-center justify-between ${
+                              isGroupSelected ? 'bg-primary/5' : 'bg-card hover:bg-muted/30'
+                            }`}
                           >
-                            <Check className="h-3.5 w-3.5 mr-1" />
-                            {reachedSaving ? 'Saving...' : 'Confirm Reached'}
-                          </Button>
+                            <div className="min-w-0">
+                              {group.length === 1 ? (
+                                <p className="font-medium">{formatRankName(rep.personnel_rank, rep.personnel_name)}</p>
+                              ) : (
+                                <div>
+                                  <p className="font-medium">{group.length} personnel</p>
+                                  <p className="text-xs text-muted-foreground truncate">
+                                    {group.map(l => l.personnel_name?.split(' ').slice(-1)[0]).join(', ')}
+                                  </p>
+                                </div>
+                              )}
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {rep.from_location} → {rep.to_location} · Left {formatTime(rep.leave_time)}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0 ml-2">
+                              {group.length > 1 && (
+                                <span className="text-[10px] font-bold text-amber-400 bg-amber-500/15 border border-amber-500/25 rounded-full px-2 py-0.5">
+                                  {group.length}
+                                </span>
+                              )}
+                              {isGroupSelected ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                            </div>
+                          </button>
+
+                          {isGroupSelected && (
+                            <div className="px-3 pb-3 pt-2 border-t border-border space-y-3 bg-card">
+                              {group.length > 1 && (
+                                <div className="space-y-1">
+                                  {group.map(l => (
+                                    <p key={l.id} className="text-xs text-muted-foreground">· {formatRankName(l.personnel_rank, l.personnel_name)}</p>
+                                  ))}
+                                </div>
+                              )}
+                              <Label className="text-xs font-medium text-muted-foreground">Reached Time (HHmm)</Label>
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  placeholder="e.g. 0900"
+                                  maxLength={4}
+                                  value={reachedTime}
+                                  onChange={e => setReachedTime(e.target.value.replace(/\D/g, ''))}
+                                  className="text-center font-mono tracking-wider"
+                                />
+                                <Button variant="outline" size="sm" onClick={() => setReachedTime(getCurrentTimeSG())}>
+                                  <Clock className="h-3.5 w-3.5 mr-1" />Now
+                                </Button>
+                              </div>
+                              <Button
+                                className="w-full"
+                                size="sm"
+                                onClick={async () => {
+                                  if (!TIME_REGEX.test(reachedTime)) return;
+                                  setReachedSaving(true);
+                                  // Update all logs in the group
+                                  await Promise.all(group.map(l =>
+                                    base44.entities.MovementLog.update(l.id, { reached_time: reachedTime, status: 'reached' })
+                                  ));
+                                  await base44.entities.Notification.create({
+                                    title: 'Reached Confirmed',
+                                    message: group.length === 1
+                                      ? `${formatRankName(rep.personnel_rank, rep.personnel_name)} reached ${rep.to_location} at ${formatTime(reachedTime)}`
+                                      : `${group.length} personnel reached ${rep.to_location} at ${formatTime(reachedTime)}`,
+                                    type: 'success',
+                                    category: 'movement',
+                                    recipient_unit: user?.unit,
+                                  });
+                                  setReachedSaving(false);
+                                  toast.success(group.length > 1 ? `${group.length} personnel marked reached` : 'Reached recorded');
+                                  setSelectedLog(null);
+                                  setReachedTime('');
+                                  queryClient.invalidateQueries({ queryKey: ['movement-pending'] });
+                                }}
+                                disabled={!TIME_REGEX.test(reachedTime) || reachedSaving}
+                              >
+                                <Check className="h-3.5 w-3.5 mr-1" />
+                                {reachedSaving ? 'Saving...' : group.length > 1 ? `Confirm All ${group.length} Reached` : 'Confirm Reached'}
+                              </Button>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
+                      );
+                    })}
+                  </div>
+                </>
+              );
+            })()}
           </div>
         )}
 

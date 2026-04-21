@@ -69,49 +69,79 @@ export default function LocationTracker() {
           </div>
         )}
 
-        {/* Pending (Out) list — highlighted */}
-        {pending.length > 0 && (
-          <div className="space-y-2">
-            <h2 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Pending Return ({pending.length})</h2>
-            {pending.map((m, idx) => {
-              const overdue = isOverdue(m);
-              return (
-                <div key={m.id} className={`p-3.5 rounded-xl border transition-all ${
-                  overdue ? 'border-destructive/30 bg-destructive/8' : 'border-amber-500/25 bg-amber-500/8'
-                }`}>
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-start gap-2.5 min-w-0">
-                      <span className="text-xs font-bold text-muted-foreground w-5 shrink-0 mt-1">{idx + 1}.</span>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-semibold text-foreground">
-                            {formatRankName(m.personnel_rank, m.personnel_name)}
-                          </p>
-                          {overdue && <AlertCircle className="h-3.5 w-3.5 text-destructive shrink-0" />}
+        {/* Pending (Away) list — grouped by trip */}
+        {pending.length > 0 && (() => {
+          const groups = [];
+          const assigned = new Set();
+          pending.forEach(m => {
+            if (assigned.has(m.id)) return;
+            const group = pending.filter(l =>
+              l.from_location === m.from_location &&
+              l.to_location === m.to_location &&
+              l.leave_time === m.leave_time &&
+              l.reported_by === m.reported_by
+            );
+            group.forEach(l => assigned.add(l.id));
+            groups.push(group);
+          });
+
+          return (
+            <div className="space-y-2">
+              <h2 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
+                Pending Return ({pending.length} personnel · {groups.length} {groups.length === 1 ? 'trip' : 'trips'})
+              </h2>
+              {groups.map((group, gi) => {
+                const rep = group[0];
+                const overdue = isOverdue(rep);
+                return (
+                  <div key={gi} className={`p-3.5 rounded-xl border transition-all ${
+                    overdue ? 'border-destructive/30 bg-destructive/8' : 'border-amber-500/25 bg-amber-500/8'
+                  }`}>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-2.5 min-w-0">
+                        <span className="text-xs font-bold text-muted-foreground w-5 shrink-0 mt-1">{gi + 1}.</span>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {group.length === 1 ? (
+                              <p className="text-sm font-semibold text-foreground">
+                                {formatRankName(rep.personnel_rank, rep.personnel_name)}
+                              </p>
+                            ) : (
+                              <p className="text-sm font-semibold text-foreground">
+                                {group.length} personnel
+                              </p>
+                            )}
+                            {overdue && <AlertCircle className="h-3.5 w-3.5 text-destructive shrink-0" />}
+                          </div>
+                          {group.length > 1 && (
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {group.map(l => l.personnel_name?.split(' ').slice(-1)[0]).join(', ')}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground">
+                            <span>{rep.from_location}</span>
+                            <ArrowRight className="h-3 w-3 shrink-0" />
+                            <span className="font-medium text-foreground">{rep.to_location}</span>
+                          </div>
+                          {rep.purpose && <p className="text-xs text-muted-foreground mt-0.5">{rep.purpose}</p>}
                         </div>
-                        <div className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground">
-                          <span>{m.from_location}</span>
-                          <ArrowRight className="h-3 w-3 shrink-0" />
-                          <span className="font-medium text-foreground">{m.to_location}</span>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">{m.purpose}</p>
                       </div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <Badge className={`text-[10px] ${overdue ? 'bg-destructive/15 text-destructive border-destructive/25' : 'bg-amber-500/15 text-amber-400 border-amber-500/25'}`}>
-                        {overdue ? 'Overdue' : 'Away'}
-                      </Badge>
-                      <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground justify-end">
-                        <Clock className="h-2.5 w-2.5" />
-                        <span>{formatTime(m.leave_time)}</span>
+                      <div className="text-right shrink-0">
+                        <Badge className={`text-[10px] ${overdue ? 'bg-destructive/15 text-destructive border-destructive/25' : 'bg-amber-500/15 text-amber-400 border-amber-500/25'}`}>
+                          {overdue ? 'Overdue' : group.length > 1 ? `${group.length} away` : 'Away'}
+                        </Badge>
+                        <div className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground justify-end">
+                          <Clock className="h-2.5 w-2.5" />
+                          <span>{formatTime(rep.leave_time)}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                );
+              })}
+            </div>
+          );
+        })()}
 
         {/* Full today log */}
         {todayMovements.length > 0 && (

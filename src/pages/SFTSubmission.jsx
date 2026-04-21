@@ -1,23 +1,19 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import PageHeader from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { SFT_ACTIVITIES } from '@/lib/constants';
-import { Activity, Check, ArrowRight, XCircle } from 'lucide-react';
+import { Activity, Check, ArrowRight, XCircle, Clock, Minus, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 
-// Convert HHmm string to total minutes
 const toMinutes = (hhmm) => {
   if (!hhmm || hhmm.length !== 4) return 0;
   return parseInt(hhmm.slice(0, 2)) * 60 + parseInt(hhmm.slice(2));
 };
 
-// Convert minutes to HHmm string
 const fromMinutes = (mins) => {
   const h = Math.floor(mins / 60);
   const m = mins % 60;
@@ -29,94 +25,40 @@ const formatDisplay = (hhmm) => {
   return `${hhmm.slice(0, 2)}${hhmm.slice(2)}H`;
 };
 
-// Simple two-handle range slider within a window
-function TimeRangeSlider({ windowStart, windowEnd, startMins, endMins, onChange }) {
-  const trackRef = useRef(null);
-  const totalRange = windowEnd - windowStart;
+// Generate time options at 5-min increments within window
+const getTimeOptions = (windowStart, windowEnd) => {
+  const options = [];
+  for (let m = windowStart; m <= windowEnd; m += 5) {
+    options.push(m);
+  }
+  return options;
+};
 
-  const getPercent = (val) => ((val - windowStart) / totalRange) * 100;
-
-  const handleDrag = (which, e) => {
-    e.preventDefault();
-    const track = trackRef.current;
-    if (!track) return;
-
-    const move = (clientX) => {
-      const rect = track.getBoundingClientRect();
-      let pct = (clientX - rect.left) / rect.width;
-      pct = Math.max(0, Math.min(1, pct));
-      // snap to 5-minute increments
-      let val = Math.round((windowStart + pct * totalRange) / 5) * 5;
-      val = Math.max(windowStart, Math.min(windowEnd, val));
-
-      if (which === 'start') {
-        onChange(Math.min(val, endMins - 5), endMins);
-      } else {
-        onChange(startMins, Math.max(val, startMins + 5));
-      }
-    };
-
-    const onMouseMove = (ev) => move(ev.clientX);
-    const onTouchMove = (ev) => move(ev.touches[0].clientX);
-    const cleanup = () => {
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', cleanup);
-      window.removeEventListener('touchmove', onTouchMove);
-      window.removeEventListener('touchend', cleanup);
-    };
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', cleanup);
-    window.addEventListener('touchmove', onTouchMove);
-    window.addEventListener('touchend', cleanup);
+function TimeSelector({ label, value, min, max, options, onChange }) {
+  const adjust = (delta) => {
+    const idx = options.indexOf(value);
+    const next = options[Math.max(0, Math.min(options.length - 1, idx + delta))];
+    if (next >= min && next <= max) onChange(next);
   };
 
-  const startPct = getPercent(startMins);
-  const endPct = getPercent(endMins);
-
   return (
-    <div className="space-y-4">
-      {/* Time labels */}
-      <div className="flex justify-between items-center">
-        <div className="text-center">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Start</p>
-          <p className="text-lg font-bold font-mono text-primary">{formatDisplay(fromMinutes(startMins))}</p>
-        </div>
-        <div className="text-xs text-muted-foreground">to</div>
-        <div className="text-center">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">End</p>
-          <p className="text-lg font-bold font-mono text-primary">{formatDisplay(fromMinutes(endMins))}</p>
-        </div>
+    <div className="flex flex-col items-center gap-2">
+      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">{label}</p>
+      <button
+        onClick={() => adjust(-1)}
+        className="w-10 h-10 rounded-xl border border-border bg-card flex items-center justify-center hover:bg-muted/40 active:scale-95 transition-all"
+      >
+        <Minus className="h-4 w-4 text-muted-foreground" />
+      </button>
+      <div className="w-24 h-16 rounded-2xl border-2 border-primary/40 bg-primary/8 flex items-center justify-center">
+        <span className="text-2xl font-bold font-mono text-primary">{formatDisplay(fromMinutes(value))}</span>
       </div>
-
-      {/* Slider track */}
-      <div className="relative h-8 flex items-center px-3" ref={trackRef}>
-        {/* Background track */}
-        <div className="absolute inset-x-3 h-2 bg-border rounded-full" />
-        {/* Active range */}
-        <div
-          className="absolute h-2 bg-primary rounded-full"
-          style={{ left: `calc(12px + ${startPct}% * (100% - 24px) / 100)`, right: `calc(12px + ${100 - endPct}% * (100% - 24px) / 100)` }}
-        />
-        {/* Window boundary labels */}
-        <span className="absolute left-0 -bottom-5 text-[10px] text-muted-foreground font-mono">{formatDisplay(fromMinutes(windowStart))}</span>
-        <span className="absolute right-0 -bottom-5 text-[10px] text-muted-foreground font-mono">{formatDisplay(fromMinutes(windowEnd))}</span>
-
-        {/* Start handle */}
-        <div
-          className="absolute w-6 h-6 bg-primary rounded-full shadow-lg border-2 border-white cursor-grab active:cursor-grabbing z-10 flex items-center justify-center"
-          style={{ left: `calc(${startPct}% * (100% - 24px) / 100)` }}
-          onMouseDown={(e) => handleDrag('start', e)}
-          onTouchStart={(e) => handleDrag('start', e)}
-        />
-        {/* End handle */}
-        <div
-          className="absolute w-6 h-6 bg-primary rounded-full shadow-lg border-2 border-white cursor-grab active:cursor-grabbing z-10 flex items-center justify-center"
-          style={{ left: `calc(24px + ${endPct}% * (100% - 24px) / 100 - 24px)` }}
-          onMouseDown={(e) => handleDrag('end', e)}
-          onTouchStart={(e) => handleDrag('end', e)}
-        />
-      </div>
-      <div className="h-5" /> {/* spacer for bottom labels */}
+      <button
+        onClick={() => adjust(1)}
+        className="w-10 h-10 rounded-xl border border-border bg-card flex items-center justify-center hover:bg-muted/40 active:scale-95 transition-all"
+      >
+        <Plus className="h-4 w-4 text-muted-foreground" />
+      </button>
     </div>
   );
 }
@@ -156,8 +98,8 @@ export default function SFTSubmission() {
 
   const windowStartMins = activeWindow ? toMinutes(activeWindow.start_time) : 0;
   const windowEndMins = activeWindow ? toMinutes(activeWindow.end_time) : 60;
+  const timeOptions = activeWindow ? getTimeOptions(windowStartMins, windowEndMins) : [];
 
-  // Init slider when step changes to time
   useEffect(() => {
     if (step === 1 && startMins === null && activeWindow) {
       setStartMins(windowStartMins);
@@ -166,9 +108,7 @@ export default function SFTSubmission() {
   }, [step, activeWindow]);
 
   const toggleActivity = (a) => {
-    setActivities(prev =>
-      prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a]
-    );
+    setActivities(prev => prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a]);
   };
 
   const canNext = () => {
@@ -186,7 +126,6 @@ export default function SFTSubmission() {
       cadet_rank: user?.rank,
       cadet_id: user?.id,
       activity: activities.join(', '),
-      location: '',
       time_range: timeRange,
       window_id: activeWindow.id,
       unit: user?.unit,
@@ -210,9 +149,11 @@ export default function SFTSubmission() {
       <div>
         <PageHeader title="SFT Submission" backTo="/" />
         <div className="px-4 py-16 text-center">
-          <Activity className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">No active SFT window.</p>
-          <p className="text-xs text-muted-foreground mt-1">An instructor must open an SFT window first.</p>
+          <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mx-auto mb-4">
+            <Activity className="h-7 w-7 text-muted-foreground/40" />
+          </div>
+          <p className="text-sm font-medium text-foreground">No active SFT window</p>
+          <p className="text-xs text-muted-foreground mt-1">An admin must open an SFT window first.</p>
         </div>
       </div>
     );
@@ -228,13 +169,23 @@ export default function SFTSubmission() {
 
       {hasSubmission ? (
         <div className="px-4 py-5 space-y-4">
-          <Alert className="bg-primary/5 border-primary/20">
-            <Activity className="h-4 w-4 text-primary" />
-            <AlertDescription className="text-sm">
-              Active submission: <strong>{mySubmissions[0].activity}</strong>
-              {mySubmissions[0].time_range && ` · ${mySubmissions[0].time_range.replace('-', '–').replace(/(\d{4})/g, (m) => formatDisplay(m))}`}
-            </AlertDescription>
-          </Alert>
+          <div className="p-4 rounded-2xl border border-primary/25 bg-primary/8 space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-primary/15 flex items-center justify-center">
+                <Check className="h-4 w-4 text-primary" />
+              </div>
+              <p className="text-sm font-semibold text-foreground">Active Submission</p>
+            </div>
+            <p className="text-sm text-foreground font-medium">{mySubmissions[0].activity}</p>
+            {mySubmissions[0].time_range && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Clock className="h-3 w-3" />
+                <span className="font-mono">
+                  {mySubmissions[0].time_range.replace(/(\d{4})-(\d{4})/, (_, a, b) => `${formatDisplay(a)} – ${formatDisplay(b)}`)}
+                </span>
+              </div>
+            )}
+          </div>
           <Button variant="destructive" className="w-full" onClick={handleQuit}>
             <XCircle className="h-4 w-4 mr-1" />
             Withdraw Submission
@@ -242,8 +193,8 @@ export default function SFTSubmission() {
         </div>
       ) : (
         <>
-          {/* Compact step indicator — no scrollbar */}
-          <div className="flex items-center justify-center gap-2 px-4 pt-3 pb-1">
+          {/* Step indicator */}
+          <div className="flex items-center justify-center gap-2 px-4 pt-4 pb-2">
             {STEPS.map((s, i) => (
               <React.Fragment key={s}>
                 <div className="flex items-center gap-1.5">
@@ -254,7 +205,7 @@ export default function SFTSubmission() {
                   }`}>
                     {i < step ? <Check className="w-3.5 h-3.5" /> : i + 1}
                   </div>
-                  <span className={`text-xs transition-all ${i === step ? 'font-semibold text-foreground' : 'text-muted-foreground/50'}`}>{s}</span>
+                  <span className={`text-xs transition-all ${i === step ? 'font-semibold text-foreground' : 'text-muted-foreground/40'}`}>{s}</span>
                 </div>
                 {i < STEPS.length - 1 && <div className="flex-1 h-px bg-border max-w-8" />}
               </React.Fragment>
@@ -262,23 +213,22 @@ export default function SFTSubmission() {
           </div>
 
           <div className="px-4 py-4">
-            {/* Step 0: Activity multi-select */}
+
+            {/* Step 0: Activity */}
             {step === 0 && (
               <div className="space-y-2">
-                <Label className="text-sm font-medium">
-                  Select Activities <span className="text-muted-foreground font-normal text-xs">(select all that apply)</span>
-                </Label>
+                <p className="text-sm font-medium text-foreground mb-3">Select your activities</p>
                 {SFT_ACTIVITIES.map(a => {
                   const checked = activities.includes(a);
                   return (
                     <button
                       key={a}
                       onClick={() => toggleActivity(a)}
-                      className={`w-full flex items-center gap-3 p-3 rounded-xl border text-sm transition-all ${
-                        checked ? 'border-primary bg-primary/5 font-medium' : 'border-border bg-card hover:bg-muted/30'
+                      className={`w-full flex items-center gap-3 p-3.5 rounded-xl border text-sm transition-all ${
+                        checked ? 'border-primary bg-primary/8 font-medium' : 'border-border bg-card hover:bg-muted/20'
                       }`}
                     >
-                      <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${
+                      <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${
                         checked ? 'border-primary bg-primary' : 'border-border'
                       }`}>
                         {checked && <Check className="h-3 w-3 text-white" />}
@@ -290,24 +240,86 @@ export default function SFTSubmission() {
               </div>
             )}
 
-            {/* Step 1: Time range slider */}
+            {/* Step 1: Time picker — tap friendly */}
             {step === 1 && startMins !== null && (
               <div className="space-y-6">
-                <div>
-                  <Label className="text-sm font-medium">Select Time Range</Label>
-                  <p className="text-xs text-muted-foreground mt-0.5">Drag the handles within the SFT window</p>
+                <div className="text-center space-y-1">
+                  <p className="text-sm font-medium text-foreground">Set your time range</p>
+                  <p className="text-xs text-muted-foreground">
+                    Window: {formatDisplay(activeWindow.start_time)} – {formatDisplay(activeWindow.end_time)}
+                  </p>
                 </div>
-                <TimeRangeSlider
-                  windowStart={windowStartMins}
-                  windowEnd={windowEndMins}
-                  startMins={startMins}
-                  endMins={endMins}
-                  onChange={(s, e) => { setStartMins(s); setEndMins(e); }}
-                />
-                {/* Duration */}
-                <div className="mt-2 text-center">
-                  <span className="text-xs text-muted-foreground">Duration: </span>
-                  <span className="text-sm font-semibold text-foreground">{endMins - startMins} min</span>
+
+                {/* Time display + controls */}
+                <div className="flex items-center justify-center gap-6">
+                  <TimeSelector
+                    label="Start"
+                    value={startMins}
+                    min={windowStartMins}
+                    max={endMins - 5}
+                    options={timeOptions}
+                    onChange={setStartMins}
+                  />
+                  <div className="flex flex-col items-center gap-1 mt-5">
+                    <div className="h-[2px] w-8 bg-border" />
+                    <p className="text-[10px] text-muted-foreground font-mono">
+                      {endMins - startMins}m
+                    </p>
+                  </div>
+                  <TimeSelector
+                    label="End"
+                    value={endMins}
+                    min={startMins + 5}
+                    max={windowEndMins}
+                    options={timeOptions}
+                    onChange={setEndMins}
+                  />
+                </div>
+
+                {/* Duration bar */}
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
+                    <span>{formatDisplay(fromMinutes(windowStartMins))}</span>
+                    <span>{formatDisplay(fromMinutes(windowEndMins))}</span>
+                  </div>
+                  <div className="relative h-2 bg-border rounded-full overflow-hidden">
+                    <div
+                      className="absolute h-full bg-primary rounded-full transition-all"
+                      style={{
+                        left: `${((startMins - windowStartMins) / (windowEndMins - windowStartMins)) * 100}%`,
+                        right: `${((windowEndMins - endMins) / (windowEndMins - windowStartMins)) * 100}%`,
+                      }}
+                    />
+                  </div>
+                  <p className="text-center text-xs text-muted-foreground">
+                    Duration: <span className="font-semibold text-foreground">{endMins - startMins} min</span>
+                  </p>
+                </div>
+
+                {/* Quick preset buttons */}
+                <div className="space-y-2">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Quick Presets</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {[30, 45, 60, 90].map(dur => {
+                      const eMin = Math.min(windowStartMins + dur, windowEndMins);
+                      return (
+                        <button
+                          key={dur}
+                          disabled={windowStartMins + dur > windowEndMins}
+                          onClick={() => { setStartMins(windowStartMins); setEndMins(eMin); }}
+                          className="px-3 py-1.5 rounded-lg border border-border bg-card text-xs font-medium text-muted-foreground hover:bg-muted/40 disabled:opacity-30 transition-all"
+                        >
+                          {dur}m
+                        </button>
+                      );
+                    })}
+                    <button
+                      onClick={() => { setStartMins(windowStartMins); setEndMins(windowEndMins); }}
+                      className="px-3 py-1.5 rounded-lg border border-border bg-card text-xs font-medium text-muted-foreground hover:bg-muted/40 transition-all"
+                    >
+                      Full window
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -315,19 +327,25 @@ export default function SFTSubmission() {
             {/* Step 2: Confirm */}
             {step === 2 && (
               <div className="space-y-4">
-                <Label className="text-sm font-medium">Preview Submission</Label>
-                <Card className="bg-muted/30">
-                  <CardContent className="p-4 space-y-2">
+                <p className="text-sm font-medium text-foreground">Review your submission</p>
+                <Card className="bg-muted/20 border-border">
+                  <CardContent className="p-4 space-y-3">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Name</span>
                       <span className="font-medium">{user?.rank} {user?.full_name}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Time</span>
-                      <span className="font-mono font-medium">{formatDisplay(fromMinutes(startMins))} – {formatDisplay(fromMinutes(endMins))}</span>
+                      <span className="font-mono font-medium">
+                        {formatDisplay(fromMinutes(startMins))} – {formatDisplay(fromMinutes(endMins))}
+                      </span>
                     </div>
-                    <div className="pt-1 border-t border-border">
-                      <p className="text-xs text-muted-foreground mb-1">Activities</p>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Duration</span>
+                      <span className="font-medium">{endMins - startMins} min</span>
+                    </div>
+                    <div className="pt-2 border-t border-border space-y-1">
+                      <p className="text-xs text-muted-foreground">Activities</p>
                       {activities.map((a, i) => (
                         <p key={a} className="text-sm font-medium">{i + 1}. {a}</p>
                       ))}

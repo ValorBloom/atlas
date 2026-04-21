@@ -305,12 +305,12 @@ export default function Home() {
             </Link>
           )}
           {cadetAdmin && activeMovements.length > 0 && (
-            <Link to="/admin/locations" className="flex items-center justify-between p-3 bg-destructive/8 border border-destructive/20 rounded-xl active:scale-[0.98] transition-all">
+            <Link to="/admin/locations" className="flex items-center justify-between p-3 bg-amber-500/8 border border-amber-500/20 rounded-xl active:scale-[0.98] transition-all">
               <div className="flex items-center gap-2">
-                <MapPin className="h-3.5 w-3.5 text-destructive shrink-0" />
-                <p className="text-xs font-semibold text-destructive/90">{activeMovements.length} personnel out of camp</p>
+                <MapPin className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                <p className="text-xs font-semibold text-amber-300">{activeMovements.length} movement{activeMovements.length > 1 ? 's' : ''} pending return</p>
               </div>
-              <ChevronRight className="h-3.5 w-3.5 text-destructive/40" />
+              <ChevronRight className="h-3.5 w-3.5 text-amber-400/40" />
             </Link>
           )}
         </div>
