@@ -2,6 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import usePullToRefresh from '@/hooks/usePullToRefresh';
+import PullToRefresh from '@/components/layout/PullToRefresh';
 import PageHeader from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -199,6 +201,12 @@ export default function Notifications() {
   const [tab, setTab] = useState('admin');
   const [selected, setSelected] = useState(null);
 
+  const refresh = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    await queryClient.invalidateQueries({ queryKey: ['notifications-unit'] });
+  };
+  const { pullDistance, refreshing } = usePullToRefresh(refresh);
+
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ['notifications', user?.email],
     queryFn: () => base44.entities.Notification.filter({ recipient_email: user?.email }, '-created_date', 100),
@@ -246,7 +254,8 @@ export default function Notifications() {
   }
 
   return (
-    <div>
+    <div className="relative">
+      <PullToRefresh pullDistance={pullDistance} refreshing={refreshing} />
       <PageHeader
         title="Notifications"
         subtitle={totalUnread > 0 ? `${totalUnread} unread` : 'All caught up'}

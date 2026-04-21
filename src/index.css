@@ -99,7 +99,45 @@
   body {
     @apply bg-background text-foreground font-inter;
     color-scheme: dark;
+    overscroll-behavior-y: none;
+    -webkit-overflow-scrolling: touch;
   }
+}
+
+/* ── iOS/Android safe area support ── */
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Apply safe-area to PageHeader and BottomNav automatically */
+header.sticky {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+nav.fixed.bottom-0 {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ── Non-selectable interactive elements ── */
+button,
+a,
+nav,
+[role="button"],
+[role="tab"],
+[role="menuitem"],
+label,
+svg {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Selectable content areas ── */
+p, span, pre, .select-text {
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 /* Light page transitions and motion */

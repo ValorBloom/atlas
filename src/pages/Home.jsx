@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useOutletContext, useNavigate, Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import usePullToRefresh from '@/hooks/usePullToRefresh';
+import PullToRefresh from '@/components/layout/PullToRefresh';
 import { isInstructor, isCadetAdmin, formatRankName } from '@/lib/constants';
 import {
   MapPin, Activity, FileText, Trophy, Bell,
@@ -82,6 +84,15 @@ export default function Home() {
   const qc = useQueryClient();
   const instructor = isInstructor(user);
   const cadetAdmin = isCadetAdmin(user);
+  const containerRef = useRef(null);
+
+  const refresh = async () => {
+    await qc.invalidateQueries({ queryKey: ['notifications-unread'] });
+    await qc.invalidateQueries({ queryKey: ['sft-windows-active'] });
+    await qc.invalidateQueries({ queryKey: ['movements-active-home'] });
+    await qc.invalidateQueries({ queryKey: ['cet-today'] });
+  };
+  const { pullDistance, refreshing } = usePullToRefresh(refresh, containerRef);
   const [customizing, setCustomizing] = useState(false);
   const [showQuote, setShowQuote] = useState(true);
 
@@ -167,7 +178,8 @@ export default function Home() {
   // ── INSTRUCTOR HOME ──
   if (instructor) {
     return (
-      <div className="pb-24">
+      <div className="pb-24 relative" ref={containerRef}>
+        <PullToRefresh pullDistance={pullDistance} refreshing={refreshing} />
         {/* Military header */}
         <div className="relative px-4 pt-9 pb-5 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-b from-primary/8 to-transparent pointer-events-none" />
@@ -258,7 +270,8 @@ export default function Home() {
 
   // ── CADET / CADET ADMIN HOME ──
   return (
-    <div className="pb-24">
+    <div className="pb-24 relative" ref={containerRef}>
+      <PullToRefresh pullDistance={pullDistance} refreshing={refreshing} />
       {/* Cadet header */}
       <div className="px-4 pt-9 pb-5">
         <div className="flex items-start justify-between">

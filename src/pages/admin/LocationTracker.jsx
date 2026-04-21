@@ -1,7 +1,9 @@
 import React from 'react';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useOutletContext } from 'react-router-dom';
+import usePullToRefresh from '@/hooks/usePullToRefresh';
+import PullToRefresh from '@/components/layout/PullToRefresh';
 import PageHeader from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Clock, ArrowRight, AlertCircle, CheckCircle2, Users } from 'lucide-react';
@@ -10,6 +12,12 @@ import { isToday, parseISO, differenceInMinutes } from 'date-fns';
 
 export default function LocationTracker() {
   const { user } = useOutletContext();
+  const queryClient = useQueryClient();
+
+  const refresh = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['movements-today'] });
+  };
+  const { pullDistance, refreshing } = usePullToRefresh(refresh);
 
   const { data: allMovements = [], isLoading } = useQuery({
     queryKey: ['movements-today', user?.unit],
@@ -38,7 +46,8 @@ export default function LocationTracker() {
   const backPath = isInstructor(user) ? '/admin' : '/';
 
   return (
-    <div className="pb-24">
+    <div className="pb-24 relative">
+      <PullToRefresh pullDistance={pullDistance} refreshing={refreshing} />
       <PageHeader title="Movement Log" backTo={backPath} subtitle={`Today · ${todayMovements.length} movements`} />
       <div className="px-4 py-4 space-y-5">
 
