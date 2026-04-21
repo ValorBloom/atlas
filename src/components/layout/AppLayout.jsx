@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
 import { isInstructor, isCadetAdmin } from '@/lib/constants';
 import BottomNav from './BottomNav';
@@ -30,8 +31,18 @@ export default function AppLayout() {
 
   return (
     <div className="min-h-screen bg-background font-inter">
-      <main className="pb-20 max-w-lg mx-auto min-h-screen">
-        <Outlet context={{ user, setUser }} />
+      <main className="pb-20 max-w-lg mx-auto min-h-screen overflow-x-hidden">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={location.pathname}
+            initial={{ x: 24, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -24, opacity: 0 }}
+            transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
+          >
+            <Outlet context={{ user, setUser }} />
+          </motion.div>
+        </AnimatePresence>
       </main>
       <BottomNav isInstructor={isInstructor(user)} isCadetAdmin={isCadetAdmin(user)} />
     </div>

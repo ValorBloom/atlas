@@ -121,7 +121,11 @@ export default function SFTSubmission() {
 
   const handleSubmit = async () => {
     setSaving(true);
-    await base44.entities.SFTSubmission.create({
+    // Optimistic: navigate away immediately
+    toast.success('SFT submitted');
+    navigate('/');
+    // Then persist in background
+    base44.entities.SFTSubmission.create({
       cadet_name: user?.full_name,
       cadet_rank: user?.rank,
       cadet_id: user?.id,
@@ -130,18 +134,18 @@ export default function SFTSubmission() {
       window_id: activeWindow.id,
       unit: user?.unit,
       status: 'active',
-    });
-    setSaving(false);
-    toast.success('SFT submitted');
-    queryClient.invalidateQueries({ queryKey: ['sft-my'] });
-    navigate('/');
+    }).then(() => {
+      queryClient.invalidateQueries({ queryKey: ['sft-my'] });
+    }).finally(() => setSaving(false));
   };
 
   const handleQuit = async () => {
     if (!mySubmissions[0]) return;
-    await base44.entities.SFTSubmission.update(mySubmissions[0].id, { status: 'withdrawn' });
+    // Optimistic: update cache immediately
+    queryClient.setQueryData(['sft-my', user?.email, user?.unit], []);
     toast.success('SFT submission withdrawn');
-    queryClient.invalidateQueries({ queryKey: ['sft-my'] });
+    base44.entities.SFTSubmission.update(mySubmissions[0].id, { status: 'withdrawn' })
+      .then(() => queryClient.invalidateQueries({ queryKey: ['sft-my'] }));
   };
 
   if (!activeWindow) {

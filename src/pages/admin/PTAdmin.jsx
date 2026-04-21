@@ -6,7 +6,7 @@ import PageHeader from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { MobileSelect, MobileSelectItem } from '@/components/ui/MobileSelect';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -213,16 +213,13 @@ export default function PTAdmin() {
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Approving Instructor</Label>
-                <Select value={instructorName} onValueChange={setInstructorName}>
-                  <SelectTrigger><SelectValue placeholder="Select instructor" /></SelectTrigger>
-                  <SelectContent>
-                    {instructors.map(i => (
-                      <SelectItem key={i.id} value={formatRankName(i.rank, i.full_name)}>
-                        {formatRankName(i.rank, i.full_name)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <MobileSelect value={instructorName} onValueChange={setInstructorName} placeholder="Select instructor">
+                  {instructors.map(i => (
+                    <MobileSelectItem key={i.id} value={formatRankName(i.rank, i.full_name)}>
+                      {formatRankName(i.rank, i.full_name)}
+                    </MobileSelectItem>
+                  ))}
+                </MobileSelect>
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Salutation</Label>

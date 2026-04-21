@@ -126,62 +126,78 @@ export default function MovementWizard() {
   const handleSubmit = async () => {
     setSaving(true);
     const date = format(new Date(), 'yyyy-MM-dd');
-    for (const person of selectedPersonnel) {
-      await base44.entities.MovementLog.create({
-        personnel_name: person.full_name,
-        personnel_rank: person.rank || '',
-        personnel_id: person.id,
-        from_location: fromLoc,
-        to_location: toLoc,
-        purpose: purpose,
-        leave_time: data.leave_time,
-        status: 'departed',
-        unit: user?.unit,
-        reported_by: user?.email,
-        movement_date: date,
-      });
-    }
 
-    const numberedNames = selectedPersonnel
-      .map((p, i) => `${i + 1}. ${formatRankName(p.rank || '', p.full_name || '')}`)
-      .join('\n');
-    // Instructor notification
-    await base44.entities.Notification.create({
-      title: 'Movement Reported',
-      message: instructorNotificationMessage(),
-      type: 'info',
-      category: 'movement',
-      recipient_unit: user?.unit,
-    });
-
-    await base44.entities.AuditLog.create({
-      action: 'movement_report',
-      category: 'movement',
-      details: reportLines(),
-      performed_by: user?.email,
-      unit: user?.unit,
-    });
-
-    // Schedule a 20-minute reminder notification
-    setTimeout(async () => {
-      await base44.entities.Notification.create({
-        title: '⏱ Report Reached Time',
-        message: `Reminder: ${selectedPersonnel.map(p => p.full_name).join(', ')} departed 20 mins ago. Please update reached time.`,
-        type: 'warning',
-        category: 'movement',
-        recipient_unit: user?.unit,
-      });
-    }, 20 * 60 * 1000);
-
-    setSaving(false);
+    // Optimistic: show success and switch tab immediately
     toast.success(`${selectedPersonnel.length > 1 ? selectedPersonnel.length + ' movements' : 'Movement'} reported`);
-    await queryClient.invalidateQueries({ queryKey: ['movement-pending'] });
-    // Switch to reached tab so user can update reached time
+    // Build optimistic log entries to show in reached tab right away
+    const optimisticLogs = selectedPersonnel.map((person, idx) => ({
+      id: `optimistic-${idx}`,
+      personnel_name: person.full_name,
+      personnel_rank: person.rank || '',
+      personnel_id: person.id,
+      from_location: fromLoc,
+      to_location: toLoc,
+      purpose: purpose,
+      leave_time: data.leave_time,
+      status: 'departed',
+      unit: user?.unit,
+      reported_by: user?.email,
+      movement_date: date,
+    }));
+    queryClient.setQueryData(['movement-pending', user?.unit], prev =>
+      [...(prev || []), ...optimisticLogs]
+    );
+
+    // Switch UI immediately
     setTab('reached');
-    // Reset report form
     setStep(0);
     setData({ from_location: '', to_location: '', purpose: '', leave_time: '', custom_from: '', custom_to: '', custom_purpose: '' });
     setSelectedPersonnel([user]);
+
+    // Persist in background
+    const persistAll = async () => {
+      for (const person of selectedPersonnel) {
+        await base44.entities.MovementLog.create({
+          personnel_name: person.full_name,
+          personnel_rank: person.rank || '',
+          personnel_id: person.id,
+          from_location: fromLoc,
+          to_location: toLoc,
+          purpose: purpose,
+          leave_time: data.leave_time,
+          status: 'departed',
+          unit: user?.unit,
+          reported_by: user?.email,
+          movement_date: date,
+        });
+      }
+      await base44.entities.Notification.create({
+        title: 'Movement Reported',
+        message: instructorNotificationMessage(),
+        type: 'info',
+        category: 'movement',
+        recipient_unit: user?.unit,
+      });
+      await base44.entities.AuditLog.create({
+        action: 'movement_report',
+        category: 'movement',
+        details: reportLines(),
+        performed_by: user?.email,
+        unit: user?.unit,
+      });
+      setTimeout(async () => {
+        await base44.entities.Notification.create({
+          title: '⏱ Report Reached Time',
+          message: `Reminder: ${selectedPersonnel.map(p => p.full_name).join(', ')} departed 20 mins ago. Please update reached time.`,
+          type: 'warning',
+          category: 'movement',
+          recipient_unit: user?.unit,
+        });
+      }, 20 * 60 * 1000);
+    };
+    persistAll()
+      .then(() => queryClient.invalidateQueries({ queryKey: ['movement-pending'] }))
+      .finally(() => setSaving(false));
   };
 
   const handleReached = async () => {
@@ -580,14 +596,21 @@ export default function MovementWizard() {
                               <Button
                                 className="w-full"
                                 size="sm"
-                                onClick={async () => {
+                                onClick={() => {
                                   if (!TIME_REGEX.test(reachedTime)) return;
                                   setReachedSaving(true);
-                                  // Update all logs in the group
-                                  await Promise.all(group.map(l =>
+                                  // Optimistic: remove group from displayed list immediately
+                                  const groupIds = new Set(group.map(l => l.id));
+                                  queryClient.setQueryData(['movement-pending', user?.unit], prev =>
+                                    (prev || []).filter(l => !groupIds.has(l.id))
+                                  );
+                                  toast.success(group.length > 1 ? `${group.length} personnel marked reached` : 'Reached recorded');
+                                  setSelectedLog(null);
+                                  setReachedTime('');
+                                  // Persist in background
+                                  Promise.all(group.map(l =>
                                     base44.entities.MovementLog.update(l.id, { reached_time: reachedTime, status: 'reached' })
-                                  ));
-                                  await base44.entities.Notification.create({
+                                  )).then(() => base44.entities.Notification.create({
                                     title: 'Reached Confirmed',
                                     message: group.length === 1
                                       ? `${formatRankName(rep.personnel_rank, rep.personnel_name)} reached ${rep.to_location} at ${formatTime(reachedTime)}`
@@ -595,12 +618,9 @@ export default function MovementWizard() {
                                     type: 'success',
                                     category: 'movement',
                                     recipient_unit: user?.unit,
-                                  });
-                                  setReachedSaving(false);
-                                  toast.success(group.length > 1 ? `${group.length} personnel marked reached` : 'Reached recorded');
-                                  setSelectedLog(null);
-                                  setReachedTime('');
-                                  queryClient.invalidateQueries({ queryKey: ['movement-pending'] });
+                                  })).then(() =>
+                                    queryClient.invalidateQueries({ queryKey: ['movement-pending'] })
+                                  ).finally(() => setReachedSaving(false));
                                 }}
                                 disabled={!TIME_REGEX.test(reachedTime) || reachedSaving}
                               >
