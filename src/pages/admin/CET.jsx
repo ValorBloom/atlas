@@ -12,12 +12,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { isInstructor, INSTRUCTOR_RANKS } from '@/lib/constants';
 import {
   Plus, Trash2, Copy, Send, Check, Sparkles, Quote, Save,
-  ChevronLeft, ChevronRight, FileText, BookTemplate, X, Edit3
+  ChevronLeft, ChevronRight, FileText, X, Edit3
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, addDays, subDays, parseISO } from 'date-fns';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const TODAY_STR = format(new Date(), 'yyyy-MM-dd');
+
+function getSlots(centerDate) {
+  const center = centerDate ? new Date(centerDate + 'T00:00:00') : new Date();
+  return [-1, 0, 1].map(offset => {
+    const d = addDays(center, offset);
+    return {
+      date: format(d, 'yyyy-MM-dd'),
+      label: format(d, 'd'),
+      month: format(d, 'MMM'),
+      day: DAY_NAMES[d.getDay()],
+      isToday: format(d, 'yyyy-MM-dd') === TODAY_STR,
+    };
+  });
+}
 
 const DEFAULT_ROWS = [
   { time: '0800H', activity: 'Pre-MDST Book-in (Last Cadet to book in by 0820H)' },
@@ -42,26 +57,12 @@ function formatTimeInput(raw) {
   return raw;
 }
 
-// Generate 3 dates: yesterday, today, tomorrow
-function getDateSlots() {
-  const today = new Date();
-  return [-1, 0, 1, 2].map(offset => {
-    const d = addDays(today, offset);
-    return {
-      date: format(d, 'yyyy-MM-dd'),
-      label: format(d, 'dd MMM'),
-      day: DAY_NAMES[d.getDay()],
-      isToday: offset === 0,
-    };
-  });
-}
-
 export default function CET() {
   const { user } = useOutletContext();
   const qc = useQueryClient();
 
-  const dates = getDateSlots();
-  const [selectedDate, setSelectedDate] = useState(dates[1].date); // today
+  const [selectedDate, setSelectedDate] = useState(TODAY_STR);
+  const slots = getSlots(selectedDate);
   const [wdi, setWdi] = useState('');
   const [quote, setQuote] = useState('');
   const [quoteAuthor, setQuoteAuthor] = useState('');
@@ -275,29 +276,43 @@ export default function CET() {
     <div className="pb-24">
       <PageHeader title="Send CET" backTo="/" subtitle="Daily Training Programme" />
 
-      {/* ── Date Scroll ── */}
+      {/* ── Date Scroll — centered on selected ── */}
       <div className="px-4 pt-3 pb-1">
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-          {dates.map(d => {
-            const rec = cetRecords.find(r => r.date === d.date);
-            const isSelected = d.date === selectedDate;
-            return (
-              <button
-                key={d.date}
-                onClick={() => setSelectedDate(d.date)}
-                className={`flex flex-col items-center px-4 py-2.5 rounded-xl border shrink-0 transition-all min-w-[72px] ${
-                  isSelected
-                    ? 'bg-primary border-primary/40 text-primary-foreground'
-                    : 'bg-card border-border text-foreground hover:bg-muted/40'
-                }`}
-              >
-                <span className={`text-[10px] font-medium uppercase tracking-wide ${isSelected ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>{d.day}</span>
-                <span className="text-sm font-bold mt-0.5">{d.label}</span>
-                {d.isToday && <span className={`text-[9px] font-semibold mt-0.5 ${isSelected ? 'text-primary-foreground/60' : 'text-primary'}`}>TODAY</span>}
-                {rec?.is_published && <div className={`w-1.5 h-1.5 rounded-full mt-1 ${isSelected ? 'bg-primary-foreground/60' : 'bg-green-400'}`} />}
-              </button>
-            );
-          })}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setSelectedDate(format(addDays(new Date(selectedDate + 'T00:00:00'), -1), 'yyyy-MM-dd'))}
+            className="w-8 h-8 rounded-lg border border-border bg-card flex items-center justify-center shrink-0 hover:bg-muted/40 transition-colors"
+          >
+            <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+          </button>
+          <div className="flex gap-2 flex-1 justify-center">
+            {slots.map(d => {
+              const rec = cetRecords.find(r => r.date === d.date);
+              const isSelected = d.date === selectedDate;
+              return (
+                <button
+                  key={d.date}
+                  onClick={() => setSelectedDate(d.date)}
+                  className={`flex flex-col items-center px-4 py-2.5 rounded-xl border shrink-0 transition-all min-w-[72px] ${
+                    isSelected
+                      ? 'bg-primary border-primary/40 text-primary-foreground'
+                      : 'bg-card border-border text-foreground hover:bg-muted/40'
+                  }`}
+                >
+                  <span className={`text-[10px] font-medium uppercase tracking-wide ${isSelected ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>{d.day}</span>
+                  <span className="text-sm font-bold mt-0.5">{d.label}</span>
+                  <span className={`text-[9px] mt-0.5 ${isSelected ? 'text-primary-foreground/60' : 'text-muted-foreground'}`}>{d.isToday ? 'Today' : d.month}</span>
+                  {rec?.is_published && <div className={`w-1.5 h-1.5 rounded-full mt-1 ${isSelected ? 'bg-primary-foreground/60' : 'bg-green-400'}`} />}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            onClick={() => setSelectedDate(format(addDays(new Date(selectedDate + 'T00:00:00'), 1), 'yyyy-MM-dd'))}
+            className="w-8 h-8 rounded-lg border border-border bg-card flex items-center justify-center shrink-0 hover:bg-muted/40 transition-colors"
+          >
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </button>
         </div>
       </div>
 
