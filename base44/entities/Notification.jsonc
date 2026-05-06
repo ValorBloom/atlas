@@ -56,10 +56,8 @@
   ],
   "rls": {
     "create": {
+      "data.recipient_unit": "{{user.data.unit}}",
       "$or": [
-        {
-          "data.recipient_email": "{{user.email}}"
-        },
         {
           "user_condition": {
             "user_role": "instructor"
@@ -78,7 +76,47 @@
           "data.recipient_email": "{{user.email}}"
         },
         {
-          "data.recipient_unit": "{{user.unit}}"
+          "$and": [
+            {
+              "data.recipient_unit": "{{user.data.unit}}"
+            },
+            {
+              "$or": [
+                {
+                  "data.recipient_email": {
+                    "$exists": false
+                  }
+                },
+                {
+                  "data.recipient_email": ""
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "user_role": "instructor"
+              }
+            },
+            {
+              "data.recipient_unit": "{{user.data.unit}}"
+            }
+          ]
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "user_role": "cadet_admin"
+              }
+            },
+            {
+              "data.recipient_unit": "{{user.data.unit}}"
+            }
+          ]
         }
       ]
     },
@@ -88,19 +126,30 @@
           "data.recipient_email": "{{user.email}}"
         },
         {
-          "user_condition": {
-            "user_role": "instructor"
-          }
-        },
-        {
-          "user_condition": {
-            "user_role": "cadet_admin"
-          }
+          "$and": [
+            {
+              "data.recipient_unit": "{{user.data.unit}}"
+            },
+            {
+              "$or": [
+                {
+                  "user_condition": {
+                    "user_role": "instructor"
+                  }
+                },
+                {
+                  "user_condition": {
+                    "user_role": "cadet_admin"
+                  }
+                }
+              ]
+            }
+          ]
         }
-      ],
-      "data.recipient_unit": "{{user.unit}}"
+      ]
     },
     "delete": {
+      "data.recipient_unit": "{{user.data.unit}}",
       "$or": [
         {
           "user_condition": {
@@ -112,8 +161,7 @@
             "user_role": "cadet_admin"
           }
         }
-      ],
-      "data.recipient_unit": "{{user.unit}}"
+      ]
     }
   }
 }
