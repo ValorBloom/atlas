@@ -33,5 +33,45 @@
   "required": [
     "name",
     "unit"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "data.unit": "{{user.data.unit}}",
+      "user_condition": {
+        "user_role": "instructor"
+      }
+    },
+    "read": {
+      "data.unit": "{{user.data.unit}}",
+      "user_condition": {
+        "user_role": "instructor"
+      }
+    },
+    "update": {
+      "data.unit": "{{user.data.unit}}",
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "user_role": "instructor"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "data.unit": "{{user.data.unit}}",
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "user_role": "instructor"
+          }
+        }
+      ]
+    }
+  }
 }
