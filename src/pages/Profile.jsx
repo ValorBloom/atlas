@@ -5,21 +5,23 @@ import PageHeader from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MobileSelect, MobileSelectItem } from '@/components/ui/MobileSelect';
-import { RANKS, UNITS, isInstructor, isCadetAdmin, getGroupLabel, getGroupOptions } from '@/lib/constants';
-import { LogOut, Trash2, Moon, Sun, ChevronRight, Bell, Shield, Upload, Star, KeyRound, Eye, EyeOff } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { RANKS, UNITS, isInstructor, isCadetAdmin, getGroupLabel, getGroupOptions, UNIT_PINS, ADMIN_PIN } from '@/lib/constants';
+import { LogOut, Trash2, Moon, Sun, ChevronRight, Bell, Shield, Upload, Star, KeyRound, Eye, EyeOff, Lock, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useTheme } from '@/lib/ThemeContext';
 import { cn } from '@/lib/utils';
 
-// Minimal Atlas vertebra inline SVG
 function AtlasMark({ size = 18 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-primary">
-      <ellipse cx="32" cy="32" rx="28" ry="20" stroke="currentColor" strokeWidth="3" />
-      <ellipse cx="32" cy="32" rx="12" ry="9" stroke="currentColor" strokeWidth="2.5" />
-      <rect x="4" y="27" width="12" height="10" rx="3" stroke="currentColor" strokeWidth="2.5" />
-      <rect x="48" y="27" width="12" height="10" rx="3" stroke="currentColor" strokeWidth="2.5" />
+    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-primary">
+      <circle cx="50" cy="45" r="36" stroke="currentColor" strokeWidth="3.5" strokeDasharray="5 3" opacity="0.5" />
+      <path d="M50 12 L72 72 H28 Z" fill="currentColor" opacity="0.15" stroke="currentColor" strokeWidth="1" opacity="0.3" />
+      <path d="M50 28 L58 52 H42 Z" fill="currentColor" opacity="0.7" />
+      <polygon points="50,7 47,13 53,13" fill="currentColor" opacity="0.5" />
+      <polygon points="14,45 20,42 20,48" fill="currentColor" opacity="0.7" />
+      <polygon points="86,45 80,42 80,48" fill="currentColor" opacity="0.7" />
     </svg>
   );
 }
@@ -32,31 +34,69 @@ export default function Profile() {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
+
+  // PIN gate for saving (required when changing unit)
+  const [showPinGate, setShowPinGate] = useState(false);
+  const [pinInput, setPinInput] = useState('');
+  const [pinError, setPinError] = useState('');
+
   const [showDelete, setShowDelete] = useState(false);
   const [deleteInput, setDeleteInput] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
-  const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
+  const [pwForm, setPwForm] = useState({ next: '', confirm: '' });
   const [showPw, setShowPw] = useState(false);
   const [pwSaving, setPwSaving] = useState(false);
 
   useEffect(() => {
     if (user) {
       setForm({
+        full_name: user.full_name || '',
         rank: user.rank || '',
         unit: user.unit || '',
         phone_number: user.phone_number || '',
-        group: user.group || '',
+        platoon: user.platoon || '',
       });
     }
   }, [user]);
 
-  const handleSave = async () => {
+  const unitChanged = form.unit !== (user?.unit || '');
+  const needsPin = unitChanged; // PIN required when changing unit
+
+  const handleSaveClick = () => {
+    if (needsPin) {
+      setPinInput('');
+      setPinError('');
+      setShowPinGate(true);
+    } else {
+      doSave();
+    }
+  };
+
+  const doSave = async () => {
     setSaving(true);
-    await base44.auth.updateMe(form);
+    await base44.auth.updateMe({
+      full_name: form.full_name,
+      rank: form.rank,
+      unit: form.unit,
+      phone_number: form.phone_number,
+      platoon: form.platoon || null,
+    });
     setSaving(false);
     setEditing(false);
+    setShowPinGate(false);
+    setPinInput('');
     toast.success('Profile updated');
+  };
+
+  const handlePinConfirm = () => {
+    // If changing unit, need the new unit's PIN (or instructor auth code for instructors)
+    const expectedPin = instructor ? ADMIN_PIN : UNIT_PINS[form.unit];
+    if (pinInput !== expectedPin) {
+      setPinError(instructor ? 'Invalid instructor auth code.' : `Invalid PIN for ${form.unit} unit.`);
+      return;
+    }
+    doSave();
   };
 
   const handleChangePassword = async () => {
@@ -65,7 +105,7 @@ export default function Profile() {
     await base44.auth.updateMe({ password: pwForm.next });
     setPwSaving(false);
     setShowChangePassword(false);
-    setPwForm({ current: '', next: '', confirm: '' });
+    setPwForm({ next: '', confirm: '' });
     toast.success('Password updated');
   };
 
@@ -81,7 +121,7 @@ export default function Profile() {
   const initials = fullName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
   const roleLabel = instructor ? 'Instructor' : cadetAdmin ? 'Cadet Admin' : 'Cadet';
   const groupLabel = getGroupLabel(user?.unit);
-  const groupOptions = getGroupOptions(user?.unit);
+  const groupOptions = getGroupOptions(form.unit || user?.unit);
 
   return (
     <div className="pb-24">
@@ -96,15 +136,13 @@ export default function Profile() {
 
       <div className="px-4 py-5 space-y-4">
 
-        {/* ── Identity Hero — military card (light + dark mode) ── */}
+        {/* ── Identity Hero ── */}
         <div className="relative rounded-2xl overflow-hidden border border-primary/30 bg-primary/5 dark:bg-[hsl(222,24%,10%)]">
-          {/* Grid texture */}
           <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
             style={{
               backgroundImage: 'linear-gradient(hsl(217,91%,55%) 1px, transparent 1px), linear-gradient(90deg, hsl(217,91%,55%) 1px, transparent 1px)',
               backgroundSize: '24px 24px'
             }} />
-          {/* Corner brackets */}
           <div className="absolute top-3 left-3 w-5 h-5 border-t-2 border-l-2 border-primary/40 rounded-tl" />
           <div className="absolute top-3 right-3 w-5 h-5 border-t-2 border-r-2 border-primary/40 rounded-tr" />
           <div className="absolute bottom-3 left-3 w-5 h-5 border-b-2 border-l-2 border-primary/40 rounded-bl" />
@@ -112,11 +150,9 @@ export default function Profile() {
 
           <div className="relative px-5 py-5">
             <div className="flex items-start gap-4">
-              {/* Avatar */}
               <div className="w-16 h-16 rounded-xl flex items-center justify-center shrink-0 border border-primary/25 bg-primary/15">
                 <span className="text-2xl font-bold text-primary">{initials || '?'}</span>
               </div>
-              {/* Info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
                   <AtlasMark size={14} />
@@ -126,8 +162,6 @@ export default function Profile() {
                 <p className="text-sm text-muted-foreground truncate mt-0.5">{user?.email}</p>
               </div>
             </div>
-
-            {/* Stats row */}
             <div className="border-t border-primary/15 mt-4 pt-3 grid grid-cols-3 gap-3">
               <div>
                 <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Rank</p>
@@ -141,17 +175,11 @@ export default function Profile() {
                 <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Role</p>
                 <p className="text-sm font-bold text-foreground mt-0.5">{roleLabel}</p>
               </div>
-              {user?.group && (
-                <div className="col-span-3 pt-1 border-t border-primary/10">
-                  <p className="text-[9px] text-muted-foreground uppercase tracking-wider">{groupLabel}</p>
-                  <p className="text-sm font-bold text-foreground mt-0.5">{user.group}</p>
-                </div>
-              )}
             </div>
           </div>
         </div>
 
-        {/* ── Details section ── */}
+        {/* ── Details ── */}
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-border">
             <p className="text-sm font-semibold">Details</p>
@@ -159,15 +187,30 @@ export default function Profile() {
               <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setEditing(true)}>Edit</Button>
             ) : (
               <div className="flex gap-2">
-                <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setEditing(false)}>Cancel</Button>
-                <Button size="sm" className="text-xs h-7" onClick={handleSave} disabled={saving}>
-                  {saving ? 'Saving…' : 'Save'}
+                <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => { setEditing(false); setShowPinGate(false); }}>Cancel</Button>
+                <Button size="sm" className="text-xs h-7" onClick={handleSaveClick} disabled={saving}>
+                  {saving ? 'Saving…' : needsPin ? 'Save (PIN required)' : 'Save'}
                 </Button>
               </div>
             )}
           </div>
 
           <div className="divide-y divide-border">
+            {/* Full Name */}
+            <div className="flex items-center justify-between px-4 py-3">
+              <span className="text-sm text-muted-foreground">Name</span>
+              {editing ? (
+                <Input
+                  className="h-9 w-44 text-sm bg-background border-border"
+                  value={form.full_name}
+                  onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                  placeholder="Full name"
+                />
+              ) : (
+                <span className="text-sm font-medium">{user?.full_name || '—'}</span>
+              )}
+            </div>
+
             {/* Rank */}
             <div className="flex items-center justify-between px-4 py-3">
               <span className="text-sm text-muted-foreground">Rank</span>
@@ -180,11 +223,14 @@ export default function Profile() {
               )}
             </div>
 
-            {/* Unit */}
+            {/* Unit — PIN gated */}
             <div className="flex items-center justify-between px-4 py-3">
-              <span className="text-sm text-muted-foreground">Unit</span>
+              <div>
+                <span className="text-sm text-muted-foreground">Unit</span>
+                {editing && <p className="text-[10px] text-amber-400 mt-0.5 flex items-center gap-1"><Lock className="h-2.5 w-2.5" />Requires unit PIN</p>}
+              </div>
               {editing ? (
-                <MobileSelect value={form.unit} onValueChange={(v) => setForm({ ...form, unit: v, group: '' })} placeholder="Unit" className="h-9 w-36 text-sm bg-background border-border">
+                <MobileSelect value={form.unit} onValueChange={(v) => setForm({ ...form, unit: v, platoon: '' })} placeholder="Unit" className="h-9 w-36 text-sm bg-background border-border">
                   {UNITS.map(u => <MobileSelectItem key={u} value={u}>{u}</MobileSelectItem>)}
                 </MobileSelect>
               ) : (
@@ -192,17 +238,17 @@ export default function Profile() {
               )}
             </div>
 
-            {/* Group (platoon / flight / byte etc.) */}
+            {/* Group */}
             <div className="flex items-center justify-between px-4 py-3">
-              <span className="text-sm text-muted-foreground">{getGroupLabel(form.unit || user?.unit)}</span>
+              <span className="text-sm text-muted-foreground">{groupLabel}</span>
               {editing ? (
-                <MobileSelect value={form.group} onValueChange={(v) => setForm({ ...form, group: v })} placeholder="Select…" className="h-9 w-44 text-sm bg-background border-border">
-                  {(getGroupOptions(form.unit || user?.unit) || []).map(g => (
+                <MobileSelect value={form.platoon} onValueChange={(v) => setForm({ ...form, platoon: v })} placeholder="Select…" className="h-9 w-44 text-sm bg-background border-border">
+                  {(groupOptions || []).map(g => (
                     <MobileSelectItem key={g} value={g}>{g}</MobileSelectItem>
                   ))}
                 </MobileSelect>
               ) : (
-                <span className="text-sm font-medium">{user?.group || '—'}</span>
+                <span className="text-sm font-medium">{user?.platoon || '—'}</span>
               )}
             </div>
 
@@ -221,6 +267,34 @@ export default function Profile() {
               )}
             </div>
           </div>
+
+          {/* PIN Gate (inline, shown when unit changed and Save clicked) */}
+          {showPinGate && (
+            <div className="px-4 pb-4 pt-3 border-t border-border bg-amber-500/5 space-y-2.5">
+              <p className="text-xs font-semibold text-amber-400 flex items-center gap-1.5">
+                <Lock className="h-3.5 w-3.5" />
+                {instructor ? 'Enter instructor auth code to confirm' : `Enter PIN for ${form.unit} to confirm unit change`}
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  type="password"
+                  placeholder="Enter PIN"
+                  value={pinInput}
+                  onChange={(e) => { setPinInput(e.target.value); setPinError(''); }}
+                  className="h-9 text-sm font-mono tracking-widest flex-1"
+                />
+                <Button size="sm" className="h-9 px-4 text-xs" onClick={handlePinConfirm} disabled={saving || !pinInput}>
+                  {saving ? '…' : 'Confirm'}
+                </Button>
+              </div>
+              {pinError && (
+                <Alert variant="destructive" className="py-2">
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                  <AlertDescription className="text-xs">{pinError}</AlertDescription>
+                </Alert>
+              )}
+            </div>
+          )}
         </div>
 
         {/* ── Settings ── */}
@@ -229,7 +303,6 @@ export default function Profile() {
             <p className="text-sm font-semibold">Settings</p>
           </div>
 
-          {/* Theme */}
           <button
             onClick={toggleTheme}
             className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors border-b border-border"
@@ -248,7 +321,6 @@ export default function Profile() {
             </div>
           </button>
 
-          {/* Notifications */}
           <Link to="/notifications" className="flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors border-b border-border">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
@@ -262,7 +334,6 @@ export default function Profile() {
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
           </Link>
 
-          {/* Change Password */}
           <button
             onClick={() => setShowChangePassword(!showChangePassword)}
             className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors border-b border-border"
@@ -314,15 +385,14 @@ export default function Profile() {
             </div>
           )}
 
-          {/* About Atlas */}
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                 <AtlasMark size={15} />
               </div>
               <div>
-                <p className="text-sm font-medium">Atlas</p>
-                <p className="text-xs text-muted-foreground">OCS Operations Platform v1.0</p>
+                <p className="text-sm font-medium">ATLAS</p>
+                <p className="text-xs text-muted-foreground">SAF Management Platform v1.0</p>
               </div>
             </div>
           </div>

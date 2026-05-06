@@ -13,62 +13,76 @@ import {
 import { AlertTriangle, ChevronRight, Lock, User, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+// Inline ATLAS logo — compass A with circuit nodes
+function AtlasLogo({ size = 56 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Outer compass ring */}
+      <circle cx="50" cy="45" r="36" stroke="#1d4ed8" strokeWidth="3.5" strokeDasharray="5 3" opacity="0.5" />
+      {/* Inner ring */}
+      <circle cx="50" cy="45" r="28" stroke="#2563eb" strokeWidth="1.5" opacity="0.3" />
+      {/* A shape — navy */}
+      <path d="M50 12 L72 72 H28 Z" fill="#0f172a" stroke="#1e3a8a" strokeWidth="1" />
+      {/* Blue inner arrow/upward chevron */}
+      <path d="M50 28 L58 52 H42 Z" fill="#2563eb" />
+      {/* Olive downward triangle */}
+      <path d="M50 66 L56 58 H44 Z" fill="#4d5e2e" />
+      {/* Compass directional triangles */}
+      <polygon points="50,7 47,13 53,13" fill="#64748b" />
+      <polygon points="14,45 20,42 20,48" fill="#2563eb" />
+      <polygon points="86,45 80,42 80,48" fill="#2563eb" />
+      {/* Circuit nodes */}
+      <circle cx="34" cy="38" r="2.5" fill="none" stroke="#3b82f6" strokeWidth="1.5" opacity="0.6" />
+      <line x1="34" y1="38" x2="40" y2="38" stroke="#3b82f6" strokeWidth="1" opacity="0.4" />
+      <circle cx="66" cy="38" r="2.5" fill="none" stroke="#3b82f6" strokeWidth="1.5" opacity="0.6" />
+      <line x1="66" y1="38" x2="60" y2="38" stroke="#3b82f6" strokeWidth="1" opacity="0.4" />
+      <circle cx="50" cy="74" r="2" fill="none" stroke="#3b82f6" strokeWidth="1.5" opacity="0.5" />
+    </svg>
+  );
+}
+
 const ROLE_OPTIONS = [
-  {
-    value: 'cadet',
-    icon: User,
-    label: 'Cadet',
-    description: 'Submit reports, SFT, movements',
-  },
-  {
-    value: 'instructor',
-    icon: Shield,
-    label: 'Instructor',
-    description: 'Full access — requires auth code',
-  },
+  { value: 'cadet',      icon: User,   label: 'Cadet',      description: 'Submit reports, SFT, movements' },
+  { value: 'instructor', icon: Shield, label: 'Instructor', description: 'Full access — requires auth code' },
 ];
 
 export default function Setup() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
-    unit: '', rank: '', role: 'cadet', phone_number: '', admin_pin: '',
-    unit_pin: '', platoon: '', section: ''
+    full_name: '', unit: '', rank: '', role: 'cadet', phone_number: '',
+    admin_pin: '', unit_pin: '', platoon: '', section: ''
   });
   const [pinError, setPinError] = useState('');
   const [unitPinError, setUnitPinError] = useState('');
   const [saving, setSaving] = useState(false);
 
   const isCadet = form.role === 'cadet';
+  const isStandardUnit = form.unit && !UNIT_GROUPS[form.unit];
   const groupOptions = form.unit ? getGroupOptions(form.unit) : [];
-  const sectionOptions = form.unit ? getSectionOptions(form.unit) : [];
+  const sectionOptions = form.unit ? getSectionOptions(form.unit) : null;
   const groupLabel = getGroupLabel(form.unit);
-  const hasGroups = groupOptions.length > 0;
-  const hasSections = !!sectionOptions;
 
   const rankOptions = isCadet ? CADET_RANKS : INSTRUCTOR_RANKS;
 
   const handleUnitChange = (v) => setForm({ ...form, unit: v, platoon: '', section: '', unit_pin: '' });
 
   const handleSubmit = async () => {
-    if (!form.unit || !form.rank) return;
+    if (!form.unit || !form.rank || !form.full_name.trim()) return;
 
-    // Validate unit PIN for everyone
     if (form.unit_pin !== UNIT_PINS[form.unit]) {
       setUnitPinError('Invalid unit PIN.');
       return;
     }
-
-    if (form.role === 'instructor') {
-      if (form.admin_pin !== ADMIN_PIN) {
-        setPinError('Invalid authorisation code.');
-        return;
-      }
+    if (form.role === 'instructor' && form.admin_pin !== ADMIN_PIN) {
+      setPinError('Invalid authorisation code.');
+      return;
     }
 
     setSaving(true);
     const isInstr = form.role === 'instructor';
     await base44.auth.updateMe({
+      full_name: form.full_name.trim(),
       unit: form.unit,
       rank: form.rank,
       role: form.role,
@@ -82,9 +96,9 @@ export default function Setup() {
     window.location.reload();
   };
 
-  const canProceedStep1 = form.unit && form.rank &&
-    (!isCadet || !hasGroups || form.platoon) &&
-    (!isCadet || !hasSections || !hasGroups || form.section);
+  // Step 1 can proceed when name + unit + rank + (if cadet standard unit) platoon filled
+  const canProceedStep1 = form.full_name.trim().length > 1 && form.unit && form.rank &&
+    (!isCadet || !isStandardUnit || form.platoon);
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-5">
@@ -92,11 +106,11 @@ export default function Setup() {
 
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary mb-4">
-            <span className="text-white font-bold text-xl tracking-tight">A</span>
+          <div className="inline-flex items-center justify-center mb-3">
+            <AtlasLogo size={64} />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Anchor</h1>
-          <p className="text-sm text-muted-foreground mt-1">OCS Operations Platform</p>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">ATLAS</h1>
+          <p className="text-sm text-muted-foreground mt-1">SAF Management Platform</p>
         </div>
 
         {/* Step bar */}
@@ -110,6 +124,18 @@ export default function Setup() {
             <div className="mb-1">
               <h2 className="text-lg font-semibold text-foreground">Your Profile</h2>
               <p className="text-sm text-muted-foreground mt-0.5">Set up your account details.</p>
+            </div>
+
+            {/* Full name — collected first */}
+            <div className="space-y-1.5">
+              <Label className="text-sm text-muted-foreground uppercase tracking-wide">Full Name</Label>
+              <Input
+                placeholder="e.g. John Tan Wei Ming"
+                value={form.full_name}
+                onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                className="h-11 bg-card border-border"
+              />
+              <p className="text-[10px] text-muted-foreground">This will be your display name across the platform.</p>
             </div>
 
             <div className="space-y-1.5">
@@ -147,8 +173,8 @@ export default function Setup() {
               </MobileSelect>
             </div>
 
-            {/* Platoon/Group — only for cadets */}
-            {isCadet && form.unit && hasGroups && (
+            {/* Unit-specific groups (Air/DIS/Mids) — single select, no section */}
+            {isCadet && form.unit && UNIT_GROUPS[form.unit] && (
               <div className="space-y-1.5">
                 <Label className="text-sm text-muted-foreground uppercase tracking-wide">{groupLabel}</Label>
                 <MobileSelect value={form.platoon} onValueChange={(v) => setForm({ ...form, platoon: v, section: '' })} placeholder={`Select ${groupLabel}`} className="h-11 bg-card border-border text-sm">
@@ -157,21 +183,23 @@ export default function Setup() {
               </div>
             )}
 
-            {/* Standard units: platoon + section */}
-            {isCadet && form.unit && !UNIT_GROUPS[form.unit] && (
+            {/* Standard army units — platoon + section */}
+            {isCadet && isStandardUnit && (
               <>
                 <div className="space-y-1.5">
                   <Label className="text-sm text-muted-foreground uppercase tracking-wide">Platoon</Label>
-                  <MobileSelect value={form.platoon} onValueChange={(v) => setForm({ ...form, platoon: v })} placeholder="Select platoon" className="h-11 bg-card border-border text-sm">
+                  <MobileSelect value={form.platoon} onValueChange={(v) => setForm({ ...form, platoon: v, section: '' })} placeholder="Select platoon" className="h-11 bg-card border-border text-sm">
                     {[1,2,3,4].map(p => <MobileSelectItem key={p} value={`Platoon ${p}`}>Platoon {p}</MobileSelectItem>)}
                   </MobileSelect>
                 </div>
-                <div className="space-y-1.5">
-                  <Label className="text-sm text-muted-foreground uppercase tracking-wide">Section</Label>
-                  <MobileSelect value={form.section} onValueChange={(v) => setForm({ ...form, section: v })} placeholder="Select section" className="h-11 bg-card border-border text-sm">
-                    {[1,2,3,4].map(s => <MobileSelectItem key={s} value={`Section ${s}`}>Section {s}</MobileSelectItem>)}
-                  </MobileSelect>
-                </div>
+                {form.platoon && (
+                  <div className="space-y-1.5">
+                    <Label className="text-sm text-muted-foreground uppercase tracking-wide">Section</Label>
+                    <MobileSelect value={form.section} onValueChange={(v) => setForm({ ...form, section: v })} placeholder="Select section" className="h-11 bg-card border-border text-sm">
+                      {[1,2,3,4].map(s => <MobileSelectItem key={s} value={`Section ${s}`}>Section {s}</MobileSelectItem>)}
+                    </MobileSelect>
+                  </div>
+                )}
               </>
             )}
 
@@ -196,14 +224,18 @@ export default function Setup() {
         {step === 2 && (
           <div className="space-y-5">
             <div className="mb-1">
-              <h2 className="text-lg font-semibold text-foreground">Confirm Role</h2>
+              <h2 className="text-lg font-semibold text-foreground">Confirm Identity</h2>
               <p className="text-sm text-muted-foreground mt-0.5">
-                {form.role === 'instructor' ? 'Enter your authorisation code.' : 'Review and confirm.'}
+                {form.role === 'instructor' ? 'Enter your authorisation codes.' : 'Verify your unit to continue.'}
               </p>
             </div>
 
             {/* Summary */}
             <div className="bg-card border border-border rounded-xl p-4 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Name</span>
+                <span className="font-medium">{form.full_name}</span>
+              </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Unit</span>
                 <span className="font-medium">{form.unit}</span>
@@ -230,7 +262,7 @@ export default function Setup() {
               )}
             </div>
 
-            {/* Unit PIN — required for all users */}
+            {/* Unit PIN */}
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
                 <Lock className="h-3.5 w-3.5" /> Unit PIN
@@ -276,7 +308,7 @@ export default function Setup() {
                 Back
               </Button>
               <Button className="flex-1 h-11" onClick={handleSubmit} disabled={saving}>
-                {saving ? 'Setting up...' : 'Enter Anchor'}
+                {saving ? 'Setting up...' : 'Enter ATLAS'}
               </Button>
             </div>
           </div>

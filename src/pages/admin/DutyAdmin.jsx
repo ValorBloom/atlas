@@ -20,17 +20,22 @@ const DEFAULT_DUTY_TYPES = [
   { name: 'CDO',         weekday_pts: 0, weekend_pts: 0, color: 'blue'   },
   { name: 'CDS',         weekday_pts: 0, weekend_pts: 0, color: 'green'  },
   { name: 'Store Team',  weekday_pts: 0, weekend_pts: 0, color: 'violet' },
-  { name: 'Safety Duty', weekday_pts: 0, weekend_pts: 0, color: 'orange' },
 ];
 
-const COLOR_OPTIONS = ['blue','green','amber','red','violet','orange'];
+const COLOR_OPTIONS = ['blue','green','amber','red','violet','orange','cyan','pink','teal','indigo','rose','sky'];
 const COLOR_CLASSES = {
-  blue:   { bg: 'bg-primary/10',      text: 'text-primary',     border: 'border-primary/25'      },
-  green:  { bg: 'bg-green-500/10',    text: 'text-green-400',   border: 'border-green-500/25'    },
-  amber:  { bg: 'bg-amber-500/10',    text: 'text-amber-400',   border: 'border-amber-500/25'    },
-  red:    { bg: 'bg-destructive/10',  text: 'text-destructive', border: 'border-destructive/25'  },
-  violet: { bg: 'bg-violet-500/10',   text: 'text-violet-400',  border: 'border-violet-500/25'   },
-  orange: { bg: 'bg-orange-500/10',   text: 'text-orange-400',  border: 'border-orange-500/25'   },
+  blue:   { bg: 'bg-primary/10',      text: 'text-primary',       border: 'border-primary/25'        },
+  green:  { bg: 'bg-green-500/10',    text: 'text-green-400',     border: 'border-green-500/25'      },
+  amber:  { bg: 'bg-amber-500/10',    text: 'text-amber-400',     border: 'border-amber-500/25'      },
+  red:    { bg: 'bg-destructive/10',  text: 'text-destructive',   border: 'border-destructive/25'    },
+  violet: { bg: 'bg-violet-500/10',   text: 'text-violet-400',    border: 'border-violet-500/25'     },
+  orange: { bg: 'bg-orange-500/10',   text: 'text-orange-400',    border: 'border-orange-500/25'     },
+  cyan:   { bg: 'bg-cyan-500/10',     text: 'text-cyan-400',      border: 'border-cyan-500/25'       },
+  pink:   { bg: 'bg-pink-500/10',     text: 'text-pink-400',      border: 'border-pink-500/25'       },
+  teal:   { bg: 'bg-teal-500/10',     text: 'text-teal-400',      border: 'border-teal-500/25'       },
+  indigo: { bg: 'bg-indigo-500/10',   text: 'text-indigo-400',    border: 'border-indigo-500/25'     },
+  rose:   { bg: 'bg-rose-500/10',     text: 'text-rose-400',      border: 'border-rose-500/25'       },
+  sky:    { bg: 'bg-sky-500/10',      text: 'text-sky-400',       border: 'border-sky-500/25'        },
 };
 
 function DutyBadge({ type, color }) {
