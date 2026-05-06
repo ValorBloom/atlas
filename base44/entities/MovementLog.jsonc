@@ -58,5 +58,76 @@
     "purpose",
     "leave_time",
     "unit"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "data.personnel_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "user_role": "instructor"
+          }
+        },
+        {
+          "user_condition": {
+            "user_role": "cadet_admin"
+          }
+        }
+      ],
+      "data.unit": "{{user.unit}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.personnel_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "user_role": "instructor"
+          }
+        },
+        {
+          "user_condition": {
+            "user_role": "cadet_admin"
+          }
+        }
+      ],
+      "data.unit": "{{user.unit}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "data.personnel_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "user_role": "instructor"
+          }
+        },
+        {
+          "user_condition": {
+            "user_role": "cadet_admin"
+          }
+        }
+      ],
+      "data.unit": "{{user.unit}}"
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "user_role": "instructor"
+          }
+        },
+        {
+          "user_condition": {
+            "user_role": "cadet_admin"
+          }
+        }
+      ],
+      "data.unit": "{{user.unit}}"
+    }
+  }
 }
