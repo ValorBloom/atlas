@@ -1,0 +1,35 @@
+{
+  "name": "DutyConfig",
+  "type": "object",
+  "properties": {
+    "unit": {
+      "type": "string",
+      "description": "Unit this config belongs to"
+    },
+    "duty_types": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "weekday_pts": {
+            "type": "number"
+          },
+          "weekend_pts": {
+            "type": "number"
+          },
+          "color": {
+            "type": "string",
+            "description": "CSS color key: blue|green|amber|red|violet|orange"
+          }
+        }
+      },
+      "description": "List of duty types with point values for this unit"
+    }
+  },
+  "required": [
+    "unit"
+  ]
+}

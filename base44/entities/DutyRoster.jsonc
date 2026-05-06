@@ -9,15 +9,7 @@
     },
     "duty_type": {
       "type": "string",
-      "enum": [
-        "CDO",
-        "CDS",
-        "CDG",
-        "Guard Duty",
-        "Store Team",
-        "Safety Duty"
-      ],
-      "description": "Type of duty"
+      "description": "Type of duty (from unit config)"
     },
     "personnel_name": {
       "type": "string"
@@ -37,14 +29,6 @@
     "is_weekend": {
       "type": "boolean",
       "default": false
-    },
-    "points_awarded": {
-      "type": "number",
-      "default": 0
-    },
-    "point_log_id": {
-      "type": "string",
-      "description": "Reference to the PointLog record for this duty"
     },
     "assigned_by": {
       "type": "string",
