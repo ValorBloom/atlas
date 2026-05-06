@@ -6,7 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MobileSelect, MobileSelectItem } from '@/components/ui/MobileSelect';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { RANKS, UNITS, isInstructor, isCadetAdmin, getGroupLabel, getGroupOptions, UNIT_PINS, ADMIN_PIN } from '@/lib/constants';
+import { RANKS, UNITS, isInstructor, isCadetAdmin, getGroupLabel, getGroupOptions } from '@/lib/constants';
+
+const ATLAS_LOGO_LIGHT = 'https://media.base44.com/images/public/69e4b33d62de074557854c0f/2885c3eb3_8b77309c-da5d-492a-af37-aa6aa8c79a0b-removebg-preview.png';
+const ATLAS_LOGO_DARK = 'https://media.base44.com/images/public/69e4b33d62de074557854c0f/299b68b6d_image-removebg-preview.png';
 import { LogOut, Trash2, Moon, Sun, ChevronRight, Bell, Shield, Upload, Star, KeyRound, Eye, EyeOff, Lock, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -75,13 +78,29 @@ export default function Profile() {
 
   const doSave = async () => {
     setSaving(true);
-    await base44.auth.updateMe({
+    const updates = {
       full_name: form.full_name,
       rank: form.rank,
       unit: form.unit,
-      phone_number: form.phone_number,
+      phone_number: form.phone_number || null,
       platoon: form.platoon || null,
+    };
+    const res = await base44.functions.invoke('updateProfile', {
+      updates,
+      unitPin: needsPin ? pinInput : undefined,
     });
+    if (res?.data?.error) {
+      // Show pin error inline if it's a PIN issue
+      if (res.data.error.toLowerCase().includes('pin') || res.data.error.toLowerCase().includes('auth')) {
+        setPinError(res.data.error);
+      } else {
+        toast.error(res.data.error);
+      }
+      setSaving(false);
+      return;
+    }
+    // Sync auth session cache
+    await base44.auth.updateMe(updates).catch(() => {});
     setSaving(false);
     setEditing(false);
     setShowPinGate(false);
@@ -90,12 +109,7 @@ export default function Profile() {
   };
 
   const handlePinConfirm = () => {
-    // If changing unit, need the new unit's PIN (or instructor auth code for instructors)
-    const expectedPin = instructor ? ADMIN_PIN : UNIT_PINS[form.unit];
-    if (pinInput !== expectedPin) {
-      setPinError(instructor ? 'Invalid instructor auth code.' : `Invalid PIN for ${form.unit} unit.`);
-      return;
-    }
+    // PIN validation is enforced server-side in updateProfile backend function
     doSave();
   };
 
@@ -122,6 +136,7 @@ export default function Profile() {
   const roleLabel = instructor ? 'Instructor' : cadetAdmin ? 'Cadet Admin' : 'Cadet';
   const groupLabel = getGroupLabel(user?.unit);
   const groupOptions = getGroupOptions(form.unit || user?.unit);
+  const logoUrl = theme === 'dark' ? ATLAS_LOGO_DARK : ATLAS_LOGO_LIGHT;
 
   return (
     <div className="pb-24">
@@ -388,7 +403,7 @@ export default function Profile() {
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                <AtlasMark size={15} />
+                <img src={logoUrl} alt="ATLAS" width={22} height={22} style={{ objectFit: 'contain' }} />
               </div>
               <div>
                 <p className="text-sm font-medium">ATLAS</p>

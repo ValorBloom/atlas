@@ -16,14 +16,13 @@ export default function AppLayout() {
     base44.auth.me()
       .then((u) => {
         setUser(u);
-        // Redirect to setup if profile is incomplete
         if (!u?.unit && location.pathname !== '/setup') {
           navigate('/setup', { replace: true });
         }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [location.pathname]);
 
   if (loading) {
     return <LoadingScreen />;
@@ -35,10 +34,10 @@ export default function AppLayout() {
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={location.pathname}
-            initial={{ x: 24, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: -24, opacity: 0 }}
-            transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.12 }}
           >
             <Outlet context={{ user, setUser }} />
           </motion.div>

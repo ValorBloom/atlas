@@ -13,7 +13,7 @@ import {
 import { AlertTriangle, ChevronRight, Lock, User, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const ATLAS_LOGO_URL = 'https://media.base44.com/images/public/69e4b33d62de074557854c0f/35dd33095_8b77309c-da5d-492a-af37-aa6aa8c79a0b-removebg-preview.png';
+const ATLAS_LOGO_URL = 'https://media.base44.com/images/public/69e4b33d62de074557854c0f/299b68b6d_image-removebg-preview.png';
 
 function AtlasLogo({ size = 56 }) {
   return (

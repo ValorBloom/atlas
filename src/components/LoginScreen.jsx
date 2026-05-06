@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Lock } from 'lucide-react';
 
-const ATLAS_LOGO_URL = 'https://media.base44.com/images/public/69e4b33d62de074557854c0f/35dd33095_8b77309c-da5d-492a-af37-aa6aa8c79a0b-removebg-preview.png';
+// Dark/light mode logo variants
+const ATLAS_LOGO_DARK = 'https://media.base44.com/images/public/69e4b33d62de074557854c0f/299b68b6d_image-removebg-preview.png';
+const ATLAS_LOGO_URL = ATLAS_LOGO_DARK;
 
 function AtlasLogo({ size = 80, className = '' }) {
   return (
