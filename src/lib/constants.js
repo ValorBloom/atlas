@@ -1,4 +1,4 @@
-// Anchor App Constants
+// ATLAS App Constants
 
 export const ADMIN_PIN = "SAF2040";
 

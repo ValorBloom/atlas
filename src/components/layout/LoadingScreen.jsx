@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
+const ATLAS_LOGO_URL = 'https://media.base44.com/images/public/69e4b33d62de074557854c0f/e332096b4_generated_image.png';
+
 const tips = [
   "Fall in — loading your unit data",
   "Syncing movement logs",
@@ -79,9 +81,7 @@ export default function LoadingScreen() {
             background: 'linear-gradient(135deg, hsl(217,91%,20%) 0%, hsl(222,24%,12%) 100%)',
             boxShadow: '0 0 0 1px hsl(217,91%,55%,0.3), 0 20px 40px hsl(217,91%,55%,0.15)'
           }}>
-          <div className="text-primary">
-            <AtlasIcon size={38} />
-          </div>
+          <img src={ATLAS_LOGO_URL} alt="ATLAS" width={38} height={38} style={{ objectFit: 'contain' }} />
           {/* Corner accents */}
           <div className="absolute top-1.5 left-1.5 w-2 h-2 border-t-2 border-l-2 border-primary/60 rounded-tl" />
           <div className="absolute top-1.5 right-1.5 w-2 h-2 border-t-2 border-r-2 border-primary/60 rounded-tr" />
@@ -105,7 +105,7 @@ export default function LoadingScreen() {
           <div className="h-px w-8 bg-gradient-to-l from-transparent to-primary/40" />
         </div>
         <p className="text-[10px] tracking-[0.25em] uppercase" style={{ color: 'hsl(220,10%,45%)' }}>
-          OCS Operations Platform
+          SAF Management Platform
         </p>
       </div>
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Anchor, AlertTriangle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 
 const UserNotRegisteredError = () => {

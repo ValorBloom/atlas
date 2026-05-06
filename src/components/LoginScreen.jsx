@@ -1,39 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Lock } from 'lucide-react';
 
-// ATLAS logo — compass A with circuit board nodes
+const ATLAS_LOGO_URL = 'https://media.base44.com/images/public/69e4b33d62de074557854c0f/e332096b4_generated_image.png';
+
 function AtlasLogo({ size = 80, className = '' }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
-      {/* Outer compass ring — dashed */}
-      <circle cx="50" cy="46" r="40" stroke="#3b82f6" strokeWidth="2" strokeDasharray="4 3" opacity="0.5" />
-      {/* Inner ring */}
-      <circle cx="50" cy="46" r="31" stroke="#2563eb" strokeWidth="1" opacity="0.25" />
-      {/* A body — dark navy */}
-      <path d="M50 10 L76 80 H24 Z" fill="#0f172a" />
-      <path d="M50 10 L76 80 H24 Z" stroke="#1e3a8a" strokeWidth="1.5" />
-      {/* Crossbar of A */}
-      <line x1="34" y1="60" x2="66" y2="60" stroke="#1e3a8a" strokeWidth="2" />
-      {/* Blue inner upward arrow */}
-      <path d="M50 22 L60 58 H40 Z" fill="#2563eb" />
-      {/* Olive downward triangle bottom of A */}
-      <path d="M50 72 L57 62 H43 Z" fill="#4d5e2e" />
-      {/* Compass N/S/E/W points */}
-      <polygon points="50,4 47,11 53,11" fill="#64748b" />
-      <polygon points="50,89 47,82 53,82" fill="#64748b" opacity="0.4" />
-      <polygon points="10,46 17,43 17,49" fill="#2563eb" />
-      <polygon points="90,46 83,43 83,49" fill="#2563eb" />
-      {/* Circuit nodes — left */}
-      <circle cx="28" cy="40" r="2.5" fill="none" stroke="#3b82f6" strokeWidth="1.5" opacity="0.7" />
-      <line x1="28" y1="40" x2="35" y2="40" stroke="#3b82f6" strokeWidth="1" opacity="0.5" />
-      <circle cx="28" cy="40" r="1" fill="#3b82f6" opacity="0.5" />
-      {/* Circuit nodes — right */}
-      <circle cx="72" cy="40" r="2.5" fill="none" stroke="#3b82f6" strokeWidth="1.5" opacity="0.7" />
-      <line x1="72" y1="40" x2="65" y2="40" stroke="#3b82f6" strokeWidth="1" opacity="0.5" />
-      <circle cx="72" cy="40" r="1" fill="#3b82f6" opacity="0.5" />
-      {/* Bottom node */}
-      <circle cx="50" cy="85" r="2" fill="none" stroke="#3b82f6" strokeWidth="1.5" opacity="0.4" />
-    </svg>
+    <img
+      src={ATLAS_LOGO_URL}
+      alt="ATLAS"
+      width={size}
+      height={size}
+      className={className}
+      style={{ width: size, height: size, objectFit: 'contain' }}
+    />
   );
 }
 
@@ -112,7 +91,7 @@ export default function LoginScreen({ onLogin }) {
       {/* ── TOP BAR ── */}
       <div className="relative z-10 flex items-center justify-between px-6 pt-14">
         <div className="flex items-center gap-2">
-          <AtlasLogo size={16} className="opacity-70" />
+          <img src={ATLAS_LOGO_URL} alt="ATLAS" width={18} height={18} style={{ opacity: 0.7, objectFit: 'contain' }} />
           <span className="text-[10px] tracking-[0.35em] uppercase text-blue-400/60 font-semibold">ATLAS</span>
         </div>
         <div className="flex items-center gap-3">
@@ -232,8 +211,8 @@ export default function LoginScreen({ onLogin }) {
       </div>
 
       {/* Watermark */}
-      <div className="absolute bottom-0 right-0 opacity-[0.012] pointer-events-none translate-x-1/4 translate-y-1/4">
-        <AtlasLogo size={320} />
+      <div className="absolute bottom-0 right-0 opacity-[0.04] pointer-events-none translate-x-1/4 translate-y-1/4">
+        <img src={ATLAS_LOGO_URL} alt="" width={300} height={300} style={{ objectFit: 'contain' }} />
       </div>
     </div>
   );

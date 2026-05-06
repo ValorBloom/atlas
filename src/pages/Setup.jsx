@@ -13,31 +13,11 @@ import {
 import { AlertTriangle, ChevronRight, Lock, User, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// Inline ATLAS logo — compass A with circuit nodes
+const ATLAS_LOGO_URL = 'https://media.base44.com/images/public/69e4b33d62de074557854c0f/e332096b4_generated_image.png';
+
 function AtlasLogo({ size = 56 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* Outer compass ring */}
-      <circle cx="50" cy="45" r="36" stroke="#1d4ed8" strokeWidth="3.5" strokeDasharray="5 3" opacity="0.5" />
-      {/* Inner ring */}
-      <circle cx="50" cy="45" r="28" stroke="#2563eb" strokeWidth="1.5" opacity="0.3" />
-      {/* A shape — navy */}
-      <path d="M50 12 L72 72 H28 Z" fill="#0f172a" stroke="#1e3a8a" strokeWidth="1" />
-      {/* Blue inner arrow/upward chevron */}
-      <path d="M50 28 L58 52 H42 Z" fill="#2563eb" />
-      {/* Olive downward triangle */}
-      <path d="M50 66 L56 58 H44 Z" fill="#4d5e2e" />
-      {/* Compass directional triangles */}
-      <polygon points="50,7 47,13 53,13" fill="#64748b" />
-      <polygon points="14,45 20,42 20,48" fill="#2563eb" />
-      <polygon points="86,45 80,42 80,48" fill="#2563eb" />
-      {/* Circuit nodes */}
-      <circle cx="34" cy="38" r="2.5" fill="none" stroke="#3b82f6" strokeWidth="1.5" opacity="0.6" />
-      <line x1="34" y1="38" x2="40" y2="38" stroke="#3b82f6" strokeWidth="1" opacity="0.4" />
-      <circle cx="66" cy="38" r="2.5" fill="none" stroke="#3b82f6" strokeWidth="1.5" opacity="0.6" />
-      <line x1="66" y1="38" x2="60" y2="38" stroke="#3b82f6" strokeWidth="1" opacity="0.4" />
-      <circle cx="50" cy="74" r="2" fill="none" stroke="#3b82f6" strokeWidth="1.5" opacity="0.5" />
-    </svg>
+    <img src={ATLAS_LOGO_URL} alt="ATLAS" width={size} height={size} style={{ width: size, height: size, objectFit: 'contain' }} />
   );
 }
 
@@ -81,19 +61,21 @@ export default function Setup() {
 
     setSaving(true);
     const isInstr = form.role === 'instructor';
-    await base44.auth.updateMe({
-      full_name: form.full_name.trim(),
-      unit: form.unit,
-      rank: form.rank,
-      role: form.role,
-      is_admin: isInstr,
-      phone_number: form.phone_number,
-      platoon: isInstr ? null : (form.platoon || null),
-      section: isInstr ? null : (form.section || null),
-    });
-    setSaving(false);
-    navigate('/');
-    window.location.reload();
+    try {
+      await base44.auth.updateMe({
+        full_name: form.full_name.trim(),
+        unit: form.unit,
+        rank: form.rank,
+        role: form.role,
+        is_admin: isInstr,
+        phone_number: form.phone_number,
+        platoon: isInstr ? null : (form.platoon || null),
+        section: isInstr ? null : (form.section || null),
+      });
+      window.location.href = '/';
+    } catch (e) {
+      setSaving(false);
+    }
   };
 
   // Step 1 can proceed when name + unit + rank + (if cadet standard unit) platoon filled
