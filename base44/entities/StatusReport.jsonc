@@ -69,24 +69,11 @@
   ],
   "rls": {
     "create": {
-      "$or": [
-        {
-          "data.personnel_id": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "user_role": "instructor"
-          }
-        },
-        {
-          "user_condition": {
-            "user_role": "cadet_admin"
-          }
-        }
-      ],
-      "data.unit": "{{user.unit}}"
+      "data.personnel_id": "{{user.id}}",
+      "data.unit": "{{user.data.unit}}"
     },
     "read": {
+      "data.unit": "{{user.data.unit}}",
       "$or": [
         {
           "data.personnel_id": "{{user.id}}"
@@ -101,10 +88,10 @@
             "user_role": "cadet_admin"
           }
         }
-      ],
-      "data.unit": "{{user.unit}}"
+      ]
     },
     "update": {
+      "data.unit": "{{user.data.unit}}",
       "$or": [
         {
           "data.personnel_id": "{{user.id}}"
@@ -119,10 +106,10 @@
             "user_role": "cadet_admin"
           }
         }
-      ],
-      "data.unit": "{{user.unit}}"
+      ]
     },
     "delete": {
+      "data.unit": "{{user.data.unit}}",
       "$or": [
         {
           "user_condition": {
@@ -134,8 +121,7 @@
             "user_role": "cadet_admin"
           }
         }
-      ],
-      "data.unit": "{{user.unit}}"
+      ]
     }
   }
 }
