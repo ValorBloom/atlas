@@ -1,55 +1,44 @@
 import React, { useState, useMemo } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import PageHeader from '@/components/layout/PageHeader';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { isCadetAdmin, isInstructor } from '@/lib/constants';
-import { Plus, Trash2, ChevronLeft, ChevronRight, Users, BarChart2, Calendar } from 'lucide-react';
-import { toast } from 'sonner';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, parseISO, isWeekend } from 'date-fns';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import {
+  isCadetAdmin, isInstructor, DUTY_COLORS, DUTY_POINTS, getDutyPoints,
+  formatRankName
+} from '@/lib/constants';
+import {
+  CalendarDays, ChevronLeft, ChevronRight, Shield, Trophy, Star,
+  ClipboardList, Info
+} from 'lucide-react';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay,
+  addMonths, subMonths, isWeekend, parseISO } from 'date-fns';
+import { cn } from '@/lib/utils';
 
-const DUTY_TYPES = ['CDO', 'CDS', 'CDG', 'Guard Duty'];
-const DUTY_COLORS = {
-  CDO: { bg: 'bg-primary/10', text: 'text-primary', border: 'border-primary/25' },
-  CDS: { bg: 'bg-green-500/10', text: 'text-green-400', border: 'border-green-500/25' },
-  CDG: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/25' },
-  'Guard Duty': { bg: 'bg-destructive/10', text: 'text-destructive', border: 'border-destructive/25' },
-};
+function DutyBadge({ type }) {
+  const c = DUTY_COLORS[type] || DUTY_COLORS.CDO;
+  return (
+    <span className={cn('text-[10px] font-semibold px-1.5 py-0.5 rounded border', c.bg, c.text, c.border)}>
+      {type}
+    </span>
+  );
+}
 
 export default function Duty() {
   const { user } = useOutletContext();
-  const qc = useQueryClient();
   const canManage = isCadetAdmin(user) || isInstructor(user);
-
   const [viewMonth, setViewMonth] = useState(new Date());
-  const [selectedDay, setSelectedDay] = useState(null);
-  const [showAdd, setShowAdd] = useState(false);
-  const [tab, setTab] = useState('calendar'); // 'calendar' | 'stats'
-
-  // New duty form
-  const [dutyType, setDutyType] = useState('CDO');
-  const [personnelId, setPersonnelId] = useState('');
-  const [notes, setNotes] = useState('');
-  const [saving, setSaving] = useState(false);
+  const [selectedDay, setSelectedDay] = useState(new Date());
+  const [tab, setTab] = useState('roster'); // 'roster' | 'points' | 'info'
 
   const { data: duties = [] } = useQuery({
     queryKey: ['duties', user?.unit],
-    queryFn: () => base44.entities.DutyRoster.filter({ unit: user?.unit }, 'date', 100),
+    queryFn: () => base44.entities.DutyRoster.filter({ unit: user?.unit }, 'date', 200),
     enabled: !!user?.unit,
   });
-
-  const { data: unitUsers = [] } = useQuery({
-    queryKey: ['unit-users', user?.unit],
-    queryFn: () => base44.entities.User.filter({ unit: user?.unit }),
-    enabled: !!user?.unit,
-  });
-  const cadets = unitUsers.filter(u => u.role === 'cadet' || u.role === 'cadet_admin');
 
   const monthDays = useMemo(() => {
     const start = startOfMonth(viewMonth);
@@ -62,78 +51,62 @@ export default function Duty() {
 
   const selectedDayDuties = selectedDay ? dutiesForDay(selectedDay) : [];
 
-  // Stats
-  const stats = useMemo(() => {
+  // My duties
+  const myDuties = useMemo(() =>
+    duties.filter(d => d.personnel_id === user?.id)
+      .sort((a, b) => b.date.localeCompare(a.date)),
+    [duties, user?.id]
+  );
+
+  // Points summary per cadet (from duty records themselves)
+  const pointsSummary = useMemo(() => {
     const map = {};
-    cadets.forEach(c => {
-      map[c.id] = { name: c.full_name, rank: c.rank, weekday: 0, weekend: 0, total: 0, byType: {} };
-    });
     duties.forEach(d => {
-      if (!map[d.personnel_id]) {
-        map[d.personnel_id] = { name: d.personnel_name, rank: d.personnel_rank, weekday: 0, weekend: 0, total: 0, byType: {} };
-      }
-      const entry = map[d.personnel_id];
-      entry.total++;
-      entry.byType[d.duty_type] = (entry.byType[d.duty_type] || 0) + 1;
-      const parsed = parseISO(d.date);
-      if (isWeekend(parsed)) entry.weekend++;
-      else entry.weekday++;
+      const key = d.personnel_id || d.personnel_name;
+      if (!map[key]) map[key] = { name: d.personnel_name, rank: d.personnel_rank || '', pts: 0, count: 0 };
+      map[key].pts += (d.points_awarded || 0);
+      map[key].count++;
     });
-    return Object.entries(map)
-      .map(([id, v]) => ({ id, ...v }))
-      .sort((a, b) => b.total - a.total);
-  }, [duties, cadets]);
-
-  const handleAddDuty = async () => {
-    if (!selectedDay || !personnelId || !dutyType) return;
-    setSaving(true);
-    const selectedUser = unitUsers.find(u => u.id === personnelId);
-    await base44.entities.DutyRoster.create({
-      date: format(selectedDay, 'yyyy-MM-dd'),
-      duty_type: dutyType,
-      personnel_name: selectedUser?.full_name || '',
-      personnel_rank: selectedUser?.rank || '',
-      personnel_id: personnelId,
-      unit: user?.unit,
-      notes,
-      created_by: user?.email,
-    });
-    setSaving(false);
-    setPersonnelId('');
-    setNotes('');
-    setShowAdd(false);
-    qc.invalidateQueries({ queryKey: ['duties'] });
-    toast.success('Duty assigned');
-  };
-
-  const handleDelete = async (id) => {
-    await base44.entities.DutyRoster.delete(id);
-    qc.invalidateQueries({ queryKey: ['duties'] });
-    toast.success('Duty removed');
-  };
+    return Object.values(map).sort((a, b) => b.pts - a.pts);
+  }, [duties]);
 
   return (
     <div className="pb-24">
-      <PageHeader title="Duty Roster" backTo="/actions" subtitle="CDO / CDS / CDG / Guard" />
+      <PageHeader
+        title="Duty Roster"
+        subtitle={user?.unit}
+        backTo="/"
+        rightAction={
+          canManage && (
+            <Link to="/admin/duty">
+              <Button size="sm" className="h-8 text-xs gap-1.5">
+                <ClipboardList className="h-3.5 w-3.5" />
+                Manage
+              </Button>
+            </Link>
+          )
+        }
+      />
 
       {/* Tabs */}
-      <div className="px-4 pt-3 flex gap-1 bg-background sticky top-14 z-10 pb-2">
-        <button
-          onClick={() => setTab('calendar')}
-          className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${tab === 'calendar' ? 'bg-primary text-primary-foreground' : 'bg-muted/50 text-muted-foreground hover:bg-muted'}`}
-        >
-          <Calendar className="h-3.5 w-3.5 inline mr-1.5" />Calendar
-        </button>
-        <button
-          onClick={() => setTab('stats')}
-          className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${tab === 'stats' ? 'bg-primary text-primary-foreground' : 'bg-muted/50 text-muted-foreground hover:bg-muted'}`}
-        >
-          <BarChart2 className="h-3.5 w-3.5 inline mr-1.5" />Statistics
-        </button>
+      <div className="flex border-b border-border mx-4 mt-1">
+        {['roster', 'points', 'info'].map(t => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={cn(
+              'flex-1 py-2.5 text-sm font-medium capitalize transition-colors',
+              tab === t ? 'text-primary border-b-2 border-primary' : 'text-muted-foreground'
+            )}
+          >
+            {t === 'roster' ? 'Roster' : t === 'points' ? 'Points' : 'How Points Work'}
+          </button>
+        ))}
       </div>
 
-      {tab === 'calendar' && (
-        <div className="px-4 space-y-4 pt-2">
+      {/* ── ROSTER TAB ── */}
+      {tab === 'roster' && (
+        <div className="px-4 pt-3 space-y-4">
           {/* Month Nav */}
           <div className="flex items-center justify-between">
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setViewMonth(subMonths(viewMonth, 1))}>
@@ -145,7 +118,7 @@ export default function Duty() {
             </Button>
           </div>
 
-          {/* Day-of-week headers */}
+          {/* Day headers */}
           <div className="grid grid-cols-7 gap-0.5">
             {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
               <div key={i} className="text-center text-[10px] font-semibold text-muted-foreground py-1">{d}</div>
@@ -154,152 +127,185 @@ export default function Duty() {
 
           {/* Calendar grid */}
           <div className="grid grid-cols-7 gap-0.5">
-            {/* Empty cells for first day offset */}
-            {Array.from({ length: monthDays[0].getDay() }).map((_, i) => (
-              <div key={`empty-${i}`} />
-            ))}
+            {Array.from({ length: monthDays[0].getDay() }).map((_, i) => <div key={`e-${i}`} />)}
             {monthDays.map(day => {
               const dayDuties = dutiesForDay(day);
-              const isSelected = selectedDay && isSameDay(day, selectedDay);
+              const isSelected = isSameDay(day, selectedDay);
               const isToday = isSameDay(day, new Date());
+              const hasMyDuty = dayDuties.some(d => d.personnel_id === user?.id);
               return (
                 <button
                   key={day.toString()}
-                  onClick={() => { setSelectedDay(day); setShowAdd(false); }}
-                  className={`relative aspect-square flex flex-col items-center justify-center rounded-lg text-xs font-medium transition-all ${
+                  onClick={() => setSelectedDay(day)}
+                  className={cn(
+                    'relative aspect-square flex flex-col items-center justify-center rounded-lg text-xs font-medium transition-all',
                     isSelected ? 'bg-primary text-primary-foreground' :
                     isToday ? 'bg-primary/15 text-primary' :
                     isWeekend(day) ? 'bg-muted/30 text-muted-foreground' :
                     'hover:bg-muted/40 text-foreground'
-                  }`}
+                  )}
                 >
                   <span>{format(day, 'd')}</span>
-                  {dayDuties.length > 0 && (
-                    <div className="flex gap-0.5 mt-0.5">
-                      {dayDuties.slice(0, 3).map((d, i) => (
-                        <div key={i} className={`w-1 h-1 rounded-full ${isSelected ? 'bg-primary-foreground/70' : 'bg-primary'}`} />
-                      ))}
-                    </div>
-                  )}
+                  <div className="flex gap-0.5 mt-0.5">
+                    {hasMyDuty && (
+                      <div className={cn('w-1.5 h-1.5 rounded-full', isSelected ? 'bg-amber-300' : 'bg-amber-400')} />
+                    )}
+                    {dayDuties.length > 0 && !hasMyDuty && (
+                      <div className={cn('w-1 h-1 rounded-full', isSelected ? 'bg-primary-foreground/60' : 'bg-primary/50')} />
+                    )}
+                  </div>
                 </button>
               );
             })}
           </div>
 
-          {/* Selected day detail */}
-          {selectedDay && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold">{format(selectedDay, 'EEEE, dd MMM yyyy')}</p>
-                {canManage && (
-                  <Button size="sm" className="h-8 text-xs gap-1" onClick={() => setShowAdd(!showAdd)}>
-                    <Plus className="h-3.5 w-3.5" /> Add Duty
-                  </Button>
-                )}
-              </div>
-
-              {/* Add form */}
-              {showAdd && canManage && (
-                <Card className="border-primary/20 bg-primary/5">
-                  <CardContent className="p-4 space-y-3">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Duty Type</Label>
-                        <Select value={dutyType} onValueChange={setDutyType}>
-                          <SelectTrigger className="h-8 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {DUTY_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Personnel</Label>
-                        <Select value={personnelId} onValueChange={setPersonnelId}>
-                          <SelectTrigger className="h-8 text-xs">
-                            <SelectValue placeholder="Select..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {unitUsers.map(u => (
-                              <SelectItem key={u.id} value={u.id}>{u.rank} {u.full_name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <Input placeholder="Notes (optional)" value={notes} onChange={e => setNotes(e.target.value)} className="h-8 text-xs" />
-                    <div className="flex gap-2">
-                      <Button size="sm" className="flex-1 h-8 text-xs" onClick={handleAddDuty} disabled={saving || !personnelId}>
-                        {saving ? 'Saving...' : 'Assign Duty'}
-                      </Button>
-                      <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => setShowAdd(false)}>Cancel</Button>
-                    </div>
-                  </CardContent>
-                </Card>
+          {/* Selected day */}
+          <div className="space-y-2">
+            <p className="text-sm font-semibold text-foreground">
+              {format(selectedDay, 'EEEE, dd MMM yyyy')}
+              {isWeekend(selectedDay) && (
+                <span className="ml-2 text-[10px] font-semibold text-amber-400 bg-amber-500/15 border border-amber-500/25 px-1.5 py-0.5 rounded-full">WEEKEND</span>
               )}
-
-              {selectedDayDuties.length === 0 ? (
-                <p className="text-xs text-muted-foreground py-3 text-center">No duties assigned for this day.</p>
-              ) : (
-                <div className="space-y-2">
-                  {selectedDayDuties.map(d => {
-                    const colors = DUTY_COLORS[d.duty_type] || DUTY_COLORS.CDO;
-                    return (
-                      <div key={d.id} className={`flex items-center gap-3 p-3 rounded-xl border ${colors.bg} ${colors.border}`}>
-                        <Badge className={`${colors.bg} ${colors.text} ${colors.border} text-[10px] shrink-0`}>{d.duty_type}</Badge>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground">{d.personnel_rank} {d.personnel_name}</p>
-                          {d.notes && <p className="text-xs text-muted-foreground">{d.notes}</p>}
-                        </div>
-                        {canManage && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0" onClick={() => handleDelete(d.id)}>
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        )}
+            </p>
+            {selectedDayDuties.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-6 text-center">No duties assigned for this day.</p>
+            ) : (
+              selectedDayDuties.map(d => {
+                const c = DUTY_COLORS[d.duty_type] || DUTY_COLORS.CDO;
+                const isMe = d.personnel_id === user?.id;
+                return (
+                  <div key={d.id} className={cn(
+                    'flex items-center gap-3 p-3 rounded-xl border',
+                    c.bg, c.border,
+                    isMe && 'ring-1 ring-primary/40'
+                  )}>
+                    <DutyBadge type={d.duty_type} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground">
+                        {formatRankName(d.personnel_rank, d.personnel_name)}
+                        {isMe && <span className="ml-1.5 text-[9px] text-primary font-bold uppercase tracking-wider">You</span>}
+                      </p>
+                      {d.notes && <p className="text-xs text-muted-foreground">{d.notes}</p>}
+                    </div>
+                    {d.points_awarded > 0 && (
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Trophy className="h-3 w-3 text-amber-400" />
+                        <span className="text-xs font-semibold text-amber-400">+{d.points_awarded}</span>
                       </div>
-                    );
-                  })}
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* My upcoming duties */}
+          {myDuties.length > 0 && (
+            <div className="space-y-2 pt-2 border-t border-border">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">My Duties</p>
+              {myDuties.slice(0, 5).map(d => (
+                <div key={d.id} className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card">
+                  <DutyBadge type={d.duty_type} />
+                  <div className="flex-1">
+                    <p className="text-xs text-muted-foreground">{d.date}</p>
+                    {d.is_weekend && <span className="text-[9px] text-amber-400">Weekend</span>}
+                  </div>
+                  {d.points_awarded > 0 && (
+                    <span className="text-xs font-semibold text-amber-400">+{d.points_awarded} pts</span>
+                  )}
                 </div>
-              )}
+              ))}
             </div>
           )}
         </div>
       )}
 
-      {tab === 'stats' && (
-        <div className="px-4 pt-2 space-y-3">
-          <p className="text-xs text-muted-foreground">Duty counts per cadet — for fair allocation</p>
-          {stats.filter(s => s.total > 0).length === 0 ? (
-            <p className="text-sm text-muted-foreground py-8 text-center">No duty data yet.</p>
+      {/* ── POINTS TAB ── */}
+      {tab === 'points' && (
+        <div className="px-4 pt-3 space-y-3">
+          <p className="text-xs text-muted-foreground">Duty points accumulated by all cadets in {user?.unit} unit.</p>
+          {pointsSummary.length === 0 ? (
+            <div className="text-center py-12">
+              <Trophy className="h-8 w-8 text-muted-foreground/30 mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground">No duty points recorded yet.</p>
+            </div>
           ) : (
-            stats.filter(s => s.total > 0).map(s => (
-              <Card key={s.id} className="border-border">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">{s.rank} {s.name}</p>
-                      <div className="flex gap-3 mt-1.5">
-                        <span className="text-xs text-muted-foreground">Weekday: <span className="text-foreground font-medium">{s.weekday}</span></span>
-                        <span className="text-xs text-muted-foreground">Weekend: <span className="text-amber-400 font-medium">{s.weekend}</span></span>
-                        <span className="text-xs text-muted-foreground">Total: <span className="text-primary font-semibold">{s.total}</span></span>
-                      </div>
-                    </div>
+            pointsSummary.map((entry, i) => (
+              <Card key={i} className={cn(entry.name === user?.full_name && 'border-primary/30 bg-primary/5')}>
+                <CardContent className="p-3 flex items-center gap-3">
+                  <div className={cn(
+                    'w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold',
+                    i === 0 ? 'bg-amber-500/20 text-amber-400' :
+                    i === 1 ? 'bg-slate-500/20 text-slate-400' :
+                    i === 2 ? 'bg-orange-700/20 text-orange-600' :
+                    'bg-muted text-muted-foreground'
+                  )}>
+                    {i + 1}
                   </div>
-                  <div className="flex flex-wrap gap-1.5 mt-2.5">
-                    {Object.entries(s.byType).map(([type, count]) => {
-                      const colors = DUTY_COLORS[type] || DUTY_COLORS.CDO;
-                      return (
-                        <span key={type} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${colors.bg} ${colors.text} ${colors.border}`}>
-                          {type}: {count}
-                        </span>
-                      );
-                    })}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate">
+                      {formatRankName(entry.rank, entry.name)}
+                      {entry.name === user?.full_name && (
+                        <span className="ml-1.5 text-[9px] text-primary font-bold">You</span>
+                      )}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{entry.count} duties</p>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Trophy className="h-3.5 w-3.5 text-amber-400" />
+                    <span className="text-sm font-bold text-amber-400">{entry.pts}</span>
                   </div>
                 </CardContent>
               </Card>
             ))
           )}
+        </div>
+      )}
+
+      {/* ── INFO TAB ── */}
+      {tab === 'info' && (
+        <div className="px-4 pt-3 space-y-4">
+          <div className="p-3.5 rounded-xl border border-border bg-card">
+            <p className="text-sm font-semibold mb-3 flex items-center gap-2">
+              <Info className="h-4 w-4 text-primary" />
+              How Duty Points Are Calculated
+            </p>
+            <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+              Points are awarded automatically when an admin assigns you to a duty. The points depend on the duty type and whether it falls on a weekday or weekend.
+            </p>
+            <div className="space-y-2">
+              {Object.entries(DUTY_POINTS).map(([type, pts]) => {
+                const c = DUTY_COLORS[type] || DUTY_COLORS.CDO;
+                return (
+                  <div key={type} className={cn('flex items-center gap-3 p-2.5 rounded-lg border', c.bg, c.border)}>
+                    <DutyBadge type={type} />
+                    <div className="flex-1 text-xs text-muted-foreground">
+                      Weekday: <span className={cn('font-semibold', c.text)}>+{pts.weekday} pts</span>
+                      <span className="mx-2">·</span>
+                      Weekend: <span className="font-semibold text-amber-400">+{pts.weekend} pts</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-xl border border-border bg-card space-y-2">
+            <p className="text-sm font-semibold">Rules</p>
+            <ul className="space-y-1.5 text-xs text-muted-foreground">
+              <li className="flex items-start gap-2"><Star className="h-3 w-3 text-primary mt-0.5 shrink-0" />No duplicate points for same cadet, duty type, and date.</li>
+              <li className="flex items-start gap-2"><Star className="h-3 w-3 text-primary mt-0.5 shrink-0" />If a duty assignment is changed, the points update automatically.</li>
+              <li className="flex items-start gap-2"><Star className="h-3 w-3 text-primary mt-0.5 shrink-0" />If a duty is removed, the associated points are voided.</li>
+              <li className="flex items-start gap-2"><Star className="h-3 w-3 text-primary mt-0.5 shrink-0" />Duty points count toward the main leaderboard alongside other points.</li>
+            </ul>
+          </div>
+
+          <div className="p-3.5 rounded-xl border border-amber-500/25 bg-amber-500/8">
+            <p className="text-xs font-semibold text-amber-300 mb-1">Weekend Bonus</p>
+            <p className="text-xs text-amber-400/80 leading-relaxed">
+              Duties on Saturday or Sunday earn higher points to recognise the impact on personal time.
+            </p>
+          </div>
         </div>
       )}
     </div>

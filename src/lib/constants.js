@@ -109,6 +109,39 @@ export const POINT_REASONS = [
 
 export const STATUS_TYPES = ["RSO", "MA", "RSI"];
 
+// Duty types per unit
+export const getDutyTypes = (unit) => {
+  const base = unit === 'DIS'
+    ? ['CDG', 'Guard Duty', 'Store Team', 'Safety Duty']
+    : ['CDO', 'CDS', 'Guard Duty', 'Store Team', 'Safety Duty'];
+  return base;
+};
+
+// Points hierarchy for duties
+export const DUTY_POINTS = {
+  'Guard Duty':   { weekday: 12, weekend: 15 },
+  'CDO':          { weekday: 6,  weekend: 9  },
+  'CDS':          { weekday: 6,  weekend: 9  },
+  'CDG':          { weekday: 6,  weekend: 9  },
+  'Store Team':   { weekday: 3,  weekend: 4  },
+  'Safety Duty':  { weekday: 3,  weekend: 4  },
+};
+
+export const getDutyPoints = (dutyType, isWeekendDay) => {
+  const config = DUTY_POINTS[dutyType];
+  if (!config) return 0;
+  return isWeekendDay ? config.weekend : config.weekday;
+};
+
+export const DUTY_COLORS = {
+  CDO:           { bg: 'bg-primary/10',        text: 'text-primary',      border: 'border-primary/25'      },
+  CDS:           { bg: 'bg-green-500/10',       text: 'text-green-400',    border: 'border-green-500/25'    },
+  CDG:           { bg: 'bg-amber-500/10',       text: 'text-amber-400',    border: 'border-amber-500/25'    },
+  'Guard Duty':  { bg: 'bg-destructive/10',     text: 'text-destructive',  border: 'border-destructive/25'  },
+  'Store Team':  { bg: 'bg-violet-500/10',      text: 'text-violet-400',   border: 'border-violet-500/25'   },
+  'Safety Duty': { bg: 'bg-orange-500/10',      text: 'text-orange-400',   border: 'border-orange-500/25'   },
+};
+
 export const NOTIFICATION_TYPES = {
   SUCCESS: "success",
   INFO: "info",

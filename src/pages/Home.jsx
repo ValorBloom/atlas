@@ -243,10 +243,11 @@ export default function Home() {
           </div>
 
           <div className="space-y-2">
-            <SectionLabel>Communications</SectionLabel>
+            <SectionLabel>Communications & Duties</SectionLabel>
             <div className="grid grid-cols-2 gap-2">
               <InstructorTile to="/admin/cet" icon={Calendar} label="Send CET" sub="Daily programme" accent="green" />
               <InstructorTile to="/admin/announcements" icon={Megaphone} label="Announcements" sub="Unit notices" accent="default" />
+              <InstructorTile to="/admin/duty" icon={CalendarDays} label="Duty Admin" sub="Assign & track duty" accent="blue" />
             </div>
           </div>
 
@@ -419,6 +420,7 @@ export default function Home() {
               <InstructorTile to="/admin/parade-state" icon={ClipboardList} label="Parade State" sub="Compile & send" accent="default" />
               <InstructorTile to="/admin/locations" icon={MapPin} label="Movement Log" sub="Track personnel" accent="default" />
               <InstructorTile to="/admin/announcements" icon={Megaphone} label="Announcements" sub="Unit notices" accent="default" />
+              <InstructorTile to="/admin/duty" icon={CalendarDays} label="Duty Admin" sub="Assign & track duty" accent="blue" />
             </div>
           </div>
         )}

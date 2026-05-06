@@ -41,6 +41,7 @@ import ImportUsers from './pages/admin/ImportUsers';
 import DataClear from './pages/admin/DataClear';
 import Announcements from './pages/admin/Announcements';
 import CET from './pages/admin/CET';
+import DutyAdmin from './pages/admin/DutyAdmin';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -94,6 +95,7 @@ const AuthenticatedApp = () => {
         <Route path="/admin/data-clear" element={<DataClear />} />
         <Route path="/admin/announcements" element={<Announcements />} />
         <Route path="/admin/cet" element={<CET />} />
+        <Route path="/admin/duty" element={<DutyAdmin />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

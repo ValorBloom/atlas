@@ -4,7 +4,8 @@
   "properties": {
     "date": {
       "type": "string",
-      "format": "date"
+      "format": "date",
+      "description": "Duty date YYYY-MM-DD"
     },
     "duty_type": {
       "type": "string",
@@ -12,7 +13,9 @@
         "CDO",
         "CDS",
         "CDG",
-        "Guard Duty"
+        "Guard Duty",
+        "Store Team",
+        "Safety Duty"
       ],
       "description": "Type of duty"
     },
@@ -31,8 +34,21 @@
     "notes": {
       "type": "string"
     },
-    "created_by": {
-      "type": "string"
+    "is_weekend": {
+      "type": "boolean",
+      "default": false
+    },
+    "points_awarded": {
+      "type": "number",
+      "default": 0
+    },
+    "point_log_id": {
+      "type": "string",
+      "description": "Reference to the PointLog record for this duty"
+    },
+    "assigned_by": {
+      "type": "string",
+      "description": "Email of admin who assigned the duty"
     }
   },
   "required": [
