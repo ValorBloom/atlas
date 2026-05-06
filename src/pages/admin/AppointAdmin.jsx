@@ -35,12 +35,12 @@ export default function AppointAdmin() {
     );
   }
 
-  const cadets = unitUsers.filter(u => u.role === 'cadet' || u.role === 'cadet_admin');
+  const cadets = unitUsers.filter(u => u.user_role === 'cadet' || u.user_role === 'cadet_admin');
 
   const handleAppoint = async (targetUser) => {
     setSaving(true);
-    const newRole = targetUser.role === 'cadet_admin' ? 'cadet' : 'cadet_admin';
-    await base44.entities.User.update(targetUser.id, { role: newRole });
+    const newRole = targetUser.user_role === 'cadet_admin' ? 'cadet' : 'cadet_admin';
+    await base44.entities.User.update(targetUser.id, { user_role: newRole });
     await base44.entities.AuditLog.create({
       action: `${newRole === 'cadet_admin' ? 'appointed' : 'removed'}_cadet_admin`,
       category: 'admin',
@@ -73,7 +73,7 @@ export default function AppointAdmin() {
         )}
 
         {cadets.map((u) => {
-          const isCurrentAdmin = u.role === 'cadet_admin';
+          const isCurrentAdmin = u.user_role === 'cadet_admin';
           const isConfirming = confirming === u.id;
           return (
             <Card key={u.id}>

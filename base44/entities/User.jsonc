@@ -2,7 +2,7 @@
   "name": "User",
   "type": "object",
   "properties": {
-    "role": {
+    "user_role": {
       "type": "string",
       "enum": [
         "cadet",
@@ -10,7 +10,7 @@
         "instructor"
       ],
       "default": "cadet",
-      "description": "User role"
+      "description": "ATLAS role (cadet / cadet_admin / instructor)"
     },
     "unit": {
       "type": "string",
@@ -30,7 +30,6 @@
     }
   },
   "required": [
-    "role",
     "unit",
     "rank"
   ]

@@ -107,7 +107,7 @@ export default function Dashboard() {
     );
   }
 
-  const cadets = allUsers.filter(u => u.role === 'cadet' || u.role === 'cadet_admin');
+  const cadets = allUsers.filter(u => u.user_role === 'cadet' || u.user_role === 'cadet_admin');
   const outNow = activeMovements.length;
   const cadetTotal = cadets.length;
   const cadetInCamp = Math.max(cadetTotal - outNow, 0);

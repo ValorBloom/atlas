@@ -177,11 +177,11 @@ export const getCurrentTimeSG = () => {
 // cadet = standard user
 
 export const isInstructor = (user) => {
-  return user?.role === 'instructor';
+  return user?.user_role === 'instructor';
 };
 
 export const isCadetAdmin = (user) => {
-  return user?.role === 'cadet_admin';
+  return user?.user_role === 'cadet_admin';
 };
 
 export const isAdmin = (user) => {

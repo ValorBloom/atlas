@@ -13,7 +13,7 @@ import {
 import { AlertTriangle, ChevronRight, Lock, User, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const ATLAS_LOGO_URL = 'https://media.base44.com/images/public/69e4b33d62de074557854c0f/e332096b4_generated_image.png';
+const ATLAS_LOGO_URL = 'https://media.base44.com/images/public/69e4b33d62de074557854c0f/35dd33095_8b77309c-da5d-492a-af37-aa6aa8c79a0b-removebg-preview.png';
 
 function AtlasLogo({ size = 56 }) {
   return (
@@ -66,11 +66,11 @@ export default function Setup() {
         full_name: form.full_name.trim(),
         unit: form.unit,
         rank: form.rank,
-        role: form.role,
-        is_admin: isInstr,
         phone_number: form.phone_number,
         platoon: isInstr ? null : (form.platoon || null),
         section: isInstr ? null : (form.section || null),
+        // Store role as custom field (not platform role — that requires platform admin)
+        user_role: form.role,
       });
       window.location.href = '/';
     } catch (e) {
