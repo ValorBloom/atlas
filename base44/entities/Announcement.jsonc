@@ -39,5 +39,42 @@
     "title",
     "content",
     "unit"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "user_role": "instructor"
+      },
+      "data.unit": "{{user.unit}}"
+    },
+    "read": {
+      "data.unit": "{{user.unit}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "user_role": "instructor"
+          }
+        }
+      ],
+      "data.unit": "{{user.unit}}"
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "user_role": "instructor"
+          }
+        }
+      ],
+      "data.unit": "{{user.unit}}"
+    }
+  }
 }
