@@ -44,10 +44,9 @@
     "performed_by"
   ],
   "rls": {
-    "create": {
-      "created_by": "{{user.email}}"
-    },
+    "create": {},
     "read": {
+      "data.unit": "{{user.data.unit}}",
       "$or": [
         {
           "user_condition": {
@@ -59,10 +58,13 @@
             "user_role": "cadet_admin"
           }
         }
-      ],
-      "data.unit": "{{user.unit}}"
+      ]
     },
-    "update": false,
-    "delete": false
+    "update": {
+      "_id": null
+    },
+    "delete": {
+      "_id": null
+    }
   }
 }
