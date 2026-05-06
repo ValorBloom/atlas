@@ -35,5 +35,70 @@
     "start_time",
     "end_time",
     "unit"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "user_role": "instructor"
+          }
+        },
+        {
+          "user_condition": {
+            "user_role": "cadet_admin"
+          }
+        }
+      ],
+      "data.unit": "{{user.unit}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.is_active": true,
+          "data.unit": "{{user.unit}}"
+        },
+        {
+          "user_condition": {
+            "user_role": "instructor"
+          }
+        },
+        {
+          "user_condition": {
+            "user_role": "cadet_admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "user_role": "instructor"
+          }
+        },
+        {
+          "user_condition": {
+            "user_role": "cadet_admin"
+          }
+        }
+      ],
+      "data.unit": "{{user.unit}}"
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "user_role": "instructor"
+          }
+        },
+        {
+          "user_condition": {
+            "user_role": "cadet_admin"
+          }
+        }
+      ],
+      "data.unit": "{{user.unit}}"
+    }
+  }
 }
