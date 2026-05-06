@@ -35,6 +35,7 @@
   ],
   "rls": {
     "create": {
+      "data.unit": "{{user.data.unit}}",
       "$or": [
         {
           "user_condition": {
@@ -46,10 +47,10 @@
             "user_role": "cadet_admin"
           }
         }
-      ],
-      "data.unit": "{{user.unit}}"
+      ]
     },
     "read": {
+      "data.unit": "{{user.data.unit}}",
       "$or": [
         {
           "data.user_id": "{{user.id}}"
@@ -64,38 +65,13 @@
             "user_role": "cadet_admin"
           }
         }
-      ],
-      "data.unit": "{{user.unit}}"
+      ]
     },
     "update": {
-      "$or": [
-        {
-          "user_condition": {
-            "user_role": "instructor"
-          }
-        },
-        {
-          "user_condition": {
-            "user_role": "cadet_admin"
-          }
-        }
-      ],
-      "data.unit": "{{user.unit}}"
+      "_id": null
     },
     "delete": {
-      "$or": [
-        {
-          "user_condition": {
-            "user_role": "instructor"
-          }
-        },
-        {
-          "user_condition": {
-            "user_role": "cadet_admin"
-          }
-        }
-      ],
-      "data.unit": "{{user.unit}}"
+      "_id": null
     }
   }
 }
