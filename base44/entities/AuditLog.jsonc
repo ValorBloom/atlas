@@ -42,5 +42,27 @@
     "action",
     "category",
     "performed_by"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "user_role": "instructor"
+          }
+        },
+        {
+          "user_condition": {
+            "user_role": "cadet_admin"
+          }
+        }
+      ],
+      "data.unit": "{{user.unit}}"
+    },
+    "update": false,
+    "delete": false
+  }
 }
