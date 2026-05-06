@@ -92,7 +92,10 @@ export default function DutyAdmin() {
     enabled: !!user?.unit,
   });
 
-  const eligiblePersonnel = unitUsers.filter(u => u.role === 'cadet' || u.role === 'cadet_admin');
+  const eligiblePersonnel = unitUsers.filter(u => {
+    const role = u.user_role || u.role;
+    return role !== 'instructor';
+  });
   const filteredPersonnel = useMemo(() =>
     eligiblePersonnel.filter(u =>
       !search ||

@@ -30,7 +30,7 @@ export default function Setup() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
-    full_name: '', unit: '', rank: '', role: 'cadet', phone_number: '',
+    full_name: '', unit: '', rank: '', role: 'cadet',
     admin_pin: '', unit_pin: '', platoon: '', section: ''
   });
   const [pinError, setPinError] = useState('');
@@ -66,10 +66,8 @@ export default function Setup() {
         full_name: form.full_name.trim(),
         unit: form.unit,
         rank: form.rank,
-        phone_number: form.phone_number,
         platoon: isInstr ? null : (form.platoon || null),
         section: isInstr ? null : (form.section || null),
-        // Store role as custom field (not platform role — that requires platform admin)
         user_role: form.role,
       });
       window.location.href = '/';
@@ -88,8 +86,8 @@ export default function Setup() {
 
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center mb-3">
-            <AtlasLogo size={64} />
+          <div className="inline-flex items-center justify-center mb-4">
+            <AtlasLogo size={96} />
           </div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">ATLAS</h1>
           <p className="text-sm text-muted-foreground mt-1">SAF Management Platform</p>
@@ -184,18 +182,6 @@ export default function Setup() {
                 )}
               </>
             )}
-
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-                Phone <span className="normal-case font-normal">(optional)</span>
-              </Label>
-              <Input
-                placeholder="e.g. 91234567"
-                value={form.phone_number}
-                onChange={(e) => setForm({ ...form, phone_number: e.target.value })}
-                className="h-11 bg-card border-border"
-              />
-            </div>
 
             <Button className="w-full h-11 mt-2" onClick={() => setStep(2)} disabled={!canProceedStep1}>
               Continue <ChevronRight className="h-4 w-4 ml-1" />

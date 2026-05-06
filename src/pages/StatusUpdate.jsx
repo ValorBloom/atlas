@@ -31,6 +31,8 @@ export default function StatusUpdate() {
   const [newStatus, setNewStatus] = useState('');
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
+  const [approvalDiagnosis, setApprovalDiagnosis] = useState('');
+  const [approvalEndDate, setApprovalEndDate] = useState('');
 
   // For cadets: own records. For admins/instructors: all pending/active
   const { data: myReports = [], isLoading } = useQuery({
@@ -117,11 +119,15 @@ export default function StatusUpdate() {
     if (!selected || !newStatus) return;
     setSaving(true);
 
-    await base44.entities.StatusReport.update(selected.id, {
+    const updateData = {
       status: newStatus,
       details: (selected.details || '') + `\n[${format(new Date(), 'dd MMM HH:mm')}] ${newStatus.toUpperCase()}${notes ? ': ' + notes : ''}`,
       ...(newStatus === 'approved' ? { approved_by: user?.email, approval_date: new Date().toISOString() } : {}),
-    });
+    };
+    if (approvalDiagnosis) updateData.diagnosis = approvalDiagnosis;
+    if (approvalEndDate) updateData.end_date = approvalEndDate;
+
+    await base44.entities.StatusReport.update(selected.id, updateData);
 
     // If approved, notify cadet to know & remind admin to update parade state
     if (newStatus === 'approved') {
@@ -169,6 +175,8 @@ export default function StatusUpdate() {
     setEndDate(r.end_date || '');
     setNewStatus('');
     setNotes('');
+    setApprovalDiagnosis('');
+    setApprovalEndDate('');
   };
 
   const pageTitle = instructor ? `${type} Approvals` : `Update ${type}`;
@@ -360,6 +368,22 @@ export default function StatusUpdate() {
                     <p className={`text-xs font-semibold uppercase tracking-wide ${newStatus === 'approved' ? 'text-green-400' : 'text-destructive'}`}>
                       {newStatus === 'approved' ? 'Approving' : 'Rejecting'} — {formatRankName(selected.personnel_rank, selected.personnel_name)}
                     </p>
+                    {newStatus === 'approved' && type === 'RSO' && (
+                      <>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Diagnosis <span className="text-muted-foreground">(optional)</span></Label>
+                          <Input
+                            placeholder="e.g. KNEE INFLAMMATION"
+                            value={approvalDiagnosis}
+                            onChange={(e) => setApprovalDiagnosis(e.target.value.toUpperCase())}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">End Date <span className="text-muted-foreground">(optional)</span></Label>
+                          <Input type="date" value={approvalEndDate} onChange={(e) => setApprovalEndDate(e.target.value)} />
+                        </div>
+                      </>
+                    )}
                     <div className="space-y-1.5">
                       <Label className="text-xs">Notes <span className="text-muted-foreground">(optional)</span></Label>
                       <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add any notes..." className="min-h-[60px]" />

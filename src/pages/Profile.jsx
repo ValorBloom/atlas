@@ -57,7 +57,6 @@ export default function Profile() {
         full_name: user.full_name || '',
         rank: user.rank || '',
         unit: user.unit || '',
-        phone_number: user.phone_number || '',
         platoon: user.platoon || '',
       });
     }
@@ -82,7 +81,6 @@ export default function Profile() {
       full_name: form.full_name,
       rank: form.rank,
       unit: form.unit,
-      phone_number: form.phone_number || null,
       platoon: form.platoon || null,
     };
     const res = await base44.functions.invoke('updateProfile', {
@@ -174,7 +172,7 @@ export default function Profile() {
                   <span className="text-[9px] tracking-[0.2em] uppercase text-primary/70 font-semibold">ATLAS ID</span>
                 </div>
                 <p className="text-base font-bold text-foreground leading-tight truncate">{fullName || 'Unknown'}</p>
-                <p className="text-sm text-muted-foreground truncate mt-0.5">{user?.email}</p>
+                <p className="text-sm text-muted-foreground truncate mt-0.5">{user?.rank || ''}{user?.rank ? ' · ' : ''}{user?.unit || user?.email}</p>
               </div>
             </div>
             <div className="border-t border-primary/15 mt-4 pt-3 grid grid-cols-3 gap-3">
@@ -188,7 +186,7 @@ export default function Profile() {
               </div>
               <div>
                 <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Role</p>
-                <p className="text-sm font-bold text-foreground mt-0.5">{roleLabel}</p>
+                <p className="text-sm font-bold text-foreground mt-0.5 truncate">{roleLabel}</p>
               </div>
             </div>
           </div>
@@ -267,20 +265,7 @@ export default function Profile() {
               )}
             </div>
 
-            {/* Phone */}
-            <div className="flex items-center justify-between px-4 py-3">
-              <span className="text-sm text-muted-foreground">Phone</span>
-              {editing ? (
-                <Input
-                  className="h-9 w-36 text-sm bg-background border-border"
-                  value={form.phone_number}
-                  onChange={(e) => setForm({ ...form, phone_number: e.target.value })}
-                  placeholder="e.g. 91234567"
-                />
-              ) : (
-                <span className="text-sm font-medium">{user?.phone_number || '—'}</span>
-              )}
-            </div>
+
           </div>
 
           {/* PIN Gate (inline, shown when unit changed and Save clicked) */}

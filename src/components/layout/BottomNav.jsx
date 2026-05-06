@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Home, Zap, Bell, User, Shield, LayoutDashboard } from 'lucide-react';
+import { Home, Zap, Bell, User, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Tab definitions — each tab remembers the last path visited within its section
@@ -52,14 +52,12 @@ export default function BottomNav({ isInstructor, isCadetAdmin }) {
   };
 
   const adminItem = isInstructor
-    ? { key: 'admin', icon: Shield, label: 'Instructor', default: '/admin' }
-    : isCadetAdmin
-    ? { key: 'admin', icon: LayoutDashboard, label: 'Admin', default: '/admin' }
+    ? { key: 'admin', icon: Shield, label: 'Command', default: '/admin' }
     : null;
 
   const items = [
     { key: 'home', icon: Home, label: 'Home', default: '/' },
-    { key: 'actions', icon: Zap, label: 'Ops', default: '/actions' },
+    { key: 'actions', icon: Zap, label: 'Actions', default: '/actions' },
     { key: 'notifications', icon: Bell, label: 'Alerts', default: '/notifications' },
     ...(adminItem ? [adminItem] : []),
     { key: 'profile', icon: User, label: 'Profile', default: '/profile' },

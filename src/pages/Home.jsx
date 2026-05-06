@@ -5,6 +5,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import usePullToRefresh from '@/hooks/usePullToRefresh';
 import PullToRefresh from '@/components/layout/PullToRefresh';
 import { isInstructor, isCadetAdmin, formatRankName } from '@/lib/constants';
+
+const ATLAS_LOGO_DARK = 'https://media.base44.com/images/public/69e4b33d62de074557854c0f/299b68b6d_image-removebg-preview.png';
 import {
   MapPin, Activity, FileText, Trophy, Bell,
   ClipboardList, ChevronRight, Megaphone,
@@ -37,18 +39,6 @@ const ACTION_ICON_STYLES = {
 
 function SectionLabel({ children }) {
   return <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest px-0.5">{children}</p>;
-}
-
-// Minimal Atlas mark
-function AtlasMark({ className = "text-primary/60" }) {
-  return (
-    <svg width="18" height="18" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
-      <ellipse cx="32" cy="32" rx="28" ry="20" stroke="currentColor" strokeWidth="3" />
-      <ellipse cx="32" cy="32" rx="12" ry="9" stroke="currentColor" strokeWidth="2.5" />
-      <rect x="4" y="27" width="12" height="10" rx="3" stroke="currentColor" strokeWidth="2.5" />
-      <rect x="48" y="27" width="12" height="10" rx="3" stroke="currentColor" strokeWidth="2.5" />
-    </svg>
-  );
 }
 
 // Compact action tile for instructors on home (2-col grid)
@@ -186,7 +176,7 @@ export default function Home() {
           <div className="relative flex items-start justify-between">
             <div>
               <div className="flex items-center gap-1.5 mb-1">
-                <AtlasMark />
+                <img src={ATLAS_LOGO_DARK} alt="ATLAS" width={20} height={20} style={{ objectFit: 'contain', opacity: 0.85 }} />
                 <span className="text-[9px] tracking-[0.2em] uppercase text-muted-foreground font-semibold">Atlas · {user?.unit}</span>
               </div>
               <p className="text-[11px] text-muted-foreground">{greeting()}</p>
@@ -278,7 +268,7 @@ export default function Home() {
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-1.5 mb-1">
-              <AtlasMark />
+              <img src={ATLAS_LOGO_DARK} alt="ATLAS" width={20} height={20} style={{ objectFit: 'contain', opacity: 0.85 }} />
               <span className="text-[9px] tracking-[0.2em] uppercase text-muted-foreground font-semibold">Atlas · {user?.unit}</span>
             </div>
             <p className="text-[11px] text-muted-foreground">{greeting()}</p>
