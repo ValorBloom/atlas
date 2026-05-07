@@ -12,6 +12,12 @@ export default function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const refreshUser = async () => {
+    const u = await base44.auth.me();
+    setUser(u);
+    return u;
+  };
+
   useEffect(() => {
     base44.auth.me()
       .then((u) => {
@@ -39,7 +45,7 @@ export default function AppLayout() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.12 }}
           >
-            <Outlet context={{ user, setUser }} />
+            <Outlet context={{ user, setUser, refreshUser }} />
           </motion.div>
         </AnimatePresence>
       </main>

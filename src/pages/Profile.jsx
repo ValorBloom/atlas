@@ -30,7 +30,7 @@ function AtlasMark({ size = 18 }) {
 }
 
 export default function Profile() {
-  const { user } = useOutletContext();
+  const { user, refreshUser } = useOutletContext();
   const instructor = isInstructor(user);
   const cadetAdmin = isCadetAdmin(user);
   const { theme, toggleTheme } = useTheme();
@@ -97,8 +97,9 @@ export default function Profile() {
       setSaving(false);
       return;
     }
-    // Sync auth session cache
+    // Sync auth session cache then refresh UI from DB
     await base44.auth.updateMe(updates).catch(() => {});
+    await refreshUser().catch(() => {});
     setSaving(false);
     setEditing(false);
     setShowPinGate(false);
@@ -197,10 +198,13 @@ export default function Profile() {
           <div className="flex items-center justify-between px-4 py-3 border-b border-border">
             <p className="text-sm font-semibold">Details</p>
             {!editing ? (
-              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => setEditing(true)}>Edit</Button>
+              <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => {
+                setForm({ full_name: user?.full_name || '', rank: user?.rank || '', unit: user?.unit || '', platoon: user?.platoon || '' });
+                setEditing(true);
+              }}>Edit</Button>
             ) : (
               <div className="flex gap-2">
-                <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => { setEditing(false); setShowPinGate(false); }}>Cancel</Button>
+                <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => { setEditing(false); setShowPinGate(false); setPinInput(''); setPinError(''); }}>Cancel</Button>
                 <Button size="sm" className="text-xs h-7" onClick={handleSaveClick} disabled={saving}>
                   {saving ? 'Saving…' : needsPin ? 'Save (PIN required)' : 'Save'}
                 </Button>
@@ -209,6 +213,12 @@ export default function Profile() {
           </div>
 
           <div className="divide-y divide-border">
+            {/* Email — read-only */}
+            <div className="flex items-center justify-between px-4 py-3">
+              <span className="text-sm text-muted-foreground">Email</span>
+              <span className="text-sm font-medium text-muted-foreground">{user?.email || '—'}</span>
+            </div>
+
             {/* Full Name */}
             <div className="flex items-center justify-between px-4 py-3">
               <span className="text-sm text-muted-foreground">Name</span>
