@@ -1,8 +1,8 @@
 /**
  * updateProfile — secure user profile update endpoint
  * Users can update their own profile fields.
- * Instructors can update any user in their unit.
- * Unit changes always require the unit PIN.
+ * Unit changes require the unit PIN.
+ * Instructors require the ADMIN_PIN to change units.
  */
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
@@ -21,8 +21,7 @@ const UNIT_PINS = {
 
 const ADMIN_PIN = "SAF2040";
 
-// Allowed user-editable fields (never allow user_role escalation via this endpoint for non-instructors)
-const ALLOWED_SELF_FIELDS = ['full_name', 'rank', 'unit', 'phone_number', 'platoon', 'section'];
+const ALLOWED_SELF_FIELDS = ['full_name', 'rank', 'unit', 'platoon', 'section'];
 const ALLOWED_INSTRUCTOR_FIELDS = [...ALLOWED_SELF_FIELDS, 'user_role'];
 
 function pick(obj, keys) {
@@ -43,23 +42,9 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const { targetUserId, updates, unitPin, instructorPin } = body;
+    const { updates, unitPin } = body;
 
     const isInstructor = user.user_role === 'instructor';
-    const isSelf = !targetUserId || targetUserId === user.id;
-
-    // Instructors editing others must be same unit
-    if (!isSelf) {
-      if (!isInstructor) {
-        return Response.json({ error: 'Forbidden' }, { status: 403 });
-      }
-      // Verify instructor PIN for editing others
-      if (instructorPin !== ADMIN_PIN) {
-        return Response.json({ error: 'Invalid instructor auth code' }, { status: 403 });
-      }
-    }
-
-    // Determine allowed fields
     const allowed = isInstructor ? ALLOWED_INSTRUCTOR_FIELDS : ALLOWED_SELF_FIELDS;
     const safeUpdates = pick(updates || {}, allowed);
 
@@ -67,27 +52,25 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'No valid fields to update' }, { status: 400 });
     }
 
-    // Unit change requires unit PIN validation
+    // Unit change check — only require PIN if unit is actually changing
     const newUnit = safeUpdates.unit;
-    if (newUnit) {
-      // Get current unit of the target user
-      let currentUnit = user.unit;
-      if (!isSelf) {
-        const targetUser = await base44.asServiceRole.entities.User.filter({ id: targetUserId });
-        currentUnit = targetUser?.[0]?.unit;
+    const currentUnit = user.unit;
+
+    if (newUnit && newUnit !== currentUnit) {
+      const expectedPin = isInstructor ? ADMIN_PIN : UNIT_PINS[newUnit];
+      if (!expectedPin) {
+        return Response.json({ error: `Unknown unit: ${newUnit}` }, { status: 400 });
       }
-      if (newUnit !== currentUnit) {
-        // Changing unit — require unit PIN
-        const expectedPin = isInstructor ? ADMIN_PIN : UNIT_PINS[newUnit];
-        if (!unitPin || unitPin !== expectedPin) {
-          return Response.json({ error: 'Invalid unit PIN' }, { status: 403 });
-        }
+      if (!unitPin) {
+        return Response.json({ error: `A unit PIN is required to transfer to ${newUnit}` }, { status: 403 });
+      }
+      if (unitPin !== expectedPin) {
+        return Response.json({ error: `Incorrect PIN for ${newUnit}. Please check with your unit admin.` }, { status: 403 });
       }
     }
 
     // Perform the update
-    const updateId = isSelf ? user.id : targetUserId;
-    await base44.asServiceRole.entities.User.update(updateId, safeUpdates);
+    await base44.asServiceRole.entities.User.update(user.id, safeUpdates);
 
     return Response.json({ success: true });
   } catch (error) {

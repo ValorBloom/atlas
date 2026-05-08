@@ -63,7 +63,7 @@ export default function Profile() {
   }, [user]);
 
   const unitChanged = form.unit !== (user?.unit || '');
-  const needsPin = unitChanged; // PIN required when changing unit
+  const needsPin = unitChanged;
 
   const handleSaveClick = () => {
     if (needsPin) {
@@ -77,27 +77,40 @@ export default function Profile() {
 
   const doSave = async () => {
     setSaving(true);
-    const updates = {
-      full_name: form.full_name,
-      rank: form.rank,
-      unit: form.unit,
-      platoon: form.platoon || null,
-    };
+    setPinError('');
+
+    // Only send fields that actually changed
+    const updates = {};
+    if (form.full_name !== (user?.full_name || '')) updates.full_name = form.full_name;
+    if (form.rank !== (user?.rank || '')) updates.rank = form.rank;
+    if (form.unit !== (user?.unit || '')) updates.unit = form.unit;
+    if (form.platoon !== (user?.platoon || '')) updates.platoon = form.platoon || null;
+
+    if (Object.keys(updates).length === 0) {
+      setSaving(false);
+      setEditing(false);
+      setShowPinGate(false);
+      return;
+    }
+
     const res = await base44.functions.invoke('updateProfile', {
       updates,
       unitPin: needsPin ? pinInput : undefined,
     });
+
     if (res?.data?.error) {
-      // Show pin error inline if it's a PIN issue
-      if (res.data.error.toLowerCase().includes('pin') || res.data.error.toLowerCase().includes('auth')) {
-        setPinError(res.data.error);
+      const msg = res.data.error;
+      // Show PIN errors inline in the PIN gate, others as toast
+      if (showPinGate || msg.toLowerCase().includes('pin') || msg.toLowerCase().includes('incorrect') || msg.toLowerCase().includes('transfer')) {
+        setPinError(msg);
       } else {
-        toast.error(res.data.error);
+        toast.error(msg);
       }
       setSaving(false);
       return;
     }
-    // Sync auth session cache then refresh UI from DB
+
+    // Sync session cache + refresh UI
     await base44.auth.updateMe(updates).catch(() => {});
     await refreshUser().catch(() => {});
     setSaving(false);
@@ -108,7 +121,6 @@ export default function Profile() {
   };
 
   const handlePinConfirm = () => {
-    // PIN validation is enforced server-side in updateProfile backend function
     doSave();
   };
 
