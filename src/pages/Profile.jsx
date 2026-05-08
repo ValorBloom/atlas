@@ -62,7 +62,7 @@ export default function Profile() {
     }
   }, [user]);
 
-  const unitChanged = form.unit !== (user?.unit || '');
+  const unitChanged = editing && form.unit !== (user?.unit || '');
   const needsPin = unitChanged;
 
   const handleSaveClick = () => {
@@ -79,19 +79,13 @@ export default function Profile() {
     setSaving(true);
     setPinError('');
 
-    // Only send fields that actually changed
-    const updates = {};
-    if (form.full_name !== (user?.full_name || '')) updates.full_name = form.full_name;
-    if (form.rank !== (user?.rank || '')) updates.rank = form.rank;
-    if (form.unit !== (user?.unit || '')) updates.unit = form.unit;
-    if (form.platoon !== (user?.platoon || '')) updates.platoon = form.platoon || null;
-
-    if (Object.keys(updates).length === 0) {
-      setSaving(false);
-      setEditing(false);
-      setShowPinGate(false);
-      return;
-    }
+    // Send all editable fields on every save
+    const updates = {
+      full_name: form.full_name,
+      rank: form.rank,
+      unit: form.unit,
+      platoon: form.platoon || null,
+    };
 
     const res = await base44.functions.invoke('updateProfile', {
       updates,
