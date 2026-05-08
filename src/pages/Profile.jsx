@@ -104,8 +104,11 @@ export default function Profile() {
       return;
     }
 
-    // Sync session cache + refresh UI
-    await base44.auth.updateMe(updates).catch(() => {});
+    // Sync session cache for non-name fields, then refresh from DB
+    const { full_name, ...nonAuthUpdates } = updates;
+    if (Object.keys(nonAuthUpdates).length > 0) {
+      await base44.auth.updateMe(nonAuthUpdates).catch(() => {});
+    }
     await refreshUser().catch(() => {});
     setSaving(false);
     setEditing(false);

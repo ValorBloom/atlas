@@ -13,7 +13,8 @@ export default function AppLayout() {
   const location = useLocation();
 
   const refreshUser = async () => {
-    const u = await base44.auth.me();
+    // Force fresh fetch by invalidating any cache
+    const u = await base44.auth.me({ forceRefresh: true }).catch(() => base44.auth.me());
     setUser(u);
     return u;
   };

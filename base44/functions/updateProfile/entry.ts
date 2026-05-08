@@ -69,8 +69,17 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Perform the update
-    await base44.asServiceRole.entities.User.update(user.id, safeUpdates);
+    // Update full_name via auth (the only reliable way for auth-controlled fields)
+    // Update other custom fields via entity
+    const { full_name, ...entityUpdates } = safeUpdates;
+
+    if (full_name !== undefined) {
+      await base44.auth.updateMe({ full_name });
+    }
+
+    if (Object.keys(entityUpdates).length > 0) {
+      await base44.asServiceRole.entities.User.update(user.id, entityUpdates);
+    }
 
     return Response.json({ success: true });
   } catch (error) {
