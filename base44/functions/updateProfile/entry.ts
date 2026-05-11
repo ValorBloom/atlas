@@ -21,7 +21,7 @@ const UNIT_PINS = {
 
 const ADMIN_PIN = "SAF2040";
 
-const ALLOWED_SELF_FIELDS = ['full_name', 'rank', 'unit', 'platoon', 'section'];
+const ALLOWED_SELF_FIELDS = ['rank', 'unit', 'platoon', 'section'];
 const ALLOWED_INSTRUCTOR_FIELDS = [...ALLOWED_SELF_FIELDS, 'user_role'];
 
 function pick(obj, keys) {
@@ -69,17 +69,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Update full_name via auth (the only reliable way for auth-controlled fields)
-    // Update other custom fields via entity
-    const { full_name, ...entityUpdates } = safeUpdates;
-
-    if (full_name !== undefined) {
-      await base44.auth.updateMe({ full_name });
-    }
-
-    if (Object.keys(entityUpdates).length > 0) {
-      await base44.asServiceRole.entities.User.update(user.id, entityUpdates);
-    }
+    // Update all fields via service role entity update
+    await base44.asServiceRole.entities.User.update(user.id, safeUpdates);
 
     return Response.json({ success: true });
   } catch (error) {

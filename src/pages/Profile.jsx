@@ -79,42 +79,45 @@ export default function Profile() {
     setSaving(true);
     setPinError('');
 
-    // Send all editable fields on every save
-    const updates = {
-      full_name: form.full_name,
-      rank: form.rank,
-      unit: form.unit,
-      platoon: form.platoon || null,
-    };
-
-    const res = await base44.functions.invoke('updateProfile', {
-      updates,
-      unitPin: needsPin ? pinInput : undefined,
-    });
-
-    if (res?.data?.error) {
-      const msg = res.data.error;
-      // Show PIN errors inline in the PIN gate, others as toast
-      if (showPinGate || msg.toLowerCase().includes('pin') || msg.toLowerCase().includes('incorrect') || msg.toLowerCase().includes('transfer')) {
-        setPinError(msg);
-      } else {
-        toast.error(msg);
+    try {
+      // Update full_name directly via auth (frontend SDK — the only reliable way)
+      if (form.full_name && form.full_name !== user?.full_name) {
+        await base44.auth.updateMe({ full_name: form.full_name });
       }
-      setSaving(false);
-      return;
-    }
 
-    // Sync session cache for non-name fields, then refresh from DB
-    const { full_name, ...nonAuthUpdates } = updates;
-    if (Object.keys(nonAuthUpdates).length > 0) {
-      await base44.auth.updateMe(nonAuthUpdates).catch(() => {});
+      // Update rank/unit/platoon via backend function
+      const entityUpdates = {
+        rank: form.rank,
+        unit: form.unit,
+        platoon: form.platoon || null,
+      };
+
+      const res = await base44.functions.invoke('updateProfile', {
+        updates: entityUpdates,
+        unitPin: needsPin ? pinInput : undefined,
+      });
+
+      if (res?.data?.error) {
+        const msg = res.data.error;
+        if (showPinGate || msg.toLowerCase().includes('pin') || msg.toLowerCase().includes('incorrect') || msg.toLowerCase().includes('transfer')) {
+          setPinError(msg);
+        } else {
+          toast.error(msg);
+        }
+        setSaving(false);
+        return;
+      }
+
+      await refreshUser().catch(() => {});
+      setSaving(false);
+      setEditing(false);
+      setShowPinGate(false);
+      setPinInput('');
+      toast.success('Profile updated');
+    } catch (err) {
+      toast.error('Failed to save profile. Please try again.');
+      setSaving(false);
     }
-    await refreshUser().catch(() => {});
-    setSaving(false);
-    setEditing(false);
-    setShowPinGate(false);
-    setPinInput('');
-    toast.success('Profile updated');
   };
 
   const handlePinConfirm = () => {
