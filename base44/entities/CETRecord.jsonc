@@ -52,49 +52,35 @@
   "rls": {
     "create": {
       "user_condition": {
-        "user_role": "instructor"
+        "role": "instructor"
       },
-      "data.unit": "{{user.unit}}"
+      "data.unit": "{{user.data.unit}}"
     },
     "read": {
       "$or": [
         {
-          "data.unit": "{{user.unit}}",
+          "data.unit": "{{user.data.unit}}",
           "data.is_published": true
         },
         {
           "user_condition": {
-            "user_role": "instructor"
+            "role": "instructor"
           },
-          "data.unit": "{{user.unit}}"
+          "data.unit": "{{user.data.unit}}"
         }
       ]
     },
     "update": {
-      "$or": [
-        {
-          "created_by": "{{user.email}}"
-        },
-        {
-          "user_condition": {
-            "user_role": "instructor"
-          }
-        }
-      ],
-      "data.unit": "{{user.unit}}"
+      "user_condition": {
+        "role": "instructor"
+      },
+      "data.unit": "{{user.data.unit}}"
     },
     "delete": {
-      "$or": [
-        {
-          "created_by": "{{user.email}}"
-        },
-        {
-          "user_condition": {
-            "user_role": "instructor"
-          }
-        }
-      ],
-      "data.unit": "{{user.unit}}"
+      "user_condition": {
+        "role": "instructor"
+      },
+      "data.unit": "{{user.data.unit}}"
     }
   }
 }
