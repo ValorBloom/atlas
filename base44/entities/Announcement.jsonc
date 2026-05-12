@@ -42,59 +42,25 @@
   ],
   "rls": {
     "create": {
+      "data.unit": "{{user.data.unit}}",
       "user_condition": {
-        "user_role": "instructor"
-      },
-      "data.unit": "{{user.unit}}"
+        "role": "instructor"
+      }
     },
     "read": {
-      "$or": [
-        {
-          "data.unit": "{{user.unit}}",
-          "$or": [
-            {
-              "data.target_role": "all"
-            },
-            {
-              "data.target_role": "{{user.user_role}}"
-            }
-          ]
-        },
-        {
-          "user_condition": {
-            "user_role": "instructor"
-          },
-          "data.unit": "{{user.unit}}"
-        }
-      ]
+      "data.unit": "{{user.data.unit}}"
     },
     "update": {
-      "$or": [
-        {
-          "created_by": "{{user.email}}",
-          "data.unit": "{{user.unit}}"
-        },
-        {
-          "user_condition": {
-            "user_role": "instructor"
-          },
-          "data.unit": "{{user.unit}}"
-        }
-      ]
+      "data.unit": "{{user.data.unit}}",
+      "user_condition": {
+        "role": "instructor"
+      }
     },
     "delete": {
-      "$or": [
-        {
-          "created_by": "{{user.email}}",
-          "data.unit": "{{user.unit}}"
-        },
-        {
-          "user_condition": {
-            "user_role": "instructor"
-          },
-          "data.unit": "{{user.unit}}"
-        }
-      ]
+      "data.unit": "{{user.data.unit}}",
+      "user_condition": {
+        "role": "instructor"
+      }
     }
   }
 }
