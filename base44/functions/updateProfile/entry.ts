@@ -21,7 +21,7 @@ const UNIT_PINS = {
 
 const ADMIN_PIN = "SAF2040";
 
-const ALLOWED_SELF_FIELDS = ['rank', 'unit', 'platoon', 'section'];
+const ALLOWED_SELF_FIELDS = ['full_name', 'rank', 'unit', 'platoon', 'section'];
 const ALLOWED_INSTRUCTOR_FIELDS = [...ALLOWED_SELF_FIELDS, 'user_role'];
 
 function pick(obj, keys) {

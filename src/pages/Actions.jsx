@@ -5,7 +5,7 @@ import PageHeader from '@/components/layout/PageHeader';
 import QuickAction from '@/components/home/QuickAction';
 import {
   MapPin, Activity, FileText, Dumbbell, ClipboardList,
-  Upload, Trophy, Megaphone, Trash2, Calendar, CheckSquare, Shield, CalendarDays, ChevronRight
+  Users, Megaphone, Trash2, Calendar, CheckSquare, Shield, CalendarDays
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -68,8 +68,7 @@ export default function Actions() {
             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">System</p>
             <div className="grid grid-cols-2 gap-2">
               <ActionTile to="/admin/appoint" icon={Shield} label="Appoint Admin" sub="Grant cadet access" accent="amber" />
-              <ActionTile to="/points" icon={Trophy} label="Points" sub="Leaderboard & logs" accent="default" />
-              <ActionTile to="/admin/import" icon={Upload} label="Import Users" sub="CSV bulk import" accent="default" />
+              <ActionTile to="/admin/nominal" icon={Users} label="Nominal Role" sub="View & edit all personnel" accent="default" />
               <ActionTile to="/admin/data-clear" icon={Trash2} label="Data Clear" sub="Controlled wipe" accent="red" />
             </div>
           </div>
@@ -91,7 +90,7 @@ export default function Actions() {
             <QuickAction to="/actions/status" icon={FileText} label="Status Report" description="RSO / MA / RSI reporting" />
             <QuickAction to="/actions/cet" icon={Calendar} label="View CET" description="Daily training programme" />
             <QuickAction to="/actions/duty" icon={CalendarDays} label="Duty Roster" description="CDO / CDS / CDG / Guard" />
-            <QuickAction to="/points" icon={Trophy} label="Points" description="View leaderboard & history" />
+
           </div>
         </div>
 

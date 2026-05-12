@@ -23,11 +23,6 @@ import SFTSubmission from './pages/SFTSubmission';
 import StatusMenu from './pages/StatusMenu';
 import StatusReport from './pages/StatusReport';
 import StatusUpdate from './pages/StatusUpdate';
-import Points from './pages/Points';
-import Leaderboard from './pages/Leaderboard';
-import PointLogs from './pages/PointLogs';
-import EditPoints from './pages/EditPoints';
-import DrawNames from './pages/DrawNames';
 import ViewCET from './pages/ViewCET';
 import Duty from './pages/Duty';
 
@@ -36,8 +31,8 @@ import Dashboard from './pages/admin/Dashboard';
 import LocationTracker from './pages/admin/LocationTracker';
 import AppointAdmin from './pages/admin/AppointAdmin';
 import PTAdmin from './pages/admin/PTAdmin';
-import ParadeState from './pages/admin/ParadeState';
-import ImportUsers from './pages/admin/ImportUsers';
+import ParadeState from './pages/admin/ParadeState.jsx';
+import NominalRole from './pages/admin/NominalRole';
 import DataClear from './pages/admin/DataClear';
 import Announcements from './pages/admin/Announcements';
 import CET from './pages/admin/CET';
@@ -79,11 +74,7 @@ const AuthenticatedApp = () => {
         <Route path="/actions/status/update/:type" element={<StatusUpdate />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/profile" element={<Profile />} />
-        <Route path="/points" element={<Points />} />
-        <Route path="/points/leaderboard" element={<Leaderboard />} />
-        <Route path="/points/logs" element={<PointLogs />} />
-        <Route path="/points/edit" element={<EditPoints />} />
-        <Route path="/points/draw" element={<DrawNames />} />
+
         <Route path="/actions/cet" element={<ViewCET />} />
         <Route path="/actions/duty" element={<Duty />} />
         <Route path="/admin" element={<Dashboard />} />
@@ -91,7 +82,7 @@ const AuthenticatedApp = () => {
         <Route path="/admin/appoint" element={<AppointAdmin />} />
         <Route path="/admin/pt" element={<PTAdmin />} />
         <Route path="/admin/parade-state" element={<ParadeState />} />
-        <Route path="/admin/import" element={<ImportUsers />} />
+        <Route path="/admin/nominal" element={<NominalRole />} />
         <Route path="/admin/data-clear" element={<DataClear />} />
         <Route path="/admin/announcements" element={<Announcements />} />
         <Route path="/admin/cet" element={<CET />} />

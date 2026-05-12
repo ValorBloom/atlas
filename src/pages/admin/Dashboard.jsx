@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { isInstructor, isCadetAdmin } from '@/lib/constants';
 import {
   Users, Shield, Activity, MapPin, FileText,
-  ClipboardList, Trophy, Upload, Trash2, Megaphone, ChevronRight, Calendar, UserX, CalendarDays
+  ClipboardList, Trash2, Megaphone, ChevronRight, Calendar, CalendarDays
 } from 'lucide-react';
 
 function NavLink({ to, icon: Icon, label, badge }) {
@@ -99,7 +99,7 @@ export default function Dashboard() {
               <NavLink to="/admin/announcements" icon={Megaphone} label="Announcements" />
               <NavLink to="/actions/cet" icon={Calendar} label="View CET" />
               <NavLink to="/admin/duty" icon={CalendarDays} label="Duty Admin" />
-              <NavLink to="/points" icon={Trophy} label="Points" />
+
             </div>
           </div>
         </div>
@@ -231,9 +231,7 @@ export default function Dashboard() {
             <NavLink to="/admin/cet" icon={Calendar} label="Send CET" />
             <NavLink to="/admin/announcements" icon={Megaphone} label="Announcements" />
             <NavLink to="/admin/duty" icon={CalendarDays} label="Duty Admin" />
-            <NavLink to="/points" icon={Trophy} label="Points & Leaderboard" />
-            <NavLink to="/admin/appoint" icon={Users} label="Appoint Cadet Admin" />
-            <NavLink to="/admin/import" icon={Upload} label="Import Users" />
+            <NavLink to="/admin/nominal" icon={Users} label="Nominal Role" />
             <NavLink to="/admin/data-clear" icon={Trash2} label="Data Clear" />
           </div>
         </div>

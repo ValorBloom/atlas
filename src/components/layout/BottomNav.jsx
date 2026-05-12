@@ -18,7 +18,7 @@ function getTabForPath(pathname) {
   if (pathname.startsWith('/actions')) return 'actions';
   if (pathname.startsWith('/notifications')) return 'notifications';
   if (pathname.startsWith('/profile')) return 'profile';
-  if (pathname.startsWith('/points')) return 'actions'; // points lives under actions section
+
   return 'home';
 }
 

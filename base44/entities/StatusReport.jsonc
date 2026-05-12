@@ -7,9 +7,11 @@
       "enum": [
         "RSO",
         "MA",
-        "RSI"
+        "RSI",
+        "PERM",
+        "TEMP"
       ],
-      "description": "Status type"
+      "description": "Status type. PERM/TEMP are manual entries by cadet admin."
     },
     "personnel_name": {
       "type": "string"
@@ -28,6 +30,19 @@
     },
     "details": {
       "type": "string"
+    },
+    "duration_text": {
+      "type": "string",
+      "description": "Duration display e.g. '2 DAY' or '30 DAYS'"
+    },
+    "status_category": {
+      "type": "string",
+      "enum": [
+        "MC",
+        "Light Duty",
+        "Others"
+      ],
+      "description": "Outcome category after seeing doctor (RSO only)"
     },
     "start_date": {
       "type": "string",
@@ -66,62 +81,5 @@
     "type",
     "personnel_name",
     "unit"
-  ],
-  "rls": {
-    "create": {
-      "data.personnel_id": "{{user.id}}",
-      "data.unit": "{{user.data.unit}}"
-    },
-    "read": {
-      "data.unit": "{{user.data.unit}}",
-      "$or": [
-        {
-          "data.personnel_id": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "user_role": "instructor"
-          }
-        },
-        {
-          "user_condition": {
-            "user_role": "cadet_admin"
-          }
-        }
-      ]
-    },
-    "update": {
-      "data.unit": "{{user.data.unit}}",
-      "$or": [
-        {
-          "data.personnel_id": "{{user.id}}"
-        },
-        {
-          "user_condition": {
-            "user_role": "instructor"
-          }
-        },
-        {
-          "user_condition": {
-            "user_role": "cadet_admin"
-          }
-        }
-      ]
-    },
-    "delete": {
-      "data.unit": "{{user.data.unit}}",
-      "$or": [
-        {
-          "user_condition": {
-            "user_role": "instructor"
-          }
-        },
-        {
-          "user_condition": {
-            "user_role": "cadet_admin"
-          }
-        }
-      ]
-    }
-  }
+  ]
 }

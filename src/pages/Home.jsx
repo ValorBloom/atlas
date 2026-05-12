@@ -21,7 +21,7 @@ const ALL_CADET_ACTIONS = [
   { key: 'movement', to: '/actions/movement', icon: MapPin, label: 'Movement', color: 'primary' },
   { key: 'sft', to: '/actions/sft', icon: Activity, label: 'SFT', color: 'green' },
   { key: 'status', to: '/actions/status', icon: FileText, label: 'Status', color: 'amber' },
-  { key: 'points', to: '/points', icon: Trophy, label: 'Points', color: 'default' },
+
   { key: 'cet', to: '/actions/cet', icon: Calendar, label: 'View CET', color: 'blue' },
   { key: 'duty', to: '/actions/duty', icon: CalendarDays, label: 'Duty', color: 'purple' },
 ];
