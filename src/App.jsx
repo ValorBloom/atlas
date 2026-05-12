@@ -22,7 +22,7 @@ import ReachedUpdate from './pages/ReachedUpdate';
 import SFTSubmission from './pages/SFTSubmission';
 import StatusMenu from './pages/StatusMenu';
 import StatusReport from './pages/StatusReport';
-import StatusUpdate from './pages/StatusUpdate';
+import StatusUpdate from './pages/StatusUpdate.jsx';
 import ViewCET from './pages/ViewCET';
 import Duty from './pages/Duty';
 

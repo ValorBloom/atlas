@@ -14,9 +14,7 @@ export default function StatusMenu() {
         <QuickAction to="/actions/status/report/RSI" icon={FilePlus} label="Report RSI" description="Report Sick In" />
 
         <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mt-6">Update Existing</h2>
-        <QuickAction to="/actions/status/update/RSO" icon={RefreshCw} label="Update RSO" />
-        <QuickAction to="/actions/status/update/MA" icon={RefreshCw} label="Update MA" />
-        <QuickAction to="/actions/status/update/RSI" icon={RefreshCw} label="Update RSI" />
+        <QuickAction to="/actions/status/update/RSO" icon={RefreshCw} label="Update RSO" description="Post-consultation — add diagnosis & outcome" />
       </div>
     </div>
   );
