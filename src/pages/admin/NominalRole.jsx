@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 
 function EditRow({ u, onSave, onCancel, unit }) {
   const [form, setForm] = useState({
-    full_name: u.full_name || '',
+    full_name: u.display_name || u.full_name || '',
     rank: u.rank || '',
     platoon: u.platoon || '',
   });
@@ -73,7 +73,7 @@ function UserRow({ u, unit }) {
   return (
     <div className="flex items-center justify-between p-3 rounded-xl border border-border bg-card">
       <div>
-        <p className="text-sm font-semibold">{u.rank ? `${u.rank} ` : ''}{u.full_name || <span className="text-muted-foreground italic">No name</span>}</p>
+        <p className="text-sm font-semibold">{u.rank ? `${u.rank} ` : ''}{u.display_name || u.full_name || <span className="text-muted-foreground italic">No name</span>}</p>
         <p className="text-xs text-muted-foreground">{u.platoon || '—'} · {u.email}</p>
       </div>
       <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setEditing(true)}>

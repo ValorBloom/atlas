@@ -64,6 +64,7 @@ export default function Setup() {
     try {
       await base44.auth.updateMe({
         full_name: form.full_name.trim(),
+        display_name: form.full_name.trim(),
         unit: form.unit,
         rank: form.rank,
         platoon: isInstr ? null : (form.platoon || null),

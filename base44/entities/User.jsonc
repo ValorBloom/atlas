@@ -2,35 +2,33 @@
   "name": "User",
   "type": "object",
   "properties": {
-    "user_role": {
+    "role": {
       "type": "string",
       "enum": [
-        "cadet",
-        "cadet_admin",
-        "instructor"
+        "admin",
+        "user"
       ],
-      "default": "cadet",
-      "description": "ATLAS role (cadet / cadet_admin / instructor)"
+      "default": "user"
+    },
+    "display_name": {
+      "type": "string",
+      "description": "User's preferred display name, set during setup and editable by instructors"
     },
     "unit": {
-      "type": "string",
-      "description": "Unit assignment"
+      "type": "string"
     },
     "rank": {
-      "type": "string",
-      "description": "Military rank"
+      "type": "string"
     },
-    "phone_number": {
+    "user_role": {
       "type": "string",
-      "description": "Contact phone number"
+      "description": "cadet, cadet_admin, or instructor"
     },
     "platoon": {
-      "type": "string",
-      "description": "Platoon / Flight / Byte / Division"
+      "type": "string"
+    },
+    "section": {
+      "type": "string"
     }
-  },
-  "required": [
-    "unit",
-    "rank"
-  ]
+  }
 }
