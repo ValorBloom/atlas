@@ -44,14 +44,24 @@
     "performed_by"
   ],
   "rls": {
-    "create": true,
-    "read": {
-      "user_condition": {
-        "user_role": "instructor"
-      },
-      "data.unit": "{{user.unit}}"
+    "create": {
+      "data.unit": "{{user.data.unit}}"
     },
-    "update": false,
-    "delete": false
+    "read": {
+      "data.unit": "{{user.data.unit}}",
+      "user_condition": {
+        "role": "instructor"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
   }
 }
