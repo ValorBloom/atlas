@@ -42,74 +42,57 @@
   ],
   "rls": {
     "create": {
-      "data.unit": "{{user.data.unit}}",
-      "$or": [
-        {
-          "user_condition": {
-            "user_role": "instructor"
-          }
-        },
-        {
-          "user_condition": {
-            "user_role": "cadet_admin"
-          }
-        }
-      ]
+      "user_condition": {
+        "user_role": "instructor"
+      },
+      "data.unit": "{{user.unit}}"
     },
     "read": {
-      "data.unit": "{{user.data.unit}}",
       "$or": [
         {
-          "data.target_role": "all"
-        },
-        {
-          "data.target_role": "{{user.data.user_role}}"
+          "data.unit": "{{user.unit}}",
+          "$or": [
+            {
+              "data.target_role": "all"
+            },
+            {
+              "data.target_role": "{{user.user_role}}"
+            }
+          ]
         },
         {
           "user_condition": {
             "user_role": "instructor"
-          }
-        },
-        {
-          "user_condition": {
-            "user_role": "cadet_admin"
-          }
+          },
+          "data.unit": "{{user.unit}}"
         }
       ]
     },
     "update": {
-      "data.unit": "{{user.data.unit}}",
       "$or": [
         {
-          "created_by": "{{user.email}}"
+          "created_by": "{{user.email}}",
+          "data.unit": "{{user.unit}}"
         },
         {
           "user_condition": {
             "user_role": "instructor"
-          }
-        },
-        {
-          "user_condition": {
-            "user_role": "cadet_admin"
-          }
+          },
+          "data.unit": "{{user.unit}}"
         }
       ]
     },
     "delete": {
-      "data.unit": "{{user.data.unit}}",
       "$or": [
         {
-          "created_by": "{{user.email}}"
+          "created_by": "{{user.email}}",
+          "data.unit": "{{user.unit}}"
         },
         {
           "user_condition": {
             "user_role": "instructor"
-          }
-        },
-        {
-          "user_condition": {
-            "user_role": "cadet_admin"
-          }
+          },
+          "data.unit": "{{user.unit}}"
         }
       ]
     }
