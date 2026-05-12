@@ -50,28 +50,30 @@
     "update": {
       "$or": [
         {
-          "created_by": "{{user.email}}"
+          "created_by": "{{user.email}}",
+          "data.unit": "{{user.unit}}"
         },
         {
           "user_condition": {
             "user_role": "instructor"
-          }
+          },
+          "data.unit": "{{user.unit}}"
         }
-      ],
-      "data.unit": "{{user.unit}}"
+      ]
     },
     "delete": {
       "$or": [
         {
-          "created_by": "{{user.email}}"
+          "created_by": "{{user.email}}",
+          "data.unit": "{{user.unit}}"
         },
         {
           "user_condition": {
             "user_role": "instructor"
-          }
+          },
+          "data.unit": "{{user.unit}}"
         }
-      ],
-      "data.unit": "{{user.unit}}"
+      ]
     }
   }
 }
