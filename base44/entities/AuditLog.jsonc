@@ -44,27 +44,14 @@
     "performed_by"
   ],
   "rls": {
-    "create": {},
+    "create": true,
     "read": {
-      "data.unit": "{{user.data.unit}}",
-      "$or": [
-        {
-          "user_condition": {
-            "user_role": "instructor"
-          }
-        },
-        {
-          "user_condition": {
-            "user_role": "cadet_admin"
-          }
-        }
-      ]
+      "user_condition": {
+        "user_role": "instructor"
+      },
+      "data.unit": "{{user.unit}}"
     },
-    "update": {
-      "_id": null
-    },
-    "delete": {
-      "_id": null
-    }
+    "update": false,
+    "delete": false
   }
 }
