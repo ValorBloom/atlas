@@ -8,13 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { MobileSelect, MobileSelectItem } from '@/components/ui/MobileSelect';
 import { isCadetAdmin, isInstructor, formatRankName } from '@/lib/constants';
-import { Plus, X, Check, CheckSquare, Stethoscope, Shield } from 'lucide-react';
+import { Plus, X, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, isAfter, parseISO, startOfDay } from 'date-fns';
 
-// Format date as DDMMYY
 function fmtDate(d) {
   if (!d) return '';
   return d.replace(/-/g, '').slice(2);
@@ -22,37 +20,126 @@ function fmtDate(d) {
 
 function isExpired(endDate) {
   if (!endDate) return false;
-  const today = startOfDay(new Date());
-  const end = startOfDay(parseISO(endDate));
-  // Expired if today is AFTER end date
-  return isAfter(today, end);
+  return isAfter(startOfDay(new Date()), startOfDay(parseISO(endDate)));
 }
 
-// Generate parade state line for a status report
+// Generate the parade state text line for a record
 function formatStatusLine(r) {
   const name = formatRankName(r.personnel_rank, r.personnel_name);
+
   if (r.type === 'PERM') {
-    return `${name} PERMANENT STATUS: ${r.details || ''}`;
+    return `${name}\nPERMANENT STATUS: ${r.details || ''}`;
   }
+
   if (r.type === 'TEMP') {
     const dur = r.duration_text || '';
     const dates = r.start_date && r.end_date ? ` (${fmtDate(r.start_date)}-${fmtDate(r.end_date)})` : '';
-    return `${name} ${dur}${dates}`;
+    return `${name}\n${dur}${dates}`;
   }
+
+  if (r.type === 'MA') {
+    // Parse stored details block
+    const lines = (r.details || '').split('\n').filter(Boolean);
+    const endorsed = r.approved_by ? `ENDORSED BY: ${r.approved_by}` : '';
+    return [name, ...lines, endorsed].filter(Boolean).join('\n');
+  }
+
+  if (r.type === 'OTHERS') {
+    const lines = (r.details || '').split('\n').filter(Boolean);
+    const endorsed = r.approved_by ? `ENDORSED BY: ${r.approved_by}` : '';
+    return [name, ...lines, endorsed].filter(Boolean).join('\n');
+  }
+
+  // RSO / RSI
   if (r.status_category === 'MC') {
     const symptoms = r.symptoms ? `SYMPTOMS: ${r.symptoms.toUpperCase()} ` : '';
     const dx = r.diagnosis ? `DIAGNOSIS: ${r.diagnosis.toUpperCase()} ` : '';
     const dur = r.duration_text || '';
     const dates = r.start_date && r.end_date ? ` (${fmtDate(r.start_date)}-${fmtDate(r.end_date)})` : '';
-    return `${name} ${symptoms}${dx}STATUS: ${dur} MC${dates}`;
+    return `${name}\n${symptoms}${dx}STATUS: ${dur} MC${dates}`;
   }
-  // Light Duty / Others
+
+  // RSO/RSI awaiting post-consult update — show in RSO/RSI section
+  if ((r.type === 'RSO' || r.type === 'RSI') && !r.diagnosis) {
+    return `${name}\n${r.type} — SYMPTOMS: ${r.symptoms?.toUpperCase() || '—'} — AWAITING POST-CONSULT UPDATE`;
+  }
+
+  // Light Duty / Others outcome
   const dur = r.duration_text || '';
   const dates = r.start_date && r.end_date ? ` (${fmtDate(r.start_date)}-${fmtDate(r.end_date)})` : '';
-  return `${name} ${dur} ${(r.status_category || 'LIGHT DUTY').toUpperCase()}${dates}`;
+  return `${name}\n${dur} ${(r.status_category || 'LIGHT DUTY').toUpperCase()}${dates}`;
 }
 
-// Add Manual Status modal (cadet admin only)
+// ── Approve / Deny modal with optional notes ──────────────────────
+function ApprovalModal({ report, instructorName, onConfirm, onCancel }) {
+  const [notes, setNotes] = useState('');
+  const [action, setAction] = useState(null); // 'approve' | 'reject'
+  const [saving, setSaving] = useState(false);
+
+  const handleConfirm = async () => {
+    setSaving(true);
+    await onConfirm(action, notes);
+    setSaving(false);
+  };
+
+  if (!action) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black/60 flex items-end">
+        <div className="w-full bg-card rounded-t-2xl border-t border-border p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-bold">
+              {report.type} — {formatRankName(report.personnel_rank, report.personnel_name)}
+            </p>
+            <button onClick={onCancel}><X className="h-4 w-4 text-muted-foreground" /></button>
+          </div>
+          {report.symptoms && (
+            <p className="text-xs text-muted-foreground">Symptoms: {report.symptoms}</p>
+          )}
+          {report.details && (
+            <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-sans">{report.details}</pre>
+          )}
+          <p className="text-xs text-muted-foreground">Date: {report.start_date} · By: {report.reported_by}</p>
+          <div className="flex gap-2 pt-1">
+            <Button variant="outline" className="flex-1 border-destructive/30 text-destructive"
+              onClick={() => setAction('reject')}>
+              <X className="h-3.5 w-3.5 mr-1" />Deny
+            </Button>
+            <Button className="flex-1" onClick={() => setAction('approve')}>
+              <Check className="h-3.5 w-3.5 mr-1" />Approve
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-end">
+      <div className="w-full bg-card rounded-t-2xl border-t border-border p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-bold text-foreground">
+            {action === 'approve' ? '✓ Approve' : '✗ Deny'} — {report.type}
+          </p>
+          <button onClick={() => setAction(null)}><X className="h-4 w-4 text-muted-foreground" /></button>
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground uppercase tracking-wide">Notes (optional)</Label>
+          <Textarea
+            placeholder="Add any remarks or instructions..."
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+            className="min-h-[80px] text-sm"
+          />
+        </div>
+        <Button className="w-full" onClick={handleConfirm} disabled={saving}>
+          {saving ? 'Processing…' : `Confirm ${action === 'approve' ? 'Approval' : 'Denial'}`}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ── Add Manual Status ──────────────────────────────────────────────
 function AddManualStatus({ unit, user, onClose, onSaved }) {
   const [form, setForm] = useState({
     type: 'TEMP',
@@ -145,17 +232,49 @@ function AddManualStatus({ unit, user, onClose, onSaved }) {
   );
 }
 
+// ── Section component ─────────────────────────────────────────────
+function Section({ title, items, emptyText, canAdmin, onDelete }) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{title}</p>
+        <span className="text-[10px] font-bold text-foreground bg-muted px-1.5 py-0.5 rounded">{items.length}</span>
+      </div>
+      {items.length === 0 ? (
+        <p className="text-xs text-muted-foreground px-1">{emptyText}</p>
+      ) : (
+        items.map(r => (
+          <div key={r.id} className="p-3 rounded-xl border border-border bg-card flex items-start justify-between gap-2">
+            <pre className="text-xs font-mono leading-relaxed text-foreground flex-1 whitespace-pre-wrap">{formatStatusLine(r)}</pre>
+            {canAdmin && (
+              <button onClick={() => onDelete(r)} className="shrink-0 text-muted-foreground hover:text-destructive transition-colors mt-0.5">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
+// ── Main Component ────────────────────────────────────────────────
 export default function ParadeState() {
   const { user } = useOutletContext();
   const instructor = isInstructor(user);
   const cadetAdmin = isCadetAdmin(user);
+  const canAdmin = instructor || cadetAdmin;
   const unit = user?.unit;
   const qc = useQueryClient();
   const [showAddManual, setShowAddManual] = useState(false);
-  const [approvingId, setApprovingId] = useState(null);
-  const [rejectingId, setRejectingId] = useState(null);
+  const [selectedPending, setSelectedPending] = useState(null);
 
   const today = format(new Date(), 'yyyy-MM-dd');
+
+  // Instructor display name for endorsement
+  const instructorDisplayName = user
+    ? formatRankName(user.rank || '', (user.display_name || user.full_name || '').toUpperCase())
+    : '';
 
   const { data: allReports = [], isLoading } = useQuery({
     queryKey: ['parade-state', unit],
@@ -170,14 +289,11 @@ export default function ParadeState() {
     enabled: !!unit,
   });
 
-  // Auto-filter expired statuses (end_date in the past)
+  // Filter expired
   const activeReports = allReports.filter(r => {
     if (r.status === 'rejected') return false;
-    // PERM statuses never expire
     if (r.type === 'PERM') return r.status === 'active';
-    // RSO pending approval — show in RSO section
     if (r.status === 'pending_approval') return true;
-    // Active statuses — check expiry
     if (r.status === 'active' || r.status === 'approved') {
       if (r.end_date && isExpired(r.end_date)) return false;
       return true;
@@ -185,53 +301,116 @@ export default function ParadeState() {
     return false;
   });
 
-  const pendingRSO = activeReports.filter(r => r.status === 'pending_approval');
-  const rsoActive = activeReports.filter(r =>
-    r.type === 'RSO' && (r.status === 'active' || r.status === 'approved') && !r.end_date
+  // Sections
+  const pendingApproval = activeReports.filter(r => r.status === 'pending_approval');
+
+  // RSO/RSI approved but awaiting post-consult update (no diagnosis yet)
+  const awaitingUpdate = activeReports.filter(r =>
+    (r.type === 'RSO' || r.type === 'RSI') &&
+    r.status === 'approved' &&
+    !r.diagnosis
   );
+
+  // MC — RSO/RSI with MC outcome
   const mcStatuses = activeReports.filter(r =>
     (r.type === 'RSO' || r.type === 'RSI') &&
     r.status_category === 'MC' &&
     r.status === 'active' &&
     r.end_date
   );
+
+  // MA statuses — approved
+  const maStatuses = activeReports.filter(r =>
+    r.type === 'MA' && r.status === 'active'
+  );
+
+  // Others statuses — approved
+  const othersStatuses = activeReports.filter(r =>
+    r.type === 'OTHERS' && r.status === 'active'
+  );
+
+  // Temporary — non-MC RSO/RSI outcomes + manual TEMP entries
   const tempStatuses = activeReports.filter(r => {
     if (r.type === 'PERM') return false;
     if (r.type === 'TEMP') return r.status === 'active';
     if ((r.type === 'RSO' || r.type === 'RSI') && r.status === 'active' && r.end_date && r.status_category !== 'MC') return true;
-    if (r.type === 'MA') return r.status === 'active';
     return false;
   });
+
   const permStatuses = activeReports.filter(r => r.type === 'PERM' && r.status === 'active');
 
   const strength = unitUsers.filter(u => u.user_role !== 'instructor').length;
-  const onStatus = new Set([...mcStatuses, ...tempStatuses, ...rsoActive].map(r => r.personnel_id)).size;
+  const onStatus = new Set([
+    ...mcStatuses,
+    ...tempStatuses,
+    ...maStatuses,
+    ...othersStatuses,
+    ...awaitingUpdate,
+  ].map(r => r.personnel_id).filter(Boolean)).size;
 
-  const handleApprove = async (r) => {
-    setApprovingId(r.id);
-    await base44.entities.StatusReport.update(r.id, { status: 'approved' });
-    // Notify cadet
-    if (r.personnel_id) {
+  // Approve / deny handler
+  const handleDecision = async (action, notes) => {
+    const r = selectedPending;
+    if (!r) return;
+
+    if (action === 'approve') {
+      const updateData = {
+        status: 'active',
+        approved_by: instructorDisplayName,
+        approval_date: new Date().toISOString(),
+        instructor_notes: notes || '',
+      };
+
+      await base44.entities.StatusReport.update(r.id, updateData);
+
+      // Notify cadet
+      const approvedMsg = notes
+        ? `Your ${r.type} request has been approved.\nInstructor notes: ${notes}`
+        : `Your ${r.type} request has been approved. ${r.type === 'RSO' ? 'Please go see the doctor.' : r.type === 'RSI' ? 'Please go see the MO.' : 'Parade state has been updated.'}`;
+
       await base44.entities.Notification.create({
-        title: 'RSO Approved',
-        message: 'Your RSO has been approved. Please see the doctor and then update your diagnosis and outcome.',
+        title: `${r.type} Approved`,
+        message: approvedMsg,
         type: 'success',
         category: 'status',
         recipient_email: r.reported_by,
         recipient_unit: unit,
       });
-    }
-    qc.invalidateQueries({ queryKey: ['parade-state', unit] });
-    setApprovingId(null);
-    toast.success('RSO approved — cadet notified');
-  };
 
-  const handleReject = async (r) => {
-    setRejectingId(r.id);
-    await base44.entities.StatusReport.update(r.id, { status: 'rejected' });
+      // Notify cadet admins (unit broadcast)
+      await base44.entities.Notification.create({
+        title: `${r.type} Approved — ${formatRankName(r.personnel_rank, r.personnel_name)}`,
+        message: `${formatRankName(r.personnel_rank, r.personnel_name)} ${r.type} approved by ${instructorDisplayName}.${notes ? ` Notes: ${notes}` : ''}`,
+        type: 'info',
+        category: 'status',
+        recipient_unit: unit,
+      });
+
+      toast.success(`${r.type} approved — cadet notified`);
+    } else {
+      await base44.entities.StatusReport.update(r.id, {
+        status: 'rejected',
+        instructor_notes: notes || '',
+      });
+
+      const deniedMsg = notes
+        ? `Your ${r.type} request has been denied.\nInstructor notes: ${notes}`
+        : `Your ${r.type} request has been denied.`;
+
+      await base44.entities.Notification.create({
+        title: `${r.type} Denied`,
+        message: deniedMsg,
+        type: 'error',
+        category: 'status',
+        recipient_email: r.reported_by,
+        recipient_unit: unit,
+      });
+
+      toast.success(`${r.type} denied — cadet notified`);
+    }
+
     qc.invalidateQueries({ queryKey: ['parade-state', unit] });
-    setRejectingId(null);
-    toast.success('RSO rejected');
+    setSelectedPending(null);
   };
 
   const handleDelete = async (r) => {
@@ -240,32 +419,13 @@ export default function ParadeState() {
     toast.success('Status removed');
   };
 
-  const Section = ({ title, items, emptyText, children }) => (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{title}</p>
-        <span className="text-[10px] font-bold text-foreground bg-muted px-1.5 py-0.5 rounded">{items.length}</span>
-      </div>
-      {items.length === 0 ? (
-        <p className="text-xs text-muted-foreground px-1">{emptyText}</p>
-      ) : (children || items.map(r => (
-        <div key={r.id} className="p-3 rounded-xl border border-border bg-card flex items-start justify-between gap-2">
-          <p className="text-xs font-mono leading-relaxed text-foreground flex-1">{formatStatusLine(r)}</p>
-          {(instructor || cadetAdmin) && (
-            <button onClick={() => handleDelete(r)} className="shrink-0 text-muted-foreground hover:text-destructive transition-colors">
-              <X className="h-3.5 w-3.5" />
-            </button>
-          )}
-        </div>
-      )))}
-    </div>
-  );
-
   if (isLoading) {
     return (
       <div>
         <PageHeader title="Parade State" backTo="/admin" />
-        <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" /></div>
+        <div className="flex justify-center py-16">
+          <div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" />
+        </div>
       </div>
     );
   }
@@ -303,46 +463,85 @@ export default function ParadeState() {
           </CardContent></Card>
         </div>
 
-        {/* Pending RSO Approvals — instructors and cadet admins can approve */}
-        {(instructor || cadetAdmin) && pendingRSO.length > 0 && (
+        {/* Pending Approvals — visible to instructors and cadet admins */}
+        {canAdmin && pendingApproval.length > 0 && (
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-amber-400">Pending RSO Approval</p>
-              <span className="text-[10px] font-bold text-amber-400 bg-amber-500/15 px-1.5 py-0.5 rounded">{pendingRSO.length}</span>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-amber-400">Pending Approval</p>
+              <span className="text-[10px] font-bold text-amber-400 bg-amber-500/15 px-1.5 py-0.5 rounded">{pendingApproval.length}</span>
             </div>
-            {pendingRSO.map(r => (
+            {pendingApproval.map(r => (
               <div key={r.id} className="p-3 rounded-xl border border-amber-500/25 bg-amber-500/8 space-y-2">
                 <div>
-                  <p className="text-sm font-semibold">{formatRankName(r.personnel_rank, r.personnel_name)}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">{r.symptoms || 'No symptoms'}</p>
-                  <p className="text-[10px] text-muted-foreground">{r.start_date} · Reported by {r.reported_by}</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-amber-400 bg-amber-500/15 px-1.5 py-0.5 rounded">{r.type}</span>
+                    <p className="text-sm font-semibold">{formatRankName(r.personnel_rank, r.personnel_name)}</p>
+                  </div>
+                  {r.symptoms && <p className="text-xs text-muted-foreground mt-1">Symptoms: {r.symptoms}</p>}
+                  {r.details && <pre className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap font-sans">{r.details}</pre>}
+                  <p className="text-[10px] text-muted-foreground mt-1">{r.start_date} · {r.reported_by}</p>
                 </div>
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" className="flex-1 h-7 text-xs border-destructive/30 text-destructive"
-                    disabled={rejectingId === r.id} onClick={() => handleReject(r)}>
-                    <X className="h-3 w-3 mr-1" />Reject
-                  </Button>
-                  <Button size="sm" className="flex-1 h-7 text-xs"
-                    disabled={approvingId === r.id} onClick={() => handleApprove(r)}>
-                    <Check className="h-3 w-3 mr-1" />{approvingId === r.id ? 'Approving…' : 'Approve'}
-                  </Button>
-                </div>
+                <Button size="sm" className="w-full h-8 text-xs" onClick={() => setSelectedPending(r)}>
+                  Review Request
+                </Button>
               </div>
             ))}
           </div>
         )}
 
-        {/* RSO — awaiting post-consult update */}
-        <Section title="RSO — Awaiting Update" items={rsoActive} emptyText="No pending RSO updates" />
+        {/* RSO/RSI — awaiting post-consult update */}
+        <Section
+          title="RSO / RSI — Awaiting Update"
+          items={awaitingUpdate}
+          emptyText="No pending post-consult updates"
+          canAdmin={canAdmin}
+          onDelete={handleDelete}
+        />
 
         {/* MC */}
-        <Section title="MC" items={mcStatuses} emptyText="No personnel on MC" />
+        <Section
+          title="MC"
+          items={mcStatuses}
+          emptyText="No personnel on MC"
+          canAdmin={canAdmin}
+          onDelete={handleDelete}
+        />
+
+        {/* MA */}
+        <Section
+          title="Medical Appointments"
+          items={maStatuses}
+          emptyText="No medical appointments"
+          canAdmin={canAdmin}
+          onDelete={handleDelete}
+        />
+
+        {/* Others */}
+        <Section
+          title="Others"
+          items={othersStatuses}
+          emptyText="No others statuses"
+          canAdmin={canAdmin}
+          onDelete={handleDelete}
+        />
 
         {/* Temporary Statuses */}
-        <Section title="Temporary Statuses" items={tempStatuses} emptyText="No temporary statuses" />
+        <Section
+          title="Temporary Statuses"
+          items={tempStatuses}
+          emptyText="No temporary statuses"
+          canAdmin={canAdmin}
+          onDelete={handleDelete}
+        />
 
-        {/* Permanent Statuses — only cadet admin & instructor can add */}
-        <Section title="Permanent Statuses" items={permStatuses} emptyText="No permanent statuses" />
+        {/* Permanent Statuses */}
+        <Section
+          title="Permanent Statuses"
+          items={permStatuses}
+          emptyText="No permanent statuses"
+          canAdmin={canAdmin}
+          onDelete={handleDelete}
+        />
 
       </div>
 
@@ -355,6 +554,15 @@ export default function ParadeState() {
             setShowAddManual(false);
             qc.invalidateQueries({ queryKey: ['parade-state', unit] });
           }}
+        />
+      )}
+
+      {selectedPending && (
+        <ApprovalModal
+          report={selectedPending}
+          instructorName={instructorDisplayName}
+          onConfirm={handleDecision}
+          onCancel={() => setSelectedPending(null)}
         />
       )}
     </div>

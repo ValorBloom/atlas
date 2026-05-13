@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useOutletContext, useNavigate, useParams } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import PageHeader from '@/components/layout/PageHeader';
@@ -16,8 +16,12 @@ import { format, addDays } from 'date-fns';
 
 const STATUS_CATEGORIES = ['MC', 'Light Duty', 'Others'];
 
+function fmtDate(d) {
+  if (!d) return '';
+  return d.replace(/-/g, '').slice(2);
+}
+
 export default function StatusUpdate() {
-  const { type } = useParams();
   const { user } = useOutletContext();
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
@@ -32,49 +36,48 @@ export default function StatusUpdate() {
     duration_days: '',
   });
 
-  // Load pending/active RSO reports for the current user
+  const selfName = user?.display_name || user?.full_name || '';
+
+  // Load approved RSO or RSI reports for the current user that haven't been diagnosed yet
   const { data: myReports = [], isLoading } = useQuery({
-    queryKey: ['my-rso-reports', user?.id],
+    queryKey: ['my-medical-reports', user?.id],
     queryFn: () => base44.entities.StatusReport.filter(
-      { personnel_id: user?.id, type: 'RSO' },
+      { personnel_id: user?.id },
       '-created_date',
-      10
+      20
     ),
     enabled: !!user?.id,
   });
 
-  // Show only approved (ready to update) or active reports without diagnosis
+  // Show RSO/RSI that are approved (by instructor) and not yet diagnosed
   const updatable = myReports.filter(r =>
-    r.status === 'approved' || (r.status === 'active' && !r.diagnosis)
+    (r.type === 'RSO' || r.type === 'RSI') &&
+    r.status === 'approved' &&
+    !r.diagnosis
   );
 
   const handleCategoryChange = (cat) => {
     const start = form.start_date || format(new Date(), 'yyyy-MM-dd');
     const days = parseInt(form.duration_days) || 1;
-    // Auto-compute end date
-    let endDate = '';
-    if (days > 0 && start) {
-      endDate = format(addDays(new Date(start), days - 1), 'yyyy-MM-dd');
-    }
+    let endDate = days > 0 && start
+      ? format(addDays(new Date(start), days - 1), 'yyyy-MM-dd')
+      : '';
     setForm({ ...form, status_category: cat, end_date: endDate });
   };
 
   const handleDaysChange = (val) => {
     const days = parseInt(val) || 0;
-    const start = form.start_date;
-    let endDate = '';
-    if (days > 0 && start) {
-      endDate = format(addDays(new Date(start), days - 1), 'yyyy-MM-dd');
-    }
+    let endDate = days > 0 && form.start_date
+      ? format(addDays(new Date(form.start_date), days - 1), 'yyyy-MM-dd')
+      : '';
     setForm({ ...form, duration_days: val, end_date: endDate });
   };
 
   const handleStartChange = (val) => {
     const days = parseInt(form.duration_days) || 0;
-    let endDate = '';
-    if (days > 0 && val) {
-      endDate = format(addDays(new Date(val), days - 1), 'yyyy-MM-dd');
-    }
+    let endDate = days > 0 && val
+      ? format(addDays(new Date(val), days - 1), 'yyyy-MM-dd')
+      : '';
     setForm({ ...form, start_date: val, end_date: endDate });
   };
 
@@ -85,12 +88,13 @@ export default function StatusUpdate() {
     setSaving(true);
 
     const days = parseInt(form.duration_days) || 1;
-    const startFmt = form.start_date.replace(/-/g, '').slice(2); // DDMMYY
-    const endFmt = form.end_date.replace(/-/g, '').slice(2);
+    const startFmt = fmtDate(form.start_date);
+    const endFmt = fmtDate(form.end_date);
     const durationText = `${days} ${form.status_category === 'MC' ? 'DAY' : 'DAYS'}`;
+    const rankName = formatRankName(user?.rank, selfName.toUpperCase());
 
     await base44.entities.StatusReport.update(selectedReport.id, {
-      diagnosis: form.diagnosis,
+      diagnosis: form.diagnosis.toUpperCase(),
       status_category: form.status_category,
       start_date: form.start_date,
       end_date: form.end_date,
@@ -99,19 +103,23 @@ export default function StatusUpdate() {
       status: 'active',
     });
 
-    // Notify unit
+    // Notify cadet admin / unit (broadcast)
+    const outcomeMsg = form.status_category === 'MC'
+      ? `${rankName} — ${selectedReport.type} — ${form.diagnosis.toUpperCase()} — ${durationText} MC (${startFmt}-${endFmt})`
+      : `${rankName} — ${selectedReport.type} — ${form.diagnosis.toUpperCase()} — ${durationText} ${form.status_category.toUpperCase()} (${startFmt}-${endFmt})`;
+
     await base44.entities.Notification.create({
-      title: 'RSO Updated',
-      message: `${formatRankName(user?.rank, user?.full_name)} — ${form.status_category}: ${durationText} (${startFmt}-${endFmt})`,
+      title: `${selectedReport.type} Outcome Updated`,
+      message: outcomeMsg,
       type: 'info',
       category: 'status',
       recipient_unit: user?.unit,
     });
 
     await base44.entities.AuditLog.create({
-      action: 'status_update_rso',
+      action: `status_update_${selectedReport.type.toLowerCase()}`,
       category: 'status',
-      details: `RSO updated for ${user?.full_name}: ${form.status_category} ${durationText}`,
+      details: outcomeMsg,
       performed_by: user?.email,
       unit: user?.unit,
     });
@@ -124,7 +132,7 @@ export default function StatusUpdate() {
   if (isLoading) {
     return (
       <div>
-        <PageHeader title="Update RSO" backTo="/actions/status" />
+        <PageHeader title="Update RSO / RSI" backTo="/actions/status" />
         <div className="flex justify-center py-16">
           <div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" />
         </div>
@@ -134,14 +142,13 @@ export default function StatusUpdate() {
 
   return (
     <div>
-      <PageHeader title="Update RSO" backTo="/actions/status" subtitle="Post-consultation update" />
+      <PageHeader title="Update RSO / RSI" backTo="/actions/status" subtitle="Post-consultation update" />
       <div className="px-4 py-4 space-y-4 pb-24">
 
-        {/* Info banner */}
         <div className="p-3 rounded-xl bg-muted/40 border border-border flex items-start gap-2.5">
           <Stethoscope className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Select your approved RSO, then fill in your diagnosis and outcome from the doctor.
+            Select your approved RSO or RSI, then fill in your diagnosis and outcome.
           </p>
         </div>
 
@@ -149,9 +156,9 @@ export default function StatusUpdate() {
           <Card>
             <CardContent className="p-6 text-center">
               <AlertTriangle className="h-8 w-8 text-muted-foreground/30 mx-auto mb-3" />
-              <p className="text-sm font-medium text-foreground">No approved RSO to update</p>
+              <p className="text-sm font-medium text-foreground">No approved reports to update</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Your RSO must be approved by an instructor before you can update it.
+                Your RSO or RSI must be approved by an instructor before you can add a diagnosis.
               </p>
             </CardContent>
           </Card>
@@ -159,7 +166,7 @@ export default function StatusUpdate() {
           <>
             {/* Select report */}
             <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Select RSO Report</Label>
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Select Report</Label>
               <div className="space-y-2">
                 {updatable.map(r => (
                   <button
@@ -167,16 +174,14 @@ export default function StatusUpdate() {
                     onClick={() => setSelectedReport(r)}
                     className={`w-full text-left p-3 rounded-xl border transition-all ${
                       selectedReport?.id === r.id
-                        ? 'border-primary/40 bg-primary/8'
+                        ? 'border-primary/40 bg-primary/10'
                         : 'border-border bg-card hover:bg-muted/30'
                     }`}
                   >
-                    <p className="text-sm font-semibold text-foreground">RSO — {r.start_date}</p>
+                    <p className="text-sm font-semibold text-foreground">{r.type} — {r.start_date}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">{r.symptoms || 'No symptoms recorded'}</p>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full mt-1 inline-block font-semibold ${
-                      r.status === 'approved' ? 'bg-green-500/15 text-green-400' : 'bg-amber-500/15 text-amber-400'
-                    }`}>
-                      {r.status === 'approved' ? 'Approved — ready to update' : 'Active'}
+                    <span className="text-[10px] px-2 py-0.5 rounded-full mt-1 inline-block font-semibold bg-green-500/15 text-green-400">
+                      Approved — ready to update
                     </span>
                   </button>
                 ))}
@@ -185,20 +190,18 @@ export default function StatusUpdate() {
 
             {selectedReport && (
               <>
-                {/* Diagnosis */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Diagnosis</Label>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Diagnosis *</Label>
                   <Textarea
-                    placeholder="e.g. Viral Infection, Sprained Ankle"
+                    placeholder="e.g. VIRAL INFECTION, SPRAINED ANKLE"
                     value={form.diagnosis}
                     onChange={e => setForm({ ...form, diagnosis: e.target.value.toUpperCase() })}
                     className="min-h-[70px]"
                   />
                 </div>
 
-                {/* Status Category */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Outcome</Label>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Outcome *</Label>
                   <div className="grid grid-cols-3 gap-2">
                     {STATUS_CATEGORIES.map(cat => (
                       <button
@@ -216,9 +219,8 @@ export default function StatusUpdate() {
                   </div>
                 </div>
 
-                {/* Duration & Dates */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Duration (days)</Label>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Duration (days) *</Label>
                   <Input
                     type="number"
                     min="1"
@@ -230,16 +232,15 @@ export default function StatusUpdate() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground uppercase tracking-wide">Start Date</Label>
+                    <Label className="text-xs text-muted-foreground uppercase tracking-wide">Start Date *</Label>
                     <Input type="date" value={form.start_date} onChange={e => handleStartChange(e.target.value)} />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground uppercase tracking-wide">End Date</Label>
+                    <Label className="text-xs text-muted-foreground uppercase tracking-wide">End Date *</Label>
                     <Input type="date" value={form.end_date} onChange={e => setForm({ ...form, end_date: e.target.value })} />
                   </div>
                 </div>
 
-                {/* Notes */}
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground uppercase tracking-wide">Notes (optional)</Label>
                   <Textarea
@@ -256,11 +257,11 @@ export default function StatusUpdate() {
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Preview</p>
                     {form.status_category === 'MC' ? (
                       <p className="text-xs font-mono text-foreground leading-relaxed">
-                        {formatRankName(user?.rank, user?.full_name)} SYMPTOMS: {selectedReport.symptoms?.toUpperCase() || '—'} DIAGNOSIS: {form.diagnosis} STATUS: {form.duration_days} DAY MC ({form.start_date.replace(/-/g,'').slice(2)}-{form.end_date.replace(/-/g,'').slice(2)})
+                        {formatRankName(user?.rank, selfName.toUpperCase())} SYMPTOMS: {selectedReport.symptoms?.toUpperCase() || '—'} DIAGNOSIS: {form.diagnosis} STATUS: {form.duration_days} DAY MC ({fmtDate(form.start_date)}-{fmtDate(form.end_date)})
                       </p>
                     ) : (
                       <p className="text-xs font-mono text-foreground leading-relaxed">
-                        {formatRankName(user?.rank, user?.full_name)} {form.duration_days} DAYS {form.status_category.toUpperCase()} ({form.start_date.replace(/-/g,'').slice(2)}-{form.end_date.replace(/-/g,'').slice(2)})
+                        {formatRankName(user?.rank, selfName.toUpperCase())} {form.duration_days} DAYS {form.status_category.toUpperCase()} ({fmtDate(form.start_date)}-{fmtDate(form.end_date)})
                       </p>
                     )}
                   </div>

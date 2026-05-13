@@ -71,7 +71,7 @@ const AuthenticatedApp = () => {
         <Route path="/actions/sft" element={<SFTSubmission />} />
         <Route path="/actions/status" element={<StatusMenu />} />
         <Route path="/actions/status/report/:type" element={<StatusReport />} />
-        <Route path="/actions/status/update/:type" element={<StatusUpdate />} />
+        <Route path="/actions/status/update/medical" element={<StatusUpdate />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/profile" element={<Profile />} />
 

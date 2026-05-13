@@ -8,6 +8,7 @@
         "RSO",
         "MA",
         "RSI",
+        "OTHERS",
         "PERM",
         "TEMP"
       ],
@@ -42,7 +43,7 @@
         "Light Duty",
         "Others"
       ],
-      "description": "Outcome category after seeing doctor (RSO only)"
+      "description": "Outcome category after seeing doctor (RSO/RSI only)"
     },
     "start_date": {
       "type": "string",
@@ -61,7 +62,7 @@
         "approved",
         "rejected"
       ],
-      "default": "active"
+      "default": "pending_approval"
     },
     "unit": {
       "type": "string"
@@ -70,90 +71,21 @@
       "type": "string"
     },
     "approved_by": {
-      "type": "string"
+      "type": "string",
+      "description": "Rank and name of the instructor who approved the request"
     },
     "approval_date": {
       "type": "string",
       "format": "date-time"
+    },
+    "instructor_notes": {
+      "type": "string",
+      "description": "Optional notes added by instructor at time of approval or denial"
     }
   },
   "required": [
     "type",
     "personnel_name",
     "unit"
-  ],
-  "rls": {
-    "create": {
-      "data.unit": "{{user.data.unit}}"
-    },
-    "read": {
-      "$and": [
-        {
-          "data.unit": "{{user.data.unit}}"
-        },
-        {
-          "$or": [
-            {
-              "data.personnel_id": "{{user.id}}"
-            },
-            {
-              "user_condition": {
-                "role": "instructor"
-              }
-            },
-            {
-              "user_condition": {
-                "role": "cadet_admin"
-              }
-            }
-          ]
-        }
-      ]
-    },
-    "update": {
-      "$and": [
-        {
-          "data.unit": "{{user.data.unit}}"
-        },
-        {
-          "$or": [
-            {
-              "data.personnel_id": "{{user.id}}"
-            },
-            {
-              "user_condition": {
-                "role": "instructor"
-              }
-            },
-            {
-              "user_condition": {
-                "role": "cadet_admin"
-              }
-            }
-          ]
-        }
-      ]
-    },
-    "delete": {
-      "$and": [
-        {
-          "data.unit": "{{user.data.unit}}"
-        },
-        {
-          "$or": [
-            {
-              "user_condition": {
-                "role": "instructor"
-              }
-            },
-            {
-              "user_condition": {
-                "role": "cadet_admin"
-              }
-            }
-          ]
-        }
-      ]
-    }
-  }
+  ]
 }

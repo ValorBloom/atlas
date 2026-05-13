@@ -8,107 +8,215 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatRankName } from '@/lib/constants';
-import { Check, ArrowRight, Stethoscope, Calendar, Clock } from 'lucide-react';
+import { Check, ArrowRight, Stethoscope } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
+// Format yyyy-MM-dd → DDMMYY
+function fmtDate(d) {
+  if (!d) return '';
+  return d.replace(/-/g, '').slice(2);
+}
+
+const TYPE_LABELS = {
+  RSO: 'Report Sick Outside',
+  RSI: 'Report Sick Inside',
+  MA: 'Medical Appointment',
+  OTHERS: 'Others',
+};
+
+const TYPE_DESC = {
+  RSO: 'Report your symptoms. After seeing the doctor, use Update RSO/RSI to add your diagnosis and outcome.',
+  RSI: 'Report sick at the Medical Centre. After seeing the MO, use Update RSO/RSI to add your diagnosis and outcome.',
+  MA: 'Log your upcoming medical appointment. Instructor must approve before it appears on parade state.',
+  OTHERS: 'Report another event or status. Instructor must approve before it appears on parade state.',
+};
+
 export default function StatusReport() {
   const { type } = useParams();
+  const upperType = (type || '').toUpperCase();
   const { user } = useOutletContext();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
 
-  const selfName = user?.full_name || '';
+  const selfName = user?.display_name || user?.full_name || '';
   const selfRank = user?.rank || '';
 
   const [data, setData] = useState({
+    // RSO / RSI
     symptoms: '',
-    details: '',
-    start_date: format(new Date(), 'yyyy-MM-dd'),
-    // MA fields
-    appointment_type: '',
+    notes: '',
+    date: format(new Date(), 'yyyy-MM-dd'),
+    // MA
+    appointment_name: '',
     location: '',
     appointment_date: format(new Date(), 'yyyy-MM-dd'),
     appointment_time: '',
+    ma_notes: '',
+    // OTHERS
+    event_name: '',
+    others_date: format(new Date(), 'yyyy-MM-dd'),
+    others_time: '',
+    others_location: '',
+    others_notes: '',
   });
 
-  const statusLabel = { RSO: 'Report Sick Outside', MA: 'Medical Appointment', RSI: 'Report Sick In' };
-  const statusDesc = {
-    RSO: 'Report your symptoms. Diagnosis will be updated after seeing the doctor.',
-    MA: 'Log your upcoming medical appointment.',
-    RSI: 'Report sick at the Medical Centre.',
-  };
+  const isMedical = upperType === 'RSO' || upperType === 'RSI';
+  const isMA = upperType === 'MA';
+  const isOthers = upperType === 'OTHERS';
 
-  // RSO/RSI: just symptoms + date. MA: appointment details.
-  const STEPS = type === 'MA' ? ['Details', 'Confirm'] : ['Symptoms', 'Confirm'];
-  const confirmStep = STEPS.length - 1;
+  // All types: Details → Confirm (2 steps)
+  const STEPS = ['Details', 'Confirm'];
+  const confirmStep = 1;
 
   const canNext = () => {
-    if (type === 'MA') {
-      if (step === 0) return data.appointment_type && data.location && data.appointment_date && data.appointment_time;
-    } else {
-      if (step === 0) return !!(data.symptoms || data.details);
+    if (step === 0) {
+      if (isMedical) return !!(data.symptoms.trim()) && !!(data.date);
+      if (isMA) return !!(data.appointment_name.trim()) && !!(data.location.trim()) && !!(data.appointment_date) && !!(data.appointment_time.trim());
+      if (isOthers) return !!(data.event_name.trim()) && !!(data.others_date) && !!(data.others_time.trim());
     }
     return true;
   };
 
   const handleSubmit = async () => {
     setSaving(true);
-    const needsApproval = type === 'RSO';
 
-    const reportData = {
-      type,
-      personnel_name: selfName,
+    const displayName = selfName.toUpperCase();
+    const rankName = formatRankName(selfRank, displayName);
+
+    let reportData = {
+      type: upperType,
+      personnel_name: displayName,
       personnel_rank: selfRank,
       personnel_id: user?.id,
-      status: needsApproval ? 'pending_approval' : 'active',
+      status: 'pending_approval',
       unit: user?.unit,
       reported_by: user?.email,
-      start_date: data.start_date,
     };
 
-    if (type === 'MA') {
-      reportData.details = [
-        `APPOINTMENT TYPE: ${data.appointment_type}`,
-        `LOCATION: ${data.location}`,
-        `DATE: ${data.appointment_date.replace(/-/g, '').slice(2)}`,
-        `TIME: ${data.appointment_time}H`,
-      ].join('\n');
+    let notifMessage = '';
+
+    if (isMedical) {
+      reportData.symptoms = data.symptoms.toUpperCase();
+      reportData.details = data.notes || '';
+      reportData.start_date = data.date;
+      notifMessage = `${rankName} — ${upperType} — SYMPTOMS: ${data.symptoms.toUpperCase()}${data.notes ? ` — NOTES: ${data.notes}` : ''}`;
+    } else if (isMA) {
+      const dateFmt = fmtDate(data.appointment_date);
       reportData.start_date = data.appointment_date;
-    } else {
-      reportData.symptoms = data.symptoms;
-      reportData.details = data.details;
-      // diagnosis left blank — to be filled via Update Status after seeing doctor
+      reportData.details = [
+        `NAME: ${data.appointment_name.toUpperCase()}`,
+        `LOCATION: ${data.location.toUpperCase()}`,
+        `DATE: ${dateFmt}`,
+        `TIME OF APPOINTMENT: ${data.appointment_time}H`,
+        data.ma_notes ? `NOTES: ${data.ma_notes.toUpperCase()}` : '',
+      ].filter(Boolean).join('\n');
+      notifMessage = `${rankName} — MA — ${data.appointment_name.toUpperCase()} @ ${data.location.toUpperCase()} on ${dateFmt} at ${data.appointment_time}H`;
+    } else if (isOthers) {
+      const dateFmt = fmtDate(data.others_date);
+      reportData.start_date = data.others_date;
+      reportData.details = [
+        `NAME: ${data.event_name.toUpperCase()}`,
+        data.others_location ? `LOCATION: ${data.others_location.toUpperCase()}` : '',
+        `DATE: ${dateFmt}`,
+        `TIME OF APPOINTMENT: ${data.others_time}H`,
+        data.others_notes ? `NOTES: ${data.others_notes.toUpperCase()}` : '',
+      ].filter(Boolean).join('\n');
+      notifMessage = `${rankName} — OTHERS — ${data.event_name.toUpperCase()} on ${dateFmt} at ${data.others_time}H`;
     }
 
     await base44.entities.StatusReport.create(reportData);
 
-    // Notify admin/instructors
+    // Notify cadet admins / instructors (unit-wide notification, no recipient_email = broadcast)
     await base44.entities.Notification.create({
-      title: `${type} Reported`,
-      message: `${formatRankName(selfRank, selfName)} — ${type}${needsApproval ? ' (Pending Approval)' : ''}: ${data.symptoms || data.appointment_type || ''}`,
-      type: needsApproval ? 'warning' : 'info',
+      title: `${upperType} Request — Pending Approval`,
+      message: notifMessage,
+      type: 'warning',
       category: 'status',
       recipient_unit: user?.unit,
     });
 
     await base44.entities.AuditLog.create({
-      action: `status_report_${type.toLowerCase()}`,
+      action: `status_report_${upperType.toLowerCase()}`,
       category: 'status',
-      details: `${type} for ${selfName}`,
+      details: notifMessage,
       performed_by: user?.email,
       unit: user?.unit,
     });
 
     setSaving(false);
-    toast.success(needsApproval ? 'RSO submitted — pending approval' : `${type} reported`);
+    toast.success(`${upperType} submitted — pending instructor approval`);
     navigate('/actions/status');
   };
 
+  // ── Confirm cards ──────────────────────────────────────────────
+  const rankName = formatRankName(selfRank, selfName.toUpperCase());
+
+  const MedicalConfirm = () => (
+    <Card className="bg-muted/30">
+      <CardContent className="p-4 space-y-2">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">{upperType} Report</p>
+        {[
+          ['Name', rankName],
+          ['Symptoms', data.symptoms || '—'],
+          ['Date', data.date],
+          data.notes ? ['Notes', data.notes] : null,
+        ].filter(Boolean).map(([k, v]) => (
+          <div key={k} className="flex items-start gap-2">
+            <span className="text-xs text-muted-foreground w-20 shrink-0">{k}</span>
+            <span className="text-xs font-medium text-foreground">{v}</span>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+
+  const MAConfirm = () => (
+    <Card className="bg-muted/30">
+      <CardContent className="p-4 space-y-2">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">MA Details</p>
+        {[
+          ['Name', rankName],
+          ['Appointment', data.appointment_name.toUpperCase() || '—'],
+          ['Location', data.location.toUpperCase() || '—'],
+          ['Date', fmtDate(data.appointment_date)],
+          ['Time', `${data.appointment_time}H`],
+          data.ma_notes ? ['Notes', data.ma_notes] : null,
+        ].filter(Boolean).map(([k, v]) => (
+          <div key={k} className="flex items-start gap-2">
+            <span className="text-xs text-muted-foreground w-24 shrink-0">{k}</span>
+            <span className="text-xs font-medium text-foreground">{v}</span>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+
+  const OthersConfirm = () => (
+    <Card className="bg-muted/30">
+      <CardContent className="p-4 space-y-2">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Others Details</p>
+        {[
+          ['Name', rankName],
+          ['Event', data.event_name.toUpperCase() || '—'],
+          data.others_location ? ['Location', data.others_location.toUpperCase()] : null,
+          ['Date', fmtDate(data.others_date)],
+          ['Time', `${data.others_time}H`],
+          data.others_notes ? ['Notes', data.others_notes] : null,
+        ].filter(Boolean).map(([k, v]) => (
+          <div key={k} className="flex items-start gap-2">
+            <span className="text-xs text-muted-foreground w-24 shrink-0">{k}</span>
+            <span className="text-xs font-medium text-foreground">{v}</span>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div>
-      <PageHeader title={statusLabel[type] || `Report ${type}`} backTo="/actions/status" />
+      <PageHeader title={TYPE_LABELS[upperType] || `Report ${upperType}`} backTo="/actions/status" />
 
       {/* Step indicator */}
       <div className="flex items-center justify-center gap-2 py-4 px-4">
@@ -127,134 +235,155 @@ export default function StatusReport() {
         ))}
       </div>
 
-      <div className="px-4 py-3 space-y-4">
+      <div className="px-4 py-3 space-y-4 pb-24">
 
-        {/* Type info banner */}
+        {/* Info banner */}
         {step === 0 && (
           <div className="p-3 rounded-xl bg-muted/40 border border-border flex items-start gap-2.5">
             <Stethoscope className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-            <p className="text-xs text-muted-foreground leading-relaxed">{statusDesc[type]}</p>
+            <p className="text-xs text-muted-foreground leading-relaxed">{TYPE_DESC[upperType]}</p>
           </div>
         )}
 
-        {/* MA Step 0 */}
-        {type === 'MA' && step === 0 && (
+        {/* ── RSO / RSI Form ── */}
+        {isMedical && step === 0 && (
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-sm text-muted-foreground uppercase tracking-wide">Appointment Type</Label>
-              <Input
-                placeholder="e.g. DENTAL, MEDICAL, SPECIALIST"
-                value={data.appointment_type}
-                onChange={(e) => setData({ ...data, appointment_type: e.target.value.toUpperCase() })}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-sm text-muted-foreground uppercase tracking-wide">Location / Clinic</Label>
-              <Input
-                placeholder="e.g. ROYCE DENTAL CLINIC - YISHUN"
-                value={data.location}
-                onChange={(e) => setData({ ...data, location: e.target.value.toUpperCase() })}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-sm text-muted-foreground uppercase tracking-wide">Date</Label>
-                <Input type="date" value={data.appointment_date}
-                  onChange={(e) => setData({ ...data, appointment_date: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-sm text-muted-foreground uppercase tracking-wide">Time (HHmm)</Label>
-                <Input placeholder="1100" value={data.appointment_time} maxLength={4}
-                  onChange={(e) => setData({ ...data, appointment_time: e.target.value })} />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* MA Confirm */}
-        {type === 'MA' && step === confirmStep && (
-          <Card className="bg-muted/30">
-            <CardContent className="p-4">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">MA Details</p>
-              <div className="space-y-2">
-                {[
-                  ['Name', formatRankName(selfRank, selfName)],
-                  ['Appt Type', data.appointment_type || '—'],
-                  ['Location', data.location || '—'],
-                  ['Date', data.appointment_date],
-                  ['Time', `${data.appointment_time}H`],
-                ].map(([k, v]) => (
-                  <div key={k} className="flex items-start gap-2">
-                    <span className="text-xs text-muted-foreground w-24 shrink-0">{k}</span>
-                    <span className="text-xs font-medium text-foreground">{v}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* RSO / RSI Step 0 — Symptoms only */}
-        {type !== 'MA' && step === 0 && (
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label className="text-sm text-muted-foreground uppercase tracking-wide">Symptoms</Label>
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Symptoms *</Label>
               <Textarea
-                placeholder={type === 'RSI' ? 'e.g. Fever, Headache, Bodyache' : 'e.g. Knee pain, Swollen ankle'}
+                placeholder={upperType === 'RSI' ? 'e.g. Fever, Headache, Bodyache' : 'e.g. Knee pain, Swollen ankle'}
                 value={data.symptoms}
                 onChange={(e) => setData({ ...data, symptoms: e.target.value })}
                 className="min-h-[90px]"
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm text-muted-foreground uppercase tracking-wide">Date</Label>
-              <Input type="date" value={data.start_date}
-                onChange={(e) => setData({ ...data, start_date: e.target.value })} />
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Date *</Label>
+              <Input type="date" value={data.date}
+                onChange={(e) => setData({ ...data, date: e.target.value })} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-sm text-muted-foreground uppercase tracking-wide">Additional Notes (optional)</Label>
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Notes (optional)</Label>
               <Textarea
                 placeholder="Any other relevant info..."
-                value={data.details}
-                onChange={(e) => setData({ ...data, details: e.target.value })}
+                value={data.notes}
+                onChange={(e) => setData({ ...data, notes: e.target.value })}
                 className="min-h-[60px]"
               />
             </div>
           </div>
         )}
-
-        {/* RSO / RSI Confirm */}
-        {type !== 'MA' && step === confirmStep && (
+        {isMedical && step === confirmStep && (
           <div className="space-y-3">
-            <Card className="bg-muted/30">
-              <CardContent className="p-4 space-y-2">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">{type} Report</p>
-                <div className="flex items-start gap-2">
-                  <span className="text-xs text-muted-foreground w-20 shrink-0">Name</span>
-                  <span className="text-xs font-semibold text-foreground">{formatRankName(selfRank, selfName)}</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-xs text-muted-foreground w-20 shrink-0">Symptoms</span>
-                  <span className="text-xs text-foreground">{data.symptoms || '—'}</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-xs text-muted-foreground w-20 shrink-0">Date</span>
-                  <span className="text-xs text-foreground">{data.start_date}</span>
-                </div>
-                {data.details && (
-                  <div className="flex items-start gap-2">
-                    <span className="text-xs text-muted-foreground w-20 shrink-0">Notes</span>
-                    <span className="text-xs text-foreground">{data.details}</span>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-            {type === 'RSO' && (
-              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25">
-                <p className="text-xs text-amber-400 font-medium">⚠ Pending instructor approval</p>
-                <p className="text-xs text-amber-400/70 mt-0.5">After seeing the doctor, use <strong>Update RSO</strong> to add your diagnosis and MC details.</p>
+            <MedicalConfirm />
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25">
+              <p className="text-xs text-amber-400 font-medium">⚠ Pending instructor approval</p>
+              <p className="text-xs text-amber-400/70 mt-0.5">After seeing the {upperType === 'RSI' ? 'MO' : 'doctor'}, use <strong>Update RSO / RSI</strong> to add your diagnosis and outcome.</p>
+            </div>
+          </div>
+        )}
+
+        {/* ── MA Form ── */}
+        {isMA && step === 0 && (
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Name of Appointment *</Label>
+              <Input
+                placeholder="e.g. NCS APPOINTMENT, DENTAL APPOINTMENT"
+                value={data.appointment_name}
+                onChange={(e) => setData({ ...data, appointment_name: e.target.value.toUpperCase() })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Location *</Label>
+              <Input
+                placeholder="e.g. NATIONAL SKIN CENTER"
+                value={data.location}
+                onChange={(e) => setData({ ...data, location: e.target.value.toUpperCase() })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Date *</Label>
+                <Input type="date" value={data.appointment_date}
+                  onChange={(e) => setData({ ...data, appointment_date: e.target.value })} />
               </div>
-            )}
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Time (HHmm) *</Label>
+                <Input placeholder="0840" value={data.appointment_time} maxLength={4}
+                  onChange={(e) => setData({ ...data, appointment_time: e.target.value.replace(/\D/g, '') })} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Notes (optional)</Label>
+              <Textarea
+                placeholder="Any additional info..."
+                value={data.ma_notes}
+                onChange={(e) => setData({ ...data, ma_notes: e.target.value })}
+                className="min-h-[60px]"
+              />
+            </div>
+          </div>
+        )}
+        {isMA && step === confirmStep && (
+          <div className="space-y-3">
+            <MAConfirm />
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25">
+              <p className="text-xs text-amber-400 font-medium">⚠ Pending instructor approval</p>
+              <p className="text-xs text-amber-400/70 mt-0.5">The endorsing instructor will be shown on the parade state once approved.</p>
+            </div>
+          </div>
+        )}
+
+        {/* ── OTHERS Form ── */}
+        {isOthers && step === 0 && (
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Name of Event / Status *</Label>
+              <Input
+                placeholder="e.g. CJC ANNIVERSARY AWARDS CEREMONY"
+                value={data.event_name}
+                onChange={(e) => setData({ ...data, event_name: e.target.value.toUpperCase() })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Location (optional)</Label>
+              <Input
+                placeholder="e.g. CATHOLIC JUNIOR COLLEGE"
+                value={data.others_location}
+                onChange={(e) => setData({ ...data, others_location: e.target.value.toUpperCase() })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Date *</Label>
+                <Input type="date" value={data.others_date}
+                  onChange={(e) => setData({ ...data, others_date: e.target.value })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Time (HHmm) *</Label>
+                <Input placeholder="1315" value={data.others_time} maxLength={4}
+                  onChange={(e) => setData({ ...data, others_time: e.target.value.replace(/\D/g, '') })} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Notes (optional)</Label>
+              <Textarea
+                placeholder="Any additional info..."
+                value={data.others_notes}
+                onChange={(e) => setData({ ...data, others_notes: e.target.value })}
+                className="min-h-[60px]"
+              />
+            </div>
+          </div>
+        )}
+        {isOthers && step === confirmStep && (
+          <div className="space-y-3">
+            <OthersConfirm />
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25">
+              <p className="text-xs text-amber-400 font-medium">⚠ Pending instructor approval</p>
+              <p className="text-xs text-amber-400/70 mt-0.5">The endorsing instructor will be shown on the parade state once approved.</p>
+            </div>
           </div>
         )}
 
@@ -269,7 +398,7 @@ export default function StatusReport() {
             </Button>
           ) : (
             <Button className="flex-1" onClick={handleSubmit} disabled={saving}>
-              <Check className="h-4 w-4 mr-1" />{saving ? 'Submitting...' : 'Submit'}
+              <Check className="h-4 w-4 mr-1" />{saving ? 'Submitting…' : 'Submit'}
             </Button>
           )}
         </div>
