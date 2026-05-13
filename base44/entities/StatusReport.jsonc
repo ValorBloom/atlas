@@ -87,5 +87,75 @@
     "type",
     "personnel_name",
     "unit"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "data.personnel_id": "{{user.id}}"
+        },
+        {
+          "data.unit": "{{user.data.unit}}",
+          "$or": [
+            {
+              "user_condition": {
+                "user_role": "instructor"
+              }
+            },
+            {
+              "user_condition": {
+                "user_role": "cadet_admin"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "data.personnel_id": "{{user.id}}"
+        },
+        {
+          "data.unit": "{{user.data.unit}}",
+          "$or": [
+            {
+              "user_condition": {
+                "user_role": "instructor"
+              }
+            },
+            {
+              "user_condition": {
+                "user_role": "cadet_admin"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.personnel_id": "{{user.id}}",
+          "data.status": "pending_approval"
+        },
+        {
+          "data.unit": "{{user.data.unit}}",
+          "$or": [
+            {
+              "user_condition": {
+                "user_role": "instructor"
+              }
+            },
+            {
+              "user_condition": {
+                "user_role": "cadet_admin"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "delete": null
+  }
 }
