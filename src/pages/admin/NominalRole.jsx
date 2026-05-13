@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 
 function EditRow({ u, onSave, onCancel, unit }) {
   const [form, setForm] = useState({
-    full_name: u.display_name || u.full_name || '',
+    display_name: u.display_name || u.full_name || '',
     rank: u.rank || '',
     platoon: u.platoon || '',
   });
@@ -37,7 +37,7 @@ function EditRow({ u, onSave, onCancel, unit }) {
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1">
           <p className="text-[10px] text-muted-foreground uppercase">Name</p>
-          <Input value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} className="h-8 text-xs" />
+          <Input value={form.display_name} onChange={e => setForm({ ...form, display_name: e.target.value })} className="h-8 text-xs" />
         </div>
         <div className="space-y-1">
           <p className="text-[10px] text-muted-foreground uppercase">Rank</p>

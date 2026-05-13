@@ -54,7 +54,7 @@ export default function Profile() {
   useEffect(() => {
     if (user) {
       setForm({
-        full_name: user.full_name || '',
+        display_name: user.display_name || user.full_name || '',
         rank: user.rank || '',
         unit: user.unit || '',
         platoon: user.platoon || '',
@@ -62,6 +62,7 @@ export default function Profile() {
     }
   }, [user]);
 
+  const displayName = user?.display_name || user?.full_name || '';
   const unitChanged = editing && form.unit !== (user?.unit || '');
   const needsPin = unitChanged;
 
@@ -80,13 +81,9 @@ export default function Profile() {
     setPinError('');
 
     try {
-      // Update full_name directly via auth (frontend SDK — the only reliable way)
-      if (form.full_name && form.full_name !== user?.full_name) {
-        await base44.auth.updateMe({ full_name: form.full_name });
-      }
-
-      // Update rank/unit/platoon via backend function
+      // Update all fields via backend function (display_name is a custom writable field)
       const entityUpdates = {
+        display_name: form.display_name,
         rank: form.rank,
         unit: form.unit,
         platoon: form.platoon || null,
@@ -141,7 +138,7 @@ export default function Profile() {
     base44.auth.logout('/');
   };
 
-  const fullName = user?.full_name || '';
+  const fullName = displayName;
   const deleteReady = deleteInput.trim() === fullName.trim() && fullName.length > 0;
   const initials = fullName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
   const roleLabel = instructor ? 'Instructor' : cadetAdmin ? 'Cadet Admin' : 'Cadet';
@@ -211,7 +208,7 @@ export default function Profile() {
             <p className="text-sm font-semibold">Details</p>
             {!editing ? (
               <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => {
-                setForm({ full_name: user?.full_name || '', rank: user?.rank || '', unit: user?.unit || '', platoon: user?.platoon || '' });
+                setForm({ display_name: user?.display_name || user?.full_name || '', rank: user?.rank || '', unit: user?.unit || '', platoon: user?.platoon || '' });
                 setEditing(true);
               }}>Edit</Button>
             ) : (
@@ -237,12 +234,12 @@ export default function Profile() {
               {editing ? (
                 <Input
                   className="h-9 w-44 text-sm bg-background border-border"
-                  value={form.full_name}
-                  onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                  value={form.display_name}
+                  onChange={(e) => setForm({ ...form, display_name: e.target.value })}
                   placeholder="Full name"
                 />
               ) : (
-                <span className="text-sm font-medium">{user?.full_name || '—'}</span>
+                <span className="text-sm font-medium">{displayName || '—'}</span>
               )}
             </div>
 
