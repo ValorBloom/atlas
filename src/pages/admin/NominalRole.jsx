@@ -10,7 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { MobileSelect, MobileSelectItem } from '@/components/ui/MobileSelect';
 import { RANKS, UNITS, getGroupLabel, getGroupOptions } from '@/lib/constants';
-import { Users, Pencil, Check, X, Upload, FileText, AlertTriangle } from 'lucide-react';
+import { Users, Pencil, Check, X, Upload, FileText, AlertTriangle, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 function EditRow({ u, onSave, onCancel, unit }) {
@@ -64,11 +64,32 @@ function EditRow({ u, onSave, onCancel, unit }) {
   );
 }
 
-function UserRow({ u, unit }) {
+function UserRow({ u, unit, canDelete }) {
   const [editing, setEditing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const qc = useQueryClient();
 
+  const handleDelete = async () => {
+    setDeleting(true);
+    await base44.entities.User.delete(u.id);
+    qc.invalidateQueries({ queryKey: ['nominal-users', unit] });
+    toast.success('Cadet removed');
+  };
+
   if (editing) return <EditRow u={u} unit={unit} onSave={() => { setEditing(false); qc.invalidateQueries({ queryKey: ['nominal-users', unit] }); }} onCancel={() => setEditing(false)} />;
+
+  if (confirmDelete) return (
+    <div className="flex items-center justify-between p-3 rounded-xl border border-destructive/40 bg-destructive/5">
+      <p className="text-xs text-destructive font-medium">Remove {u.display_name || u.full_name}?</p>
+      <div className="flex gap-2">
+        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setConfirmDelete(false)} disabled={deleting}>Cancel</Button>
+        <Button variant="destructive" size="sm" className="h-7 text-xs" onClick={handleDelete} disabled={deleting}>
+          {deleting ? 'Removing…' : 'Confirm'}
+        </Button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="flex items-center justify-between p-3 rounded-xl border border-border bg-card">
@@ -76,9 +97,16 @@ function UserRow({ u, unit }) {
         <p className="text-sm font-semibold">{u.rank ? `${u.rank} ` : ''}{u.display_name || u.full_name || <span className="text-muted-foreground italic">No name</span>}</p>
         <p className="text-xs text-muted-foreground">{u.platoon || '—'} · {u.email}</p>
       </div>
-      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setEditing(true)}>
-        <Pencil className="h-3.5 w-3.5" />
-      </Button>
+      <div className="flex items-center gap-1">
+        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setEditing(true)}>
+          <Pencil className="h-3.5 w-3.5" />
+        </Button>
+        {canDelete && (
+          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive" onClick={() => setConfirmDelete(true)}>
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
@@ -203,14 +231,14 @@ export default function NominalRole() {
               (grouped[g]?.length > 0) && (
                 <div key={g} className="space-y-2">
                   <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">{groupLabel} — {g} ({grouped[g].length})</p>
-                  {grouped[g].map(u => <UserRow key={u.id} u={u} unit={unit} />)}
+                  {grouped[g].map(u => <UserRow key={u.id} u={u} unit={unit} canDelete />)}
                 </div>
               )
             ))}
             {ungrouped.length > 0 && (
               <div className="space-y-2">
                 <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Cadets — Unassigned ({ungrouped.length})</p>
-                {ungrouped.map(u => <UserRow key={u.id} u={u} unit={unit} />)}
+                {ungrouped.map(u => <UserRow key={u.id} u={u} unit={unit} canDelete />)}
               </div>
             )}
             {/* Instructors */}

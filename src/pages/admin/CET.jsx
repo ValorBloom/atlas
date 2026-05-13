@@ -133,7 +133,7 @@ export default function CET() {
     setLoadingQuote(true);
     const avoidList = usedQuotes.length > 0 ? `Do NOT use any of these quotes: ${usedQuotes.join(' | ')}. ` : '';
     const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `Give me one unique, short, powerful motivational quote suitable for military cadets. ${avoidList}Return ONLY a fresh quote different from any common ones. Format: {"quote": "...", "author": "..."}`,
+      prompt: `Give me one unique, short, powerful motivational quote suitable for military cadets. ${avoidList}Return a fresh quote with its REAL, SPECIFIC author (a real person's name — never use "Unknown", "Anonymous", or similar). The author MUST be a real historical figure, military leader, or well-known person. Format: {"quote": "...", "author": "..."}`,
       response_json_schema: {
         type: 'object',
         properties: {
