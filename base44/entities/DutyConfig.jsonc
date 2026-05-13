@@ -34,25 +34,24 @@
   ],
   "rls": {
     "create": {
-      "user_condition": {
-        "user_role": "instructor"
-      },
-      "data.unit": "{{user.unit}}"
+      "data.unit": "{{user.data.unit}}",
+      "$or": [
+        {
+          "user_condition": {
+            "user_role": "instructor"
+          }
+        },
+        {
+          "user_condition": {
+            "user_role": "cadet_admin"
+          }
+        }
+      ]
     },
     "read": {
-      "data.unit": "{{user.unit}}"
+      "data.unit": "{{user.data.unit}}"
     },
-    "update": {
-      "user_condition": {
-        "user_role": "instructor"
-      },
-      "data.unit": "{{user.unit}}"
-    },
-    "delete": {
-      "user_condition": {
-        "user_role": "instructor"
-      },
-      "data.unit": "{{user.unit}}"
-    }
+    "update": null,
+    "delete": null
   }
 }
