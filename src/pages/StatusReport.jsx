@@ -289,7 +289,7 @@ export default function StatusReport() {
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground uppercase tracking-wide">Name of Appointment *</Label>
               <Input
-                placeholder="e.g. NCS APPOINTMENT, DENTAL APPOINTMENT"
+                placeholder="e.g. DENTAL APPOINTMENT"
                 value={data.appointment_name}
                 onChange={(e) => setData({ ...data, appointment_name: e.target.value.toUpperCase() })}
               />
@@ -297,7 +297,7 @@ export default function StatusReport() {
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground uppercase tracking-wide">Location *</Label>
               <Input
-                placeholder="e.g. NATIONAL SKIN CENTER"
+                placeholder=""
                 value={data.location}
                 onChange={(e) => setData({ ...data, location: e.target.value.toUpperCase() })}
               />
@@ -341,7 +341,7 @@ export default function StatusReport() {
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground uppercase tracking-wide">Name of Event / Status *</Label>
               <Input
-                placeholder="e.g. CJC ANNIVERSARY AWARDS CEREMONY"
+                placeholder="e.g. AWARD CEREMONY, INTERVIEW"
                 value={data.event_name}
                 onChange={(e) => setData({ ...data, event_name: e.target.value.toUpperCase() })}
               />
@@ -349,7 +349,7 @@ export default function StatusReport() {
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground uppercase tracking-wide">Location (optional)</Label>
               <Input
-                placeholder="e.g. CATHOLIC JUNIOR COLLEGE"
+                placeholder="e.g. ORCHARD ROAD"
                 value={data.others_location}
                 onChange={(e) => setData({ ...data, others_location: e.target.value.toUpperCase() })}
               />

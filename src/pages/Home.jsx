@@ -157,10 +157,11 @@ export default function Home() {
     return 'Good evening';
   };
 
-  const lastName = user?.full_name?.split(' ').slice(-1)[0] || '';
+  const name = user?.display_name || user?.full_name || '';
+  const lastName = name.split(' ').slice(-1)[0] || '';
   const displayName = instructor
-    ? (user?.rank ? `${user.rank} ${lastName}` : user?.full_name || 'Instructor')
-    : (formatRankName(user?.rank || '', user?.full_name || '') || 'Welcome');
+    ? (user?.rank ? `${user.rank} ${lastName}` : name || 'Instructor')
+    : (formatRankName(user?.rank || '', name) || 'Welcome');
 
   const unread = notifications.length;
   const pinnedActions = ALL_CADET_ACTIONS.filter(a => pinnedKeys.includes(a.key));
