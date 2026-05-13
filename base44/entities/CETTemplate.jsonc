@@ -36,42 +36,40 @@
   ],
   "rls": {
     "create": {
+      "data.unit": "{{user.data.unit}}",
       "user_condition": {
         "user_role": "instructor"
-      },
-      "data.unit": "{{user.unit}}"
+      }
     },
     "read": {
+      "data.unit": "{{user.data.unit}}",
       "user_condition": {
         "user_role": "instructor"
-      },
-      "data.unit": "{{user.unit}}"
+      }
     },
     "update": {
       "$or": [
         {
-          "created_by": "{{user.email}}",
-          "data.unit": "{{user.unit}}"
+          "created_by": "{{user.email}}"
         },
         {
+          "data.unit": "{{user.data.unit}}",
           "user_condition": {
             "user_role": "instructor"
-          },
-          "data.unit": "{{user.unit}}"
+          }
         }
       ]
     },
     "delete": {
       "$or": [
         {
-          "created_by": "{{user.email}}",
-          "data.unit": "{{user.unit}}"
+          "created_by": "{{user.email}}"
         },
         {
+          "data.unit": "{{user.data.unit}}",
           "user_condition": {
             "user_role": "instructor"
-          },
-          "data.unit": "{{user.unit}}"
+          }
         }
       ]
     }
