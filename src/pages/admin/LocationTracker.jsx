@@ -43,7 +43,7 @@ export default function LocationTracker() {
     return differenceInMinutes(now, leaveDate) > 60;
   };
 
-  const backPath = isInstructor(user) ? '/admin' : '/';
+  const backPath = '/';
 
   return (
     <div className="pb-24 relative">

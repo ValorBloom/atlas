@@ -422,7 +422,7 @@ export default function ParadeState() {
   if (isLoading) {
     return (
       <div>
-        <PageHeader title="Parade State" backTo="/admin" />
+        <PageHeader title="Parade State" backTo="/" />
         <div className="flex justify-center py-16">
           <div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" />
         </div>
@@ -434,7 +434,7 @@ export default function ParadeState() {
     <div>
       <PageHeader
         title="Parade State"
-        backTo="/admin"
+        backTo="/"
         subtitle={`${unit} · ${today}`}
         rightAction={
           cadetAdmin && (

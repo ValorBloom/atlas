@@ -50,7 +50,7 @@ export default function DataClear() {
 
   return (
     <div>
-      <PageHeader title="Data Clear" backTo="/admin" subtitle="Controlled data operations" />
+      <PageHeader title="Data Clear" backTo="/" subtitle="Controlled data operations" />
       <div className="px-4 py-4 space-y-5">
         <Alert className="bg-destructive/5 border-destructive/20">
           <ShieldAlert className="h-4 w-4 text-destructive" />

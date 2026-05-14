@@ -174,7 +174,7 @@ export default function NominalRole() {
 
   return (
     <div>
-      <PageHeader title="Nominal Role" backTo="/admin" subtitle={`${unit} Wing — All personnel`} />
+      <PageHeader title="Nominal Role" backTo="/" subtitle={`${unit} Wing — All personnel`} />
       <div className="px-4 py-4 space-y-5 pb-24">
 
         {/* Stats */}

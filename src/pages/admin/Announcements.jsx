@@ -56,7 +56,7 @@ export default function Announcements() {
     <div>
       <PageHeader 
         title="Announcements" 
-        backTo="/admin" 
+        backTo="/"
         rightAction={
           <Button variant="ghost" size="sm" onClick={() => setShowForm(!showForm)}>
             {showForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}

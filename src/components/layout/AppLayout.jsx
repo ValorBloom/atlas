@@ -14,13 +14,12 @@ export default function AppLayout() {
 
   const refreshUser = async (optimisticUpdates = null) => {
     if (optimisticUpdates) {
-      // Apply updates immediately so UI reflects changes without waiting for cache
       setUser(prev => ({ ...prev, ...optimisticUpdates }));
     }
-    // Re-fetch to sync with server
-    const u = await base44.entities.User.filter({ email: (await base44.auth.me())?.email }).then(r => r[0]).catch(() => null);
-    if (u) setUser(prev => ({ ...prev, ...u }));
-    return u;
+    // Auth me() always has display_name; entity filter has extra fields like platoon
+    const authUser = await base44.auth.me().catch(() => null);
+    if (authUser) setUser(prev => ({ ...prev, ...authUser }));
+    return authUser;
   };
 
   useEffect(() => {
