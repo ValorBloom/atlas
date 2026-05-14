@@ -29,6 +29,7 @@ import Tasks from './pages/Tasks';
 import TaskDetail from './pages/TaskDetail';
 
 // Admin Pages
+
 import Dashboard from './pages/admin/Dashboard';
 import LocationTracker from './pages/admin/LocationTracker';
 import AppointAdmin from './pages/admin/AppointAdmin';
@@ -39,6 +40,7 @@ import DataClear from './pages/admin/DataClear';
 import Announcements from './pages/admin/Announcements';
 import CET from './pages/admin/CET';
 import DutyAdmin from './pages/admin/DutyAdmin';
+
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();

@@ -100,13 +100,6 @@ export const SFT_LOCATIONS = [
   "Basketball court", "Track", "Gym", "SOC Ground", "Pool", "Training Shed"
 ];
 
-export const POINT_REASONS = [
-  "Punctuality", "Cleanliness", "Initiative", "Teamwork",
-  "Physical Performance", "Duty Excellence", "Leadership",
-  "Late for parade", "Improper attire", "Missing equipment",
-  "Custom"
-];
-
 export const STATUS_TYPES = ["RSO", "MA", "RSI"];
 
 // Duty types per unit

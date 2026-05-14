@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useOutletContext, useNavigate, Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -8,20 +8,22 @@ import { isInstructor, isCadetAdmin, formatRankName } from '@/lib/constants';
 
 const ATLAS_LOGO_DARK = 'https://media.base44.com/images/public/69e4b33d62de074557854c0f/299b68b6d_image-removebg-preview.png';
 import {
-  MapPin, Activity, FileText, Trophy, Bell,
+  MapPin, Activity, FileText, Bell,
   ClipboardList, ChevronRight, Megaphone,
   Calendar, Dumbbell, Users, Shield, CheckSquare, Settings, X, Check, CalendarDays,
   Eye, EyeOff, ListTodo
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import TodaySummary from '@/components/home/TodaySummary';
+import { SkeletonGrid } from '@/components/ui/SkeletonCard';
+import { motion } from 'framer-motion';
 
 // All available pinnable actions for cadets
 const ALL_CADET_ACTIONS = [
   { key: 'movement', to: '/actions/movement', icon: MapPin, label: 'Movement', color: 'primary' },
   { key: 'sft', to: '/actions/sft', icon: Activity, label: 'SFT', color: 'green' },
   { key: 'status', to: '/actions/status', icon: FileText, label: 'Status', color: 'amber' },
-
   { key: 'cet', to: '/actions/cet', icon: Calendar, label: 'View CET', color: 'blue' },
   { key: 'duty', to: '/actions/duty', icon: CalendarDays, label: 'Duty', color: 'purple' },
   { key: 'tasks', to: '/tasks', icon: ListTodo, label: 'Tasks', color: 'green' },
@@ -76,12 +78,15 @@ export default function Home() {
   const instructor = isInstructor(user);
   const cadetAdmin = isCadetAdmin(user);
   const containerRef = useRef(null);
+  const [lastUpdated, setLastUpdated] = useState(Date.now());
 
   const refresh = async () => {
     await qc.invalidateQueries({ queryKey: ['notifications-unread'] });
     await qc.invalidateQueries({ queryKey: ['sft-windows-active'] });
     await qc.invalidateQueries({ queryKey: ['movements-active-home'] });
     await qc.invalidateQueries({ queryKey: ['cet-today'] });
+    await qc.invalidateQueries({ queryKey: ['tasks'] });
+    setLastUpdated(Date.now());
   };
   const { pullDistance, refreshing } = usePullToRefresh(refresh, containerRef);
   const [customizing, setCustomizing] = useState(false);
@@ -122,6 +127,12 @@ export default function Home() {
     queryFn: () => base44.entities.CETRecord.filter({ unit: user?.unit, date: todayStr, is_published: true }, '-date', 1),
     enabled: !!user?.unit && !instructor,
     select: data => data?.[0],
+  });
+
+  const { data: myTasks = [] } = useQuery({
+    queryKey: ['tasks-mine-home', user?.id, user?.unit],
+    queryFn: () => base44.entities.Task.filter({ unit: user?.unit, assigned_to_id: user?.id, status: 'Not Done' }, '-created_date', 20),
+    enabled: !!user?.unit && !!user?.id && !instructor,
   });
 
   const { data: homeConfig } = useQuery({
@@ -171,7 +182,7 @@ export default function Home() {
   if (instructor) {
     return (
       <div className="pb-24 relative" ref={containerRef}>
-        <PullToRefresh pullDistance={pullDistance} refreshing={refreshing} />
+        <PullToRefresh pullDistance={pullDistance} refreshing={refreshing} lastUpdated={lastUpdated} />
         {/* Military header */}
         <div className="relative px-4 pt-9 pb-5 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-b from-primary/8 to-transparent pointer-events-none" />
@@ -223,6 +234,12 @@ export default function Home() {
             </div>
           )}
 
+          {/* Today summary */}
+          <TodaySummary
+            statusCount={pendingStatus.length}
+            outCount={activeMovements.length}
+          />
+
           {/* Primary action grid */}
           <div className="space-y-2">
             <SectionLabel>Approvals & Reports</SectionLabel>
@@ -265,7 +282,7 @@ export default function Home() {
   // ── CADET / CADET ADMIN HOME ──
   return (
     <div className="pb-24 relative" ref={containerRef}>
-      <PullToRefresh pullDistance={pullDistance} refreshing={refreshing} />
+      <PullToRefresh pullDistance={pullDistance} refreshing={refreshing} lastUpdated={lastUpdated} />
       {/* Cadet header */}
       <div className="px-4 pt-9 pb-5">
         <div className="flex items-start justify-between">
@@ -349,6 +366,9 @@ export default function Home() {
           </div>
         ) : null}
 
+        {/* Today summary for cadets */}
+        <TodaySummary taskCount={myTasks.length} />
+
         {/* ── Quick Actions (customizable grid) ── */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
@@ -384,20 +404,27 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-2">
-              {pinnedActions.map(action => {
+              {pinnedActions.map((action, i) => {
                 const styles = ACTION_ICON_STYLES[action.color] || ACTION_ICON_STYLES.default;
                 const ActionIcon = action.icon;
                 return (
-                  <Link
+                  <motion.div
                     key={action.key}
-                    to={action.to}
-                    className="flex flex-col items-center justify-center gap-2 p-3.5 rounded-xl border border-border bg-card hover:bg-muted/40 active:scale-[0.97] transition-all"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    whileTap={{ scale: 0.95 }}
                   >
-                    <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', styles.wrap)}>
-                      <ActionIcon className={cn('h-5 w-5', styles.icon)} />
-                    </div>
-                    <p className="text-xs font-semibold text-foreground">{action.label}</p>
-                  </Link>
+                    <Link
+                      to={action.to}
+                      className="flex flex-col items-center justify-center gap-2 p-3.5 rounded-xl border border-border bg-card hover:bg-muted/40 transition-all w-full"
+                    >
+                      <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', styles.wrap)}>
+                        <ActionIcon className={cn('h-5 w-5', styles.icon)} />
+                      </div>
+                      <p className="text-xs font-semibold text-foreground">{action.label}</p>
+                    </Link>
+                  </motion.div>
                 );
               })}
             </div>

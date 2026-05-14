@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { isInstructor, isCadetAdmin } from '@/lib/constants';
 import {
   Users, Shield, Activity, MapPin, FileText,
-  ClipboardList, Trash2, Megaphone, ChevronRight, Calendar, CalendarDays
+  ClipboardList, Trash2, Megaphone, ChevronRight, Calendar, CalendarDays, ListTodo
 } from 'lucide-react';
 
 function NavLink({ to, icon: Icon, label, badge }) {
@@ -231,6 +231,7 @@ export default function Dashboard() {
             <NavLink to="/admin/cet" icon={Calendar} label="Send CET" />
             <NavLink to="/admin/announcements" icon={Megaphone} label="Announcements" />
             <NavLink to="/admin/duty" icon={CalendarDays} label="Duty Admin" />
+            <NavLink to="/tasks" icon={ListTodo} label="Tasks" />
             <NavLink to="/admin/nominal" icon={Users} label="Nominal Role" />
             <NavLink to="/admin/data-clear" icon={Trash2} label="Data Clear" />
           </div>

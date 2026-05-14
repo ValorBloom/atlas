@@ -16,7 +16,7 @@ import { format } from 'date-fns';
 import { isCadetAdmin, isInstructor } from '@/lib/constants';
 
 const ADMIN_CATEGORIES = ['movement', 'sft', 'status', 'approval', 'admin', 'parade'];
-const CADET_CATEGORIES = ['announcement', 'points', 'system'];
+const CADET_CATEGORIES = ['announcement', 'system'];
 
 const typeIcons = {
   success: CheckCircle2,
@@ -40,7 +40,6 @@ const categoryLabel = {
   admin: 'Admin',
   parade: 'Parade',
   announcement: 'Announcement',
-  points: 'Points',
   system: 'System',
 };
 

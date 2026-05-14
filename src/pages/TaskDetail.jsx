@@ -11,6 +11,7 @@ import { CheckCircle2, Clock, Circle, Trash2, AlertCircle, Users, User } from 'l
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { format, parseISO, isAfter } from 'date-fns';
+import { Drawer } from 'vaul';
 
 const STATUS_CONFIG = {
   'Not Done': { icon: Circle, color: 'text-muted-foreground', label: 'Not Done' },
@@ -400,23 +401,37 @@ export default function TaskDetail() {
           </div>
         )}
 
-        {/* Delete */}
+        {/* Delete — bottom sheet confirmation */}
         {canManage && (
-          !confirmDelete ? (
-            <button
-              onClick={() => setConfirmDelete(true)}
-              className="flex items-center gap-1.5 text-xs text-destructive/40 hover:text-destructive transition-colors w-full justify-center pt-2"
-            >
-              <Trash2 className="h-3 w-3" /> Delete Task
-            </button>
-          ) : (
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" onClick={() => setConfirmDelete(false)}>Cancel</Button>
-              <Button variant="destructive" size="sm" className="flex-1 h-8 text-xs" onClick={handleDelete} disabled={deleting}>
-                {deleting ? 'Deleting…' : 'Confirm Delete'}
-              </Button>
-            </div>
-          )
+          <Drawer.Root open={confirmDelete} onOpenChange={setConfirmDelete}>
+            <Drawer.Trigger asChild>
+              <button className="flex items-center gap-1.5 text-xs text-destructive/40 hover:text-destructive transition-colors w-full justify-center pt-2">
+                <Trash2 className="h-3 w-3" /> Delete Task
+              </button>
+            </Drawer.Trigger>
+            <Drawer.Portal>
+              <Drawer.Overlay className="fixed inset-0 z-50 bg-black/50" />
+              <Drawer.Content className="fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-2xl bg-card border-t border-border">
+                <div className="mx-auto mt-3 h-1.5 w-12 rounded-full bg-border shrink-0" />
+                <div className="px-6 py-6 space-y-4" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 24px)' }}>
+                  <div className="text-center space-y-1">
+                    <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-3">
+                      <Trash2 className="h-5 w-5 text-destructive" />
+                    </div>
+                    <p className="text-base font-bold text-foreground">Delete this task?</p>
+                    <p className="text-sm text-muted-foreground">"{task.title}"</p>
+                    <p className="text-xs text-muted-foreground/70">This action cannot be undone.</p>
+                  </div>
+                  <Button variant="destructive" className="w-full h-11" onClick={handleDelete} disabled={deleting}>
+                    {deleting ? 'Deleting…' : 'Yes, Delete Task'}
+                  </Button>
+                  <Button variant="outline" className="w-full h-10" onClick={() => setConfirmDelete(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </Drawer.Content>
+            </Drawer.Portal>
+          </Drawer.Root>
         )}
       </div>
     </div>

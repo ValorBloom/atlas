@@ -54,7 +54,7 @@ export default function AppLayout() {
           </motion.div>
         </AnimatePresence>
       </main>
-      <BottomNav isInstructor={isInstructor(user)} isCadetAdmin={isCadetAdmin(user)} />
+      <BottomNav isInstructor={isInstructor(user)} isCadetAdmin={isCadetAdmin(user)} userEmail={user?.email} />
     </div>
   );
 }

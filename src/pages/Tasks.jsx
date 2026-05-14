@@ -9,6 +9,8 @@ import { ClipboardList, Plus, ChevronRight, CheckCircle2, Clock, Circle, AlertCi
 import { cn } from '@/lib/utils';
 import { format, parseISO, isAfter } from 'date-fns';
 import { toast } from 'sonner';
+import { motion, AnimatePresence } from 'framer-motion';
+import { SkeletonList } from '@/components/ui/SkeletonCard';
 
 const STATUS_CONFIG = {
   'Not Done': { icon: Circle, color: 'text-muted-foreground', bg: 'bg-card border-border' },
@@ -16,7 +18,7 @@ const STATUS_CONFIG = {
   'Completed': { icon: CheckCircle2, color: 'text-green-400', bg: 'bg-green-500/8 border-green-500/20' },
 };
 
-function TaskCard({ task, user, canManage, onDone }) {
+function TaskCard({ task, user, canManage, onDone, index = 0 }) {
   const cfg = STATUS_CONFIG[task.status] || STATUS_CONFIG['Not Done'];
   const StatusIcon = cfg.icon;
   const isOverdue = task.due_date && task.status !== 'Completed' && isAfter(new Date(), parseISO(task.due_date));
@@ -28,7 +30,14 @@ function TaskCard({ task, user, canManage, onDone }) {
     : null;
 
   return (
-    <div className={cn('rounded-xl border transition-all', cfg.bg)}>
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, x: 40 }}
+      transition={{ duration: 0.18, delay: index * 0.04 }}
+      layout
+      className={cn('rounded-xl border transition-all', cfg.bg)}
+    >
       <Link to={`/tasks/${task.id}`} className="block p-4">
         <div className="flex items-start gap-3">
           <StatusIcon className={cn('h-4 w-4 mt-0.5 shrink-0', cfg.color)} />
@@ -59,15 +68,16 @@ function TaskCard({ task, user, canManage, onDone }) {
 
       {showDone && (
         <div className="px-4 pb-3 -mt-1">
-          <button
+          <motion.button
+            whileTap={{ scale: 0.97 }}
             onClick={(e) => { e.preventDefault(); onDone(task); }}
-            className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg border border-green-500/30 bg-green-500/10 text-green-400 text-xs font-semibold hover:bg-green-500/20 transition-colors active:scale-[0.98]"
+            className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg border border-green-500/30 bg-green-500/10 text-green-400 text-xs font-semibold hover:bg-green-500/20 transition-colors"
           >
             <CheckCircle2 className="h-3.5 w-3.5" /> Mark Done
-          </button>
+          </motion.button>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -165,59 +175,61 @@ export default function Tasks() {
 
       <div className="px-4 py-4 space-y-3">
         {isLoading ? (
-          <div className="flex justify-center py-12">
-            <div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" />
-          </div>
+          <SkeletonList count={3} />
         ) : tab === 'mine' ? (
           <>
             {myTasks.length === 0 ? (
-              <div className="py-14 text-center">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-14 text-center">
                 <CheckCircle2 className="h-8 w-8 text-green-400/40 mx-auto mb-2" />
                 <p className="text-sm text-muted-foreground">You're all caught up!</p>
                 <p className="text-xs text-muted-foreground/60 mt-1">No pending tasks assigned to you</p>
-              </div>
+              </motion.div>
             ) : (
-              <div className="space-y-2">
-                {myTasks.map(task => (
-                  <TaskCard key={task.id} task={task} user={user} canManage={canManage} onDone={handleDone} />
-                ))}
-              </div>
+              <AnimatePresence>
+                <div className="space-y-2">
+                  {myTasks.map((task, i) => (
+                    <TaskCard key={task.id} task={task} user={user} canManage={canManage} onDone={handleDone} index={i} />
+                  ))}
+                </div>
+              </AnimatePresence>
             )}
           </>
         ) : (
           /* All tasks view for managers */
           <>
             {allOpen.length === 0 && allCompleted.length === 0 ? (
-              <div className="py-14 text-center">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-14 text-center">
                 <ClipboardList className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
                 <p className="text-sm text-muted-foreground">No tasks yet</p>
                 <Link to="/tasks/new">
                   <Button size="sm" variant="outline" className="mt-3 text-xs">Assign a task</Button>
                 </Link>
-              </div>
+              </motion.div>
             ) : (
-              <>
-                {allOpen.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
-                      Open ({allOpen.length})
-                    </p>
-                    {allOpen.map(task => (
-                      <TaskCard key={task.id} task={task} user={user} canManage={canManage} onDone={handleDone} />
-                    ))}
-                  </div>
-                )}
-                {allCompleted.length > 0 && (
-                  <div className="space-y-2 mt-4">
-                    <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
-                      Completed ({allCompleted.length})
-                    </p>
-                    {allCompleted.map(task => (
-                      <TaskCard key={task.id} task={task} user={user} canManage={canManage} onDone={handleDone} />
-                    ))}
-                  </div>
-                )}
-              </>
+              <AnimatePresence>
+                <>
+                  {allOpen.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
+                        Open ({allOpen.length})
+                      </p>
+                      {allOpen.map((task, i) => (
+                        <TaskCard key={task.id} task={task} user={user} canManage={canManage} onDone={handleDone} index={i} />
+                      ))}
+                    </div>
+                  )}
+                  {allCompleted.length > 0 && (
+                    <div className="space-y-2 mt-4">
+                      <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
+                        Completed ({allCompleted.length})
+                      </p>
+                      {allCompleted.map((task, i) => (
+                        <TaskCard key={task.id} task={task} user={user} canManage={canManage} onDone={handleDone} index={i} />
+                      ))}
+                    </div>
+                  )}
+                </>
+              </AnimatePresence>
             )}
           </>
         )}
