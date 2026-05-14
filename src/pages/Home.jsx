@@ -210,31 +210,7 @@ export default function Home() {
         </div>
 
         <div className="px-4 space-y-4">
-          {/* Pending alerts strip */}
-          {(pendingStatus.length > 0 || activeMovements.length > 0) && (
-            <div className="flex gap-2">
-              {pendingStatus.length > 0 && (
-                <Link to="/actions/status/update/RSO" className="flex-1 flex items-center gap-2 p-2.5 rounded-xl border border-amber-500/25 bg-amber-500/8">
-                  <FileText className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-bold text-amber-300 truncate">{pendingStatus.length} pending</p>
-                    <p className="text-[9px] text-muted-foreground">Status approval</p>
-                  </div>
-                </Link>
-              )}
-              {activeMovements.length > 0 && (
-                <Link to="/admin/locations" className="flex-1 flex items-center gap-2 p-2.5 rounded-xl border border-primary/20 bg-primary/8">
-                  <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-bold text-primary truncate">{activeMovements.length} out</p>
-                    <p className="text-[9px] text-muted-foreground">Personnel out</p>
-                  </div>
-                </Link>
-              )}
-            </div>
-          )}
-
-          {/* Today summary */}
+          {/* Today summary — single consolidated alert, no duplicate strip */}
           <TodaySummary
             statusCount={pendingStatus.length}
             outCount={activeMovements.length}
@@ -312,32 +288,21 @@ export default function Home() {
 
       <div className="px-4 space-y-4">
 
-        {/* Alert banners */}
-        <div className="space-y-1.5">
-          {activeWindows.length > 0 && (
-            <Link to="/actions/sft" className="flex items-center justify-between p-3 bg-primary/8 border border-primary/20 rounded-xl active:scale-[0.98] transition-all">
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-primary/15 flex items-center justify-center">
-                  <Activity className="h-3.5 w-3.5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-primary">SFT Window Open</p>
-                  <p className="text-[10px] text-muted-foreground">{activeWindows[0].start_time}H – {activeWindows[0].end_time}H</p>
-                </div>
+        {/* SFT alert — shown only if active window (not duplicated in TodaySummary) */}
+        {activeWindows.length > 0 && (
+          <Link to="/actions/sft" className="flex items-center justify-between p-3 bg-primary/8 border border-primary/20 rounded-xl active:scale-[0.98] transition-all">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-primary/15 flex items-center justify-center">
+                <Activity className="h-3.5 w-3.5 text-primary" />
               </div>
-              <ChevronRight className="h-3.5 w-3.5 text-primary/40" />
-            </Link>
-          )}
-          {cadetAdmin && activeMovements.length > 0 && (
-            <Link to="/admin/locations" className="flex items-center justify-between p-3 bg-amber-500/8 border border-amber-500/20 rounded-xl active:scale-[0.98] transition-all">
-              <div className="flex items-center gap-2">
-                <MapPin className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                <p className="text-xs font-semibold text-amber-300">{activeMovements.length} movement{activeMovements.length > 1 ? 's' : ''} pending return</p>
+              <div>
+                <p className="text-xs font-semibold text-primary">SFT Window Open</p>
+                <p className="text-[10px] text-muted-foreground">{activeWindows[0].start_time}H – {activeWindows[0].end_time}H</p>
               </div>
-              <ChevronRight className="h-3.5 w-3.5 text-amber-400/40" />
-            </Link>
-          )}
-        </div>
+            </div>
+            <ChevronRight className="h-3.5 w-3.5 text-primary/40" />
+          </Link>
+        )}
 
         {/* ── Daily CET Quote bar (always shown if CET published, toggleable) ── */}
         {todayCET?.quote ? (
@@ -366,8 +331,11 @@ export default function Home() {
           </div>
         ) : null}
 
-        {/* Today summary for cadets */}
-        <TodaySummary taskCount={myTasks.length} />
+        {/* Today summary for cadets — includes outCount for cadet admin */}
+        <TodaySummary
+          taskCount={myTasks.length}
+          outCount={cadetAdmin ? activeMovements.length : 0}
+        />
 
         {/* ── Quick Actions (customizable grid) ── */}
         <div className="space-y-2">
