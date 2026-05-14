@@ -1,0 +1,67 @@
+{
+  "name": "Task",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Task title"
+    },
+    "description": {
+      "type": "string",
+      "description": "Full task details"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Not Done",
+        "In Progress",
+        "Completed"
+      ],
+      "default": "Not Done",
+      "description": "Current task status"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "Low",
+        "Medium",
+        "High"
+      ],
+      "default": "Medium"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Due date YYYY-MM-DD"
+    },
+    "assigned_to_id": {
+      "type": "string",
+      "description": "User ID of assignee"
+    },
+    "assigned_to_name": {
+      "type": "string",
+      "description": "Display name of assignee"
+    },
+    "assigned_to_rank": {
+      "type": "string"
+    },
+    "assigned_by_id": {
+      "type": "string"
+    },
+    "assigned_by_name": {
+      "type": "string"
+    },
+    "unit": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Completion notes from assignee"
+    }
+  },
+  "required": [
+    "title",
+    "assigned_to_id",
+    "unit"
+  ]
+}

@@ -5,7 +5,7 @@ import PageHeader from '@/components/layout/PageHeader';
 import QuickAction from '@/components/home/QuickAction';
 import {
   MapPin, Activity, FileText, Dumbbell, ClipboardList,
-  Users, Megaphone, Trash2, Calendar, CheckSquare, Shield, CalendarDays
+  Users, Megaphone, Trash2, Calendar, CheckSquare, Shield, CalendarDays, ListTodo
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -70,6 +70,7 @@ export default function Actions() {
               <ActionTile to="/admin/appoint" icon={Shield} label="Appoint Admin" sub="Grant cadet access" accent="amber" />
               <ActionTile to="/admin/nominal" icon={Users} label="Nominal Role" sub="View & edit all personnel" accent="default" />
               <ActionTile to="/admin/data-clear" icon={Trash2} label="Data Clear" sub="Controlled wipe" accent="red" />
+              <ActionTile to="/tasks" icon={ListTodo} label="Tasks" sub="Assign & track tasks" accent="green" />
             </div>
           </div>
         </div>
@@ -90,6 +91,7 @@ export default function Actions() {
             <QuickAction to="/actions/status" icon={FileText} label="Status Report" description="RSO / MA / RSI reporting" />
             <QuickAction to="/actions/cet" icon={Calendar} label="View CET" description="Daily training programme" />
             <QuickAction to="/actions/duty" icon={CalendarDays} label="Duty Roster" description="CDO / CDS / CDG / Guard" />
+            <QuickAction to="/tasks" icon={ListTodo} label="My Tasks" description="View tasks assigned to you" />
 
           </div>
         </div>
@@ -103,6 +105,7 @@ export default function Actions() {
               <QuickAction to="/admin/locations" icon={MapPin} label="Movement Log" description="View all personnel movements" />
               <QuickAction to="/actions/duty" icon={CalendarDays} label="Duty Roster" description="Manage CDO/CDS/Guard duties" />
               <QuickAction to="/admin/announcements" icon={Megaphone} label="Announcements" description="Post unit-wide notices" />
+              <QuickAction to="/tasks" icon={ListTodo} label="Tasks" description="Assign & track tasks" />
             </div>
           </div>
         )}

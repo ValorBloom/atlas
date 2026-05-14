@@ -11,7 +11,7 @@ import {
   MapPin, Activity, FileText, Trophy, Bell,
   ClipboardList, ChevronRight, Megaphone,
   Calendar, Dumbbell, Users, Shield, CheckSquare, Settings, X, Check, CalendarDays,
-  Eye, EyeOff
+  Eye, EyeOff, ListTodo
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -24,6 +24,7 @@ const ALL_CADET_ACTIONS = [
 
   { key: 'cet', to: '/actions/cet', icon: Calendar, label: 'View CET', color: 'blue' },
   { key: 'duty', to: '/actions/duty', icon: CalendarDays, label: 'Duty', color: 'purple' },
+  { key: 'tasks', to: '/tasks', icon: ListTodo, label: 'Tasks', color: 'green' },
 ];
 
 const DEFAULT_PINNED = ['movement', 'cet', 'sft'];
@@ -239,6 +240,7 @@ export default function Home() {
               <InstructorTile to="/admin/cet" icon={Calendar} label="Send CET" sub="Daily programme" accent="green" />
               <InstructorTile to="/admin/announcements" icon={Megaphone} label="Announcements" sub="Unit notices" accent="default" />
               <InstructorTile to="/admin/duty" icon={CalendarDays} label="Duty Admin" sub="Assign & track duty" accent="blue" />
+              <InstructorTile to="/tasks" icon={ListTodo} label="Tasks" sub="Assign & track tasks" accent="green" />
             </div>
           </div>
 
@@ -412,6 +414,7 @@ export default function Home() {
               <InstructorTile to="/admin/locations" icon={MapPin} label="Movement Log" sub="Track personnel" accent="default" />
               <InstructorTile to="/admin/announcements" icon={Megaphone} label="Announcements" sub="Unit notices" accent="default" />
               <InstructorTile to="/admin/duty" icon={CalendarDays} label="Duty Admin" sub="Assign & track duty" accent="blue" />
+              <InstructorTile to="/tasks" icon={ListTodo} label="Tasks" sub="Assign & track tasks" accent="green" />
             </div>
           </div>
         )}
