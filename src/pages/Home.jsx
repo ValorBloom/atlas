@@ -183,28 +183,27 @@ export default function Home() {
     return (
       <div className="pb-24 relative" ref={containerRef}>
         <PullToRefresh pullDistance={pullDistance} refreshing={refreshing} lastUpdated={lastUpdated} />
-        {/* Military header */}
-        <div className="relative px-4 pt-9 pb-5 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-primary/8 to-transparent pointer-events-none" />
-          <div className="relative flex items-start justify-between">
+        {/* Header */}
+        <div className="px-4 pt-10 pb-6">
+          <div className="flex items-start justify-between">
             <div>
-              <div className="flex items-center gap-1.5 mb-1">
-                <img src={ATLAS_LOGO_DARK} alt="ATLAS" width={20} height={20} style={{ objectFit: 'contain', opacity: 0.85 }} />
+              <div className="flex items-center gap-1.5 mb-2.5">
+                <img src={ATLAS_LOGO_DARK} alt="ATLAS" width={16} height={16} style={{ objectFit: 'contain', opacity: 0.7 }} />
                 <span className="text-[9px] tracking-[0.2em] uppercase text-muted-foreground font-semibold">Atlas · {user?.unit}</span>
               </div>
-              <p className="text-[11px] text-muted-foreground">{greeting()}</p>
-              <h1 className="text-xl font-bold text-foreground leading-tight mt-0.5">{displayName}</h1>
+              <p className="text-sm text-muted-foreground mb-0.5">{greeting()}</p>
+              <h1 className="text-2xl font-bold text-foreground leading-tight">{displayName}</h1>
             </div>
             <div className="flex items-center gap-2 mt-1">
-              {unread > 0 && (
-                <Link to="/notifications" className="relative w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/25 flex items-center justify-center">
-                  <Bell className="h-4 w-4 text-amber-400" />
-                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-bold flex items-center justify-center">{unread}</span>
-                </Link>
-              )}
-              <div className="w-9 h-9 rounded-xl bg-primary/15 border border-primary/25 flex items-center justify-center">
-                <Shield className="h-4 w-4 text-primary" />
-              </div>
+              <Link to="/notifications" className="relative w-9 h-9 rounded-xl bg-muted border border-border flex items-center justify-center">
+                <Bell className="h-4 w-4 text-muted-foreground" />
+                {unread > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-white text-[9px] font-bold flex items-center justify-center">{unread}</span>
+                )}
+              </Link>
+              <Link to="/profile" className="w-9 h-9 rounded-xl bg-muted border border-border flex items-center justify-center">
+                <Shield className="h-4 w-4 text-muted-foreground" />
+              </Link>
             </div>
           </div>
         </div>
@@ -260,29 +259,30 @@ export default function Home() {
     <div className="pb-24 relative" ref={containerRef}>
       <PullToRefresh pullDistance={pullDistance} refreshing={refreshing} lastUpdated={lastUpdated} />
       {/* Cadet header */}
-      <div className="px-4 pt-9 pb-5">
+      <div className="px-4 pt-10 pb-6">
         <div className="flex items-start justify-between">
           <div>
-            <div className="flex items-center gap-1.5 mb-1">
-              <img src={ATLAS_LOGO_DARK} alt="ATLAS" width={20} height={20} style={{ objectFit: 'contain', opacity: 0.85 }} />
+            <div className="flex items-center gap-1.5 mb-2.5">
+              <img src={ATLAS_LOGO_DARK} alt="ATLAS" width={16} height={16} style={{ objectFit: 'contain', opacity: 0.7 }} />
               <span className="text-[9px] tracking-[0.2em] uppercase text-muted-foreground font-semibold">Atlas · {user?.unit}</span>
             </div>
-            <p className="text-[11px] text-muted-foreground">{greeting()}</p>
-            <h1 className="text-xl font-bold text-foreground leading-tight mt-0.5">{displayName}</h1>
-            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-              {cadetAdmin ? (
-                <span className="text-[10px] bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full font-semibold border border-amber-500/25">Cadet Admin</span>
-              ) : (
-                <span className="text-[10px] bg-secondary text-muted-foreground px-2 py-0.5 rounded-full border border-border">Cadet</span>
-              )}
-            </div>
+            <p className="text-sm text-muted-foreground mb-0.5">{greeting()}</p>
+            <h1 className="text-2xl font-bold text-foreground leading-tight">{displayName}</h1>
+            {cadetAdmin && (
+              <span className="inline-block mt-2 text-[10px] bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full font-semibold border border-amber-500/25">Cadet Admin</span>
+            )}
           </div>
-          {unread > 0 && (
-            <Link to="/notifications" className="relative w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/25 flex items-center justify-center mt-1">
-              <Bell className="h-4 w-4 text-amber-400" />
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-bold flex items-center justify-center">{unread}</span>
+          <div className="flex items-center gap-2 mt-1">
+            <Link to="/notifications" className="relative w-9 h-9 rounded-xl bg-muted border border-border flex items-center justify-center">
+              <Bell className="h-4 w-4 text-muted-foreground" />
+              {unread > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-white text-[9px] font-bold flex items-center justify-center">{unread}</span>
+              )}
             </Link>
-          )}
+            <Link to="/profile" className="w-9 h-9 rounded-xl bg-muted border border-border flex items-center justify-center">
+              <Shield className="h-4 w-4 text-muted-foreground" />
+            </Link>
+          </div>
         </div>
       </div>
 

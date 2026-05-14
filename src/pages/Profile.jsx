@@ -160,44 +160,43 @@ export default function Profile() {
       <div className="px-4 py-5 space-y-4">
 
         {/* ── Identity Hero ── */}
-        <div className="relative rounded-2xl overflow-hidden border border-primary/30 bg-primary/5 dark:bg-[hsl(222,24%,10%)]">
-          <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
-            style={{
-              backgroundImage: 'linear-gradient(hsl(217,91%,55%) 1px, transparent 1px), linear-gradient(90deg, hsl(217,91%,55%) 1px, transparent 1px)',
-              backgroundSize: '24px 24px'
-            }} />
-          <div className="absolute top-3 left-3 w-5 h-5 border-t-2 border-l-2 border-primary/40 rounded-tl" />
-          <div className="absolute top-3 right-3 w-5 h-5 border-t-2 border-r-2 border-primary/40 rounded-tr" />
-          <div className="absolute bottom-3 left-3 w-5 h-5 border-b-2 border-l-2 border-primary/40 rounded-bl" />
-          <div className="absolute bottom-3 right-3 w-5 h-5 border-b-2 border-r-2 border-primary/40 rounded-br" />
+        <div className="relative rounded-2xl overflow-hidden border border-border bg-card">
+          {/* Subtle top accent line */}
+          <div className="h-0.5 w-full bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
 
-          <div className="relative px-5 py-5">
-            <div className="flex items-start gap-4">
-              <div className="w-16 h-16 rounded-xl flex items-center justify-center shrink-0 border border-primary/25 bg-primary/15">
-                <span className="text-2xl font-bold text-primary">{initials || '?'}</span>
+          <div className="px-5 pt-5 pb-4">
+            {/* Label row */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <AtlasMark size={13} />
+                <span className="text-[9px] tracking-[0.2em] uppercase text-primary/70 font-semibold">Atlas ID</span>
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <AtlasMark size={14} />
-                  <span className="text-[9px] tracking-[0.2em] uppercase text-primary/70 font-semibold">ATLAS ID</span>
-                </div>
-                <p className="text-base font-bold text-foreground leading-tight truncate">{fullName || 'Unknown'}</p>
-                <p className="text-sm text-muted-foreground truncate mt-0.5">{user?.rank || ''}{user?.rank ? ' · ' : ''}{user?.unit || user?.email}</p>
-              </div>
+              <span className={cn(
+                'text-[10px] font-semibold px-2 py-0.5 rounded-full border',
+                instructor ? 'bg-primary/10 text-primary border-primary/25' :
+                cadetAdmin ? 'bg-amber-500/15 text-amber-400 border-amber-500/25' :
+                'bg-muted text-muted-foreground border-border'
+              )}>{roleLabel}</span>
             </div>
-            <div className="border-t border-primary/15 mt-4 pt-3 grid grid-cols-3 gap-3">
-              <div>
-                <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Rank</p>
-                <p className="text-sm font-bold text-foreground mt-0.5">{user?.rank || '—'}</p>
-              </div>
-              <div>
-                <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Unit</p>
-                <p className="text-sm font-bold text-foreground mt-0.5">{user?.unit || '—'}</p>
-              </div>
-              <div>
-                <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Role</p>
-                <p className="text-sm font-bold text-foreground mt-0.5 truncate">{roleLabel}</p>
-              </div>
+
+            {/* Name block */}
+            <div className="mb-5">
+              <p className="text-[11px] text-muted-foreground mb-0.5">{user?.email || ''}</p>
+              <h2 className="text-2xl font-bold text-foreground leading-tight tracking-tight">{fullName || 'Unknown'}</h2>
+            </div>
+
+            {/* Stats row */}
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { label: 'Rank', value: user?.rank || '—' },
+                { label: 'Unit', value: user?.unit || '—' },
+                { label: 'Group', value: user?.platoon || '—' },
+              ].map(({ label, value }) => (
+                <div key={label} className="bg-muted/50 rounded-lg px-3 py-2">
+                  <p className="text-[9px] text-muted-foreground uppercase tracking-wider mb-0.5">{label}</p>
+                  <p className="text-sm font-bold text-foreground truncate">{value}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
