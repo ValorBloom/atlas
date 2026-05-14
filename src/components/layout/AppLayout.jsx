@@ -12,10 +12,14 @@ export default function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const refreshUser = async () => {
-    // Force fresh fetch by invalidating any cache
-    const u = await base44.auth.me({ forceRefresh: true }).catch(() => base44.auth.me());
-    setUser(u);
+  const refreshUser = async (optimisticUpdates = null) => {
+    if (optimisticUpdates) {
+      // Apply updates immediately so UI reflects changes without waiting for cache
+      setUser(prev => ({ ...prev, ...optimisticUpdates }));
+    }
+    // Re-fetch to sync with server
+    const u = await base44.entities.User.filter({ email: (await base44.auth.me())?.email }).then(r => r[0]).catch(() => null);
+    if (u) setUser(prev => ({ ...prev, ...u }));
     return u;
   };
 

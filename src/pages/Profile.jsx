@@ -105,7 +105,7 @@ export default function Profile() {
         return;
       }
 
-      await refreshUser().catch(() => {});
+      await refreshUser(entityUpdates).catch(() => {});
       setSaving(false);
       setEditing(false);
       setShowPinGate(false);
