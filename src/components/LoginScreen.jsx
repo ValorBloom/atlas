@@ -125,7 +125,7 @@ export default function LoginScreen({ onLogin }) {
           <div className="relative w-32 h-32 rounded-3xl border border-blue-500/25 bg-gradient-to-b from-blue-950/60 to-blue-950/20 backdrop-blur-sm flex items-center justify-center">
             <ScanLine />
             <CornerBrackets />
-            <AtlasLogo size={72} className="drop-shadow-[0_0_16px_rgba(96,165,250,0.5)]" />
+            <AtlasLogo size={108} className="drop-shadow-[0_0_16px_rgba(96,165,250,0.5)]" />
           </div>
 
           {/* Ping rings */}
