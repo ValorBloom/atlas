@@ -27,6 +27,7 @@ import ViewCET from './pages/ViewCET';
 import Duty from './pages/Duty';
 import Tasks from './pages/Tasks';
 import TaskDetail from './pages/TaskDetail';
+import TaskWidget from './pages/TaskWidget';
 
 // Admin Pages
 
@@ -66,6 +67,7 @@ const AuthenticatedApp = () => {
 
   return (
     <Routes>
+      <Route path="/widget/tasks" element={<TaskWidget />} />
       <Route path="/setup" element={<Setup />} />
       <Route element={<AppLayout />}>
         <Route path="/" element={<Home />} />
