@@ -181,7 +181,6 @@ export default function Profile() {
 
             {/* Name block */}
             <div className="mb-5">
-              <p className="text-[11px] text-muted-foreground mb-0.5">{user?.email || ''}</p>
               <h2 className="text-2xl font-bold text-foreground leading-tight tracking-tight">{fullName || 'Unknown'}</h2>
             </div>
 
@@ -221,12 +220,6 @@ export default function Profile() {
           </div>
 
           <div className="divide-y divide-border">
-            {/* Email — read-only */}
-            <div className="flex items-center justify-between px-4 py-3">
-              <span className="text-sm text-muted-foreground">Email</span>
-              <span className="text-sm font-medium text-muted-foreground">{user?.email || '—'}</span>
-            </div>
-
             {/* Full Name */}
             <div className="flex items-center justify-between px-4 py-3">
               <span className="text-sm text-muted-foreground">Name</span>
