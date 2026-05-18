@@ -178,6 +178,20 @@ export default function Home() {
   const unread = notifications.length;
   const pinnedActions = ALL_CADET_ACTIONS.filter(a => pinnedKeys.includes(a.key));
 
+  // One-line day summary
+  const daySummary = () => {
+    const parts = [];
+    if (!instructor) {
+      if (myTasks.length > 0) parts.push(`${myTasks.length} task${myTasks.length > 1 ? 's' : ''} due`);
+    } else {
+      if (pendingStatus.length > 0) parts.push(`${pendingStatus.length} status pending`);
+      if (activeMovements.length > 0) parts.push(`${activeMovements.length} out`);
+    }
+    if (activeWindows.length > 0) parts.push('SFT open');
+    return parts.length > 0 ? parts.join(' · ') : null;
+  };
+  const summary = daySummary();
+
   // ── INSTRUCTOR HOME ──
   if (instructor) {
     return (
@@ -193,6 +207,7 @@ export default function Home() {
               </div>
               <p className="text-sm text-muted-foreground mb-0.5">{greeting()}</p>
               <h1 className="text-2xl font-bold text-foreground leading-tight">{displayName}</h1>
+              {summary && <p className="text-xs text-muted-foreground mt-1">{summary}</p>}
             </div>
             <div className="flex items-center gap-2 mt-1">
               <Link to="/notifications" className="relative w-9 h-9 rounded-xl bg-muted border border-border flex items-center justify-center">
@@ -268,6 +283,7 @@ export default function Home() {
             </div>
             <p className="text-sm text-muted-foreground mb-0.5">{greeting()}</p>
             <h1 className="text-2xl font-bold text-foreground leading-tight">{displayName}</h1>
+            {summary && <p className="text-xs text-muted-foreground mt-1">{summary}</p>}
             {cadetAdmin && (
               <span className="inline-block mt-2 text-[10px] bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full font-semibold border border-amber-500/25">Cadet Admin</span>
             )}
