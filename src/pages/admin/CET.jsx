@@ -77,6 +77,7 @@ export default function CET() {
   const [newTemplateName, setNewTemplateName] = useState('');
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [usedQuotes, setUsedQuotes] = useState([]);
+  const [customWdi, setCustomWdi] = useState('');
 
   // Fetch instructors in same unit
   const { data: unitUsers = [] } = useQuery({
@@ -84,7 +85,7 @@ export default function CET() {
     queryFn: () => base44.entities.User.filter({ unit: user?.unit }),
     enabled: !!user?.unit,
   });
-  const instructors = unitUsers.filter(u => u.role === 'instructor');
+  const instructors = unitUsers.filter(u => u.user_role === 'instructor');
 
   // Fetch CET records for this unit
   const { data: cetRecords = [] } = useQuery({
@@ -112,7 +113,8 @@ export default function CET() {
       setExistingId(rec.id);
       setIsEditing(false);
     } else {
-      setWdi(user?.rank && user?.full_name ? `${user.rank} ${user.full_name.split(' ').slice(-1)[0]}` : '');
+      const lastName = (user?.display_name || user?.full_name || '').split(' ').slice(-1)[0];
+      setWdi(user?.rank && lastName ? `${user.rank} ${lastName}` : '');
       setQuote('');
       setQuoteAuthor('');
       setRows(DEFAULT_ROWS.map((r, i) => ({ ...r, id: i })));
@@ -346,24 +348,44 @@ export default function CET() {
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground uppercase tracking-wide">WDI</Label>
             {canEdit ? (
-              <Select value={wdi} onValueChange={setWdi}>
-                <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Select WDI" />
-                </SelectTrigger>
-                <SelectContent>
-                  {instructors.map(u => (
-                    <SelectItem key={u.id} value={`${u.rank || ''} ${u.full_name || ''}`.trim()}>
-                      {u.rank} {u.full_name}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="custom">Enter manually...</SelectItem>
-                </SelectContent>
-              </Select>
+              <>
+                <Select
+                  value={instructors.some(u => `${u.rank || ''} ${u.display_name || u.full_name || ''}`.trim() === wdi) ? wdi : 'custom'}
+                  onValueChange={val => {
+                    if (val === 'custom') {
+                      setWdi(customWdi);
+                    } else {
+                      setWdi(val);
+                      setCustomWdi('');
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Select WDI" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {instructors.map(u => {
+                      const label = `${u.rank || ''} ${u.display_name || u.full_name || ''}`.trim();
+                      return (
+                        <SelectItem key={u.id} value={label}>
+                          {label}
+                        </SelectItem>
+                      );
+                    })}
+                    <SelectItem value="custom">Enter manually...</SelectItem>
+                  </SelectContent>
+                </Select>
+                {(!instructors.some(u => `${u.rank || ''} ${u.display_name || u.full_name || ''}`.trim() === wdi)) && (
+                  <Input
+                    placeholder="e.g. ME4 Jun Kang"
+                    value={customWdi}
+                    onChange={e => { setCustomWdi(e.target.value); setWdi(e.target.value); }}
+                    className="h-9 mt-1"
+                  />
+                )}
+              </>
             ) : (
               <div className="h-9 px-3 bg-muted/40 border border-border rounded-md flex items-center text-sm">{wdi || '—'}</div>
-            )}
-            {canEdit && wdi === 'custom' && (
-              <Input placeholder="e.g. ME4 Jun Kang" value={wdi === 'custom' ? '' : wdi} onChange={e => setWdi(e.target.value)} className="h-9 mt-1" />
             )}
           </div>
         </div>
