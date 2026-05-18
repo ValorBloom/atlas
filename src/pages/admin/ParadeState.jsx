@@ -354,8 +354,11 @@ export default function ParadeState() {
     if (!r) return;
 
     if (action === 'approve') {
+      // RSO/RSI stay 'approved' until cadet does post-consult update
+      // MA/OTHERS go directly to 'active'
+      const isMedicalReport = r.type === 'RSO' || r.type === 'RSI';
       const updateData = {
-        status: 'active',
+        status: isMedicalReport ? 'approved' : 'active',
         approved_by: instructorDisplayName,
         approval_date: new Date().toISOString(),
         instructor_notes: notes || '',
@@ -437,7 +440,7 @@ export default function ParadeState() {
         backTo="/"
         subtitle={`${unit} · ${today}`}
         rightAction={
-          cadetAdmin && (
+          canAdmin && (
             <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5" onClick={() => setShowAddManual(true)}>
               <Plus className="h-3.5 w-3.5" />Add Status
             </Button>

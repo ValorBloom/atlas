@@ -52,7 +52,7 @@ export default function AppointAdmin() {
     qc.invalidateQueries({ queryKey: ['all-users', user?.unit] });
     setSaving(false);
     setConfirming(null);
-    toast.success(`${targetUser.full_name} is now ${newRole === 'cadet_admin' ? 'a Cadet Admin' : 'a Cadet'}`);
+    toast.success(`${targetUser.display_name || targetUser.full_name} is now ${newRole === 'cadet_admin' ? 'a Cadet Admin' : 'a Cadet'}`);
   };
 
   return (
@@ -82,7 +82,7 @@ export default function AppointAdmin() {
                   <User className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium">{formatRankName(u.rank, u.full_name)}</p>
+                  <p className="text-sm font-medium">{formatRankName(u.rank, u.display_name || u.full_name)}</p>
                   <p className="text-xs text-muted-foreground">{u.email}</p>
                 </div>
                 {isCurrentAdmin && (
