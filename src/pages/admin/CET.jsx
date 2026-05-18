@@ -228,10 +228,12 @@ export default function CET() {
       is_published: true,
     };
 
+    let savedId = existingId;
     if (isUpdate) {
       await base44.entities.CETRecord.update(existingId, payload);
     } else {
-      await base44.entities.CETRecord.create(payload);
+      const created = await base44.entities.CETRecord.create(payload);
+      savedId = created?.id || null;
     }
 
     await base44.entities.Announcement.create({
@@ -254,7 +256,7 @@ export default function CET() {
     setSending(false);
     setConfirming(false);
     setIsEditing(false);
-    setExistingId(existingId || 'new'); // mark as saved
+    setExistingId(savedId);
     qc.invalidateQueries({ queryKey: ['cet-records'] });
     qc.invalidateQueries({ queryKey: ['announcements'] });
     toast.success(isUpdate ? 'CET updated & notified' : 'CET sent to unit');
