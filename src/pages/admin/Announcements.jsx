@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Megaphone, Plus, Send, X } from 'lucide-react';
+import { Megaphone, Plus, Send, X, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -20,12 +20,38 @@ export default function Announcements() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ title: '', content: '', target_role: 'all' });
   const [saving, setSaving] = useState(false);
+  const [showAiDraft, setShowAiDraft] = useState(false);
+  const [aiNotes, setAiNotes] = useState('');
+  const [generatingDraft, setGeneratingDraft] = useState(false);
 
   const { data: announcements = [], isLoading } = useQuery({
     queryKey: ['announcements', user?.unit],
     queryFn: () => base44.entities.Announcement.filter({ unit: user?.unit }, '-created_date', 30),
     enabled: !!user?.unit,
   });
+
+  const handleAiDraft = async () => {
+    if (!aiNotes.trim()) return;
+    setGeneratingDraft(true);
+    const res = await base44.integrations.Core.InvokeLLM({
+      prompt: `You are a military admin assistant. Convert the following rough notes into a formal, professional military-style announcement. Use clear, direct language. Capitalise key terms (e.g. times, dates, locations). Do not add information not present in the notes. Return a JSON with "title" (short, formal) and "content" (full announcement body).\n\nNotes: ${aiNotes}`,
+      response_json_schema: {
+        type: 'object',
+        properties: {
+          title: { type: 'string' },
+          content: { type: 'string' },
+        },
+      },
+    });
+    setGeneratingDraft(false);
+    if (res?.title || res?.content) {
+      setForm(prev => ({ ...prev, title: res.title || prev.title, content: res.content || prev.content }));
+      setShowAiDraft(false);
+      setAiNotes('');
+      setShowForm(true);
+      toast.success('Draft ready — review and edit before sending');
+    }
+  };
 
   const handleCreate = async () => {
     if (!form.title || !form.content) return;
@@ -58,12 +84,46 @@ export default function Announcements() {
         title="Announcements" 
         backTo="/"
         rightAction={
-          <Button variant="ghost" size="sm" onClick={() => setShowForm(!showForm)}>
-            {showForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" className="gap-1 text-xs text-primary" onClick={() => { setShowAiDraft(!showAiDraft); setShowForm(false); }}>
+              <Sparkles className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => { setShowForm(!showForm); setShowAiDraft(false); }}>
+              {showForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+            </Button>
+          </div>
         }
       />
       <div className="px-4 py-4 space-y-4">
+
+        {/* AI Draft Modal */}
+        {showAiDraft && (
+          <Card className="border-primary/30 bg-primary/5">
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <p className="text-sm font-semibold text-primary">Draft with AI</p>
+                </div>
+                <button onClick={() => setShowAiDraft(false)} className="text-muted-foreground hover:text-foreground">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground">Enter rough bullet points or notes — AI will convert it to a formal military-style announcement.</p>
+              <Textarea
+                value={aiNotes}
+                onChange={(e) => setAiNotes(e.target.value)}
+                placeholder={"- PT tmr 0600 at parade sq\n- full attendance required\n- bring water\n- fall in by 0545"}
+                className="min-h-[100px] text-sm"
+              />
+              <Button className="w-full gap-2" onClick={handleAiDraft} disabled={!aiNotes.trim() || generatingDraft}>
+                <Sparkles className="h-4 w-4" />
+                {generatingDraft ? 'Drafting...' : 'Generate Draft'}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {showForm && (
           <Card>
             <CardContent className="p-4 space-y-3">

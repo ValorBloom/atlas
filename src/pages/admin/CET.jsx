@@ -134,8 +134,24 @@ export default function CET() {
   const fetchDailyQuote = async () => {
     setLoadingQuote(true);
     const avoidList = usedQuotes.length > 0 ? `Do NOT use any of these quotes: ${usedQuotes.join(' | ')}. ` : '';
+
+    // Derive theme from timetable activities
+    const activitiesText = rows.map(r => r.activity).filter(Boolean).join(', ').toLowerCase();
+    let themeHint = '';
+    if (/\bpt\b|ippt|run|physical|fitness|bfa|soc/.test(activitiesText)) {
+      themeHint = 'The day has physical training — prefer quotes about endurance, physical resilience, or discipline.';
+    } else if (/field|camp|exercise|ops|tactical|navigation/.test(activitiesText)) {
+      themeHint = 'The day involves field exercise or operations — prefer quotes about resilience, courage, or leadership under pressure.';
+    } else if (/lecture|lesson|theory|class|briefing|study/.test(activitiesText)) {
+      themeHint = 'The day has lessons or briefings — prefer quotes about learning, knowledge, or intellectual growth.';
+    } else if (/range|shoot|marksmanship|live|firing/.test(activitiesText)) {
+      themeHint = 'The day involves shooting or range activities — prefer quotes about focus, precision, or composure.';
+    } else if (/admin|rest|welfare|medical/.test(activitiesText)) {
+      themeHint = 'The day is an admin or rest day — prefer quotes about reflection, teamwork, or preparation.';
+    }
+
     const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `Give me one unique, short, powerful motivational quote suitable for military cadets. ${avoidList}Return a fresh quote with its REAL, SPECIFIC author (a real person's name — never use "Unknown", "Anonymous", or similar). The author MUST be a real historical figure, military leader, or well-known person. Format: {"quote": "...", "author": "..."}`,
+      prompt: `Give me one unique, short, powerful motivational quote suitable for military cadets. ${themeHint} ${avoidList}Return a fresh quote with its REAL, SPECIFIC author (a real person's name — never use "Unknown", "Anonymous", or similar). The author MUST be a real historical figure, military leader, or well-known person. Format: {"quote": "...", "author": "..."}`,
       response_json_schema: {
         type: 'object',
         properties: {
@@ -148,7 +164,7 @@ export default function CET() {
     if (res?.quote) {
       setQuote(res.quote);
       setQuoteAuthor(res.author || '');
-      setUsedQuotes(prev => [...prev.slice(-9), res.quote]); // track last 10
+      setUsedQuotes(prev => [...prev.slice(-9), res.quote]);
     }
   };
 
