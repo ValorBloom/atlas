@@ -50,7 +50,8 @@ export default function Setup() {
   const handleUnitChange = (v) => setForm({ ...form, unit: v, platoon: '', section: '', unit_pin: '' });
 
   const handleSubmit = async () => {
-    if (!form.unit || !form.rank || !form.full_name.trim()) return;
+    if (!form.full_name.trim()) return;
+    if (!isMO && (!form.unit || !form.rank)) return;
 
     if (!isMO && form.unit_pin !== UNIT_PINS[form.unit]) {
       setUnitPinError('Invalid unit PIN.');

@@ -4,10 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Stethoscope, TrendingUp, AlertTriangle, Users, Send, Sparkles, RefreshCw } from 'lucide-react';
-import { UNITS } from '@/lib/constants';
-import { format, subDays } from 'date-fns';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { Stethoscope, AlertTriangle, Users, Sparkles, RefreshCw, Activity, BarChart2 } from 'lucide-react';
+import { format, subDays, eachDayOfInterval, startOfDay } from 'date-fns';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 import MOAnnouncement from './MOAnnouncement';
 import { toast } from 'sonner';
 
@@ -81,6 +80,26 @@ export default function MedicalDashboard() {
     .filter(c => c.names.length >= 3)
     .sort((a, b) => b.names.length - a.names.length);
 
+  // --- Epidemic curve data (last 30 days, day-by-day) ---
+  const epidemicDays = eachDayOfInterval({ start: subDays(new Date(), 29), end: new Date() });
+  const epiCurveData = epidemicDays.map(day => {
+    const dayStr = format(day, 'yyyy-MM-dd');
+    const dayReports = last30Days.filter(r => format(new Date(r.created_date), 'yyyy-MM-dd') === dayStr);
+    return { date: format(day, 'dd MMM'), total: dayReports.length };
+  });
+
+  // --- Wing-level comparison (per unit: MC count, LD count, active, total) ---
+  const wingMap = {};
+  last30Days.forEach(r => {
+    const u = r.unit || 'Unknown';
+    if (!wingMap[u]) wingMap[u] = { unit: u, total: 0, mc: 0, ld: 0, active: 0 };
+    wingMap[u].total++;
+    if (r.status_category === 'MC') wingMap[u].mc++;
+    if (r.status_category === 'Light Duty') wingMap[u].ld++;
+    if (r.status === 'active' || r.status === 'approved') wingMap[u].active++;
+  });
+  const wingData = Object.values(wingMap).sort((a, b) => b.total - a.total);
+
   const generateAiInsight = async () => {
     setLoadingInsight(true);
     setAiInsight(null);
@@ -93,7 +112,8 @@ export default function MedicalDashboard() {
       clusters: clusters.map(c => ({ unit: c.unit, symptom: c.symptom, count: c.names.length })),
     };
     const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are a military medical officer. Analyse this 30-day health data and provide: 1) Key health trends, 2) Quarantine/cluster risks, 3) Personnel welfare concerns, 4) Actionable recommendations. Be concise and direct. Data: ${JSON.stringify(summary)}`,
+      prompt: `Military MO health brief. 30-day data: ${JSON.stringify(summary)}. Give: 1) Top trends 2) Cluster risks 3) Recommendations. Max 150 words, bullet points.`,
+      model: 'gpt_5_mini',
     });
     setLoadingInsight(false);
     setAiInsight(res);
@@ -101,6 +121,8 @@ export default function MedicalDashboard() {
 
   const tabs = [
     { key: 'overview', label: 'Overview' },
+    { key: 'epidemic', label: 'Epi Curve' },
+    { key: 'wings', label: 'Wings' },
     { key: 'clusters', label: 'Clusters', badge: clusters.length },
     { key: 'frequent', label: 'Watch List', badge: frequentFilers.length },
     { key: 'announce', label: 'Announce' },
@@ -233,6 +255,102 @@ export default function MedicalDashboard() {
                 </CardContent>
               </Card>
             )}
+          </>
+        )}
+
+        {/* EPIDEMIC CURVE TAB */}
+        {activeTab === 'epidemic' && (
+          <>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Activity className="h-4 w-4 text-primary" />
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Daily Cases — Last 30 Days</p>
+                </div>
+                <ResponsiveContainer width="100%" height={220}>
+                  <LineChart data={epiCurveData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="date" tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }} interval={4} />
+                    <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} allowDecimals={false} />
+                    <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 11 }} />
+                    <Line type="monotone" dataKey="total" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 2, fill: 'hsl(var(--primary))' }} name="Cases" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            {/* Peak days */}
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Top 5 Peak Days</p>
+                <div className="space-y-2">
+                  {[...epiCurveData].sort((a, b) => b.total - a.total).slice(0, 5).map((d, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground w-14">{d.date}</span>
+                      <div className="flex-1 bg-muted/40 rounded-full h-2 overflow-hidden">
+                        <div
+                          className="h-full bg-primary rounded-full"
+                          style={{ width: `${Math.min(100, (d.total / Math.max(...epiCurveData.map(x => x.total), 1)) * 100)}%` }}
+                        />
+                      </div>
+                      <span className="text-xs font-semibold w-6 text-right">{d.total}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
+
+        {/* WINGS COMPARISON TAB */}
+        {activeTab === 'wings' && (
+          <>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <BarChart2 className="h-4 w-4 text-primary" />
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Wing-Level Health Metrics (30d)</p>
+                </div>
+                {wingData.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">No data available.</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={wingData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="unit" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} />
+                      <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} allowDecimals={false} />
+                      <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, fontSize: 11 }} />
+                      <Legend iconSize={8} wrapperStyle={{ fontSize: 10 }} />
+                      <Bar dataKey="total" name="Total" fill="hsl(var(--primary))" radius={[3,3,0,0]} />
+                      <Bar dataKey="mc" name="MC" fill="#ef4444" radius={[3,3,0,0]} />
+                      <Bar dataKey="ld" name="Light Duty" fill="#f59e0b" radius={[3,3,0,0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Per-wing breakdown table */}
+            <Card>
+              <CardContent className="p-4">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Detailed Breakdown</p>
+                <div className="space-y-2">
+                  {wingData.map((w, i) => (
+                    <div key={i} className="flex items-center gap-2 p-2.5 bg-muted/30 rounded-lg">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold truncate">{w.unit}</p>
+                      </div>
+                      <div className="flex gap-2 text-[10px] shrink-0">
+                        <span className="px-1.5 py-0.5 bg-primary/10 text-primary rounded font-medium">{w.total} total</span>
+                        <span className="px-1.5 py-0.5 bg-destructive/10 text-destructive rounded font-medium">{w.mc} MC</span>
+                        <span className="px-1.5 py-0.5 bg-amber-500/10 text-amber-400 rounded font-medium">{w.ld} LD</span>
+                        <span className="px-1.5 py-0.5 bg-green-500/10 text-green-400 rounded font-medium">{w.active} live</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </>
         )}
 
