@@ -34,7 +34,7 @@ export default function Announcements() {
     if (!aiNotes.trim()) return;
     setGeneratingDraft(true);
     const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are a military admin assistant. Convert the following rough notes into a formal, professional military-style announcement. Use clear, direct language. Capitalise key terms (e.g. times, dates, locations). Do not add information not present in the notes. Return a JSON with "title" (short, formal) and "content" (full announcement body).\n\nNotes: ${aiNotes}`,
+      prompt: `Convert these rough notes into a formal military announcement. Keep all original facts. Return JSON with "title" (short) and "content" (formal body). Notes: ${aiNotes}`,
       response_json_schema: {
         type: 'object',
         properties: {

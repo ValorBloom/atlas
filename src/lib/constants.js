@@ -169,12 +169,18 @@ export const getCurrentTimeSG = () => {
 // cadet_admin = limited admin (appointed by instructor, can view movements + send parade state)
 // cadet = standard user
 
+export const MEDICAL_OFFICER_PIN = "L1fe_First";
+
 export const isInstructor = (user) => {
   return user?.user_role === 'instructor';
 };
 
 export const isCadetAdmin = (user) => {
   return user?.user_role === 'cadet_admin';
+};
+
+export const isMedicalOfficer = (user) => {
+  return user?.user_role === 'medical_officer';
 };
 
 export const isAdmin = (user) => {

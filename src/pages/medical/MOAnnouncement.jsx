@@ -1,0 +1,184 @@
+import React, { useState } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Megaphone, Send, Sparkles, X, Plus, CheckSquare, Square } from 'lucide-react';
+import { UNITS } from '@/lib/constants';
+import { format } from 'date-fns';
+import { toast } from 'sonner';
+
+export default function MOAnnouncement() {
+  const qc = useQueryClient();
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ title: '', content: '' });
+  const [selectedUnits, setSelectedUnits] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [aiNotes, setAiNotes] = useState('');
+  const [showAi, setShowAi] = useState(false);
+  const [generatingDraft, setGeneratingDraft] = useState(false);
+
+  const { data: announcements = [] } = useQuery({
+    queryKey: ['mo-announcements'],
+    queryFn: () => base44.entities.Announcement.filter({ sent_by: 'medical_officer' }, '-created_date', 30),
+  });
+
+  const toggleUnit = (u) => setSelectedUnits(prev => prev.includes(u) ? prev.filter(x => x !== u) : [...prev, u]);
+  const allSelected = selectedUnits.length === UNITS.length;
+  const toggleAll = () => setSelectedUnits(allSelected ? [] : [...UNITS]);
+
+  const handleAiDraft = async () => {
+    if (!aiNotes.trim()) return;
+    setGeneratingDraft(true);
+    const res = await base44.integrations.Core.InvokeLLM({
+      prompt: `Convert these health/medical notes into a formal military health advisory announcement. Keep facts accurate. Return JSON with "title" and "content". Notes: ${aiNotes}`,
+      response_json_schema: { type: 'object', properties: { title: { type: 'string' }, content: { type: 'string' } } },
+    });
+    setGeneratingDraft(false);
+    if (res?.title || res?.content) {
+      setForm(prev => ({ ...prev, title: res.title || prev.title, content: res.content || prev.content }));
+      setShowAi(false);
+      setAiNotes('');
+      setShowForm(true);
+      toast.success('Draft ready — review before sending');
+    }
+  };
+
+  const handleSend = async () => {
+    if (!form.title || !form.content || selectedUnits.length === 0) {
+      toast.error('Fill in all fields and select at least one unit');
+      return;
+    }
+    setSaving(true);
+    // Send one announcement per unit (so each unit sees it in their feed)
+    await Promise.all(selectedUnits.map(unit =>
+      base44.entities.Announcement.create({
+        ...form,
+        unit,
+        target_role: 'all',
+        is_active: true,
+        sent_by: 'medical_officer',
+        keywords: ['medical', 'health'],
+      }).then(() =>
+        base44.entities.Notification.create({
+          title: `🏥 ${form.title}`,
+          message: form.content.substring(0, 200),
+          type: 'warning',
+          category: 'announcement',
+          recipient_unit: unit,
+        })
+      )
+    ));
+    setSaving(false);
+    setShowForm(false);
+    setForm({ title: '', content: '' });
+    setSelectedUnits([]);
+    qc.invalidateQueries({ queryKey: ['mo-announcements'] });
+    toast.success(`Sent to ${selectedUnits.length} unit(s)`);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold text-foreground">Health Announcements</p>
+        <div className="flex gap-1">
+          <Button variant="ghost" size="sm" className="text-primary gap-1" onClick={() => { setShowAi(!showAi); setShowForm(false); }}>
+            <Sparkles className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => { setShowForm(!showForm); setShowAi(false); }}>
+            {showForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+          </Button>
+        </div>
+      </div>
+
+      {/* AI Draft Panel */}
+      {showAi && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <p className="text-sm font-semibold text-primary">Draft with AI</p>
+            </div>
+            <Textarea
+              value={aiNotes}
+              onChange={e => setAiNotes(e.target.value)}
+              placeholder="e.g. There's a flu outbreak in Alpha wing, remind everyone to wash hands and avoid sharing items"
+              className="min-h-[80px] text-sm"
+            />
+            <Button className="w-full gap-2" onClick={handleAiDraft} disabled={!aiNotes.trim() || generatingDraft}>
+              <Sparkles className="h-4 w-4" />
+              {generatingDraft ? 'Drafting...' : 'Generate Draft'}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Form */}
+      {showForm && (
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Title</Label>
+              <Input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="e.g. HEALTH ADVISORY — RESPIRATORY ILLNESS" />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Content</Label>
+              <Textarea value={form.content} onChange={e => setForm({ ...form, content: e.target.value })} placeholder="Write advisory..." className="min-h-[100px]" />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">Target Units</Label>
+                <button onClick={toggleAll} className="text-xs text-primary flex items-center gap-1">
+                  {allSelected ? <CheckSquare className="h-3 w-3" /> : <Square className="h-3 w-3" />}
+                  {allSelected ? 'Deselect All' : 'Select All'}
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {UNITS.map(u => (
+                  <button
+                    key={u}
+                    onClick={() => toggleUnit(u)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${
+                      selectedUnits.includes(u)
+                        ? 'bg-primary/15 border-primary/30 text-primary'
+                        : 'bg-muted/40 border-border text-muted-foreground'
+                    }`}
+                  >
+                    {u}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <Button className="w-full" onClick={handleSend} disabled={!form.title || !form.content || selectedUnits.length === 0 || saving}>
+              <Send className="h-4 w-4 mr-1" />
+              {saving ? 'Sending...' : `Send to ${selectedUnits.length || 0} unit(s)`}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* History */}
+      {announcements.length === 0 ? (
+        <Card><CardContent className="p-6 text-center">
+          <Megaphone className="h-7 w-7 text-muted-foreground/40 mx-auto mb-2" />
+          <p className="text-sm text-muted-foreground">No health announcements sent yet.</p>
+        </CardContent></Card>
+      ) : announcements.map(a => (
+        <Card key={a.id}>
+          <CardContent className="p-3.5">
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-sm font-semibold">{a.title}</p>
+              <Badge variant="secondary" className="text-[10px] shrink-0">{a.unit}</Badge>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{a.content}</p>
+            <p className="text-[10px] text-muted-foreground/60 mt-2">{format(new Date(a.created_date), 'dd MMM yyyy, HH:mm')}</p>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}

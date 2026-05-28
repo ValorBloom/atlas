@@ -7,10 +7,10 @@ import { Label } from '@/components/ui/label';
 import { MobileSelect, MobileSelectItem } from '@/components/ui/MobileSelect';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
-  CADET_RANKS, INSTRUCTOR_RANKS, UNITS, ADMIN_PIN, UNIT_PINS,
+  CADET_RANKS, INSTRUCTOR_RANKS, UNITS, ADMIN_PIN, UNIT_PINS, MEDICAL_OFFICER_PIN,
   getGroupLabel, getGroupOptions, getSectionOptions, UNIT_GROUPS
 } from '@/lib/constants';
-import { AlertTriangle, ChevronRight, Lock, User, Shield } from 'lucide-react';
+import { AlertTriangle, ChevronRight, Lock, User, Shield, Stethoscope } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const ATLAS_LOGO_URL = 'https://media.base44.com/images/public/69e4b33d62de074557854c0f/299b68b6d_image-removebg-preview.png';
@@ -22,8 +22,9 @@ function AtlasLogo({ size = 56 }) {
 }
 
 const ROLE_OPTIONS = [
-  { value: 'cadet',      icon: User,   label: 'Cadet',      description: 'Submit reports, SFT, movements' },
-  { value: 'instructor', icon: Shield, label: 'Instructor', description: 'Full access — requires auth code' },
+  { value: 'cadet',            icon: User,          label: 'Cadet',           description: 'Submit reports, SFT, movements' },
+  { value: 'instructor',       icon: Shield,        label: 'Instructor',      description: 'Full access — requires auth code' },
+  { value: 'medical_officer',  icon: Stethoscope,   label: 'Medical Officer', description: 'Medical analytics & health oversight' },
 ];
 
 export default function Setup() {
@@ -38,6 +39,7 @@ export default function Setup() {
   const [saving, setSaving] = useState(false);
 
   const isCadet = form.role === 'cadet';
+  const isMO = form.role === 'medical_officer';
   const isStandardUnit = form.unit && !UNIT_GROUPS[form.unit];
   const groupOptions = form.unit ? getGroupOptions(form.unit) : [];
   const sectionOptions = form.unit ? getSectionOptions(form.unit) : null;
@@ -50,7 +52,7 @@ export default function Setup() {
   const handleSubmit = async () => {
     if (!form.unit || !form.rank || !form.full_name.trim()) return;
 
-    if (form.unit_pin !== UNIT_PINS[form.unit]) {
+    if (!isMO && form.unit_pin !== UNIT_PINS[form.unit]) {
       setUnitPinError('Invalid unit PIN.');
       return;
     }
@@ -58,17 +60,22 @@ export default function Setup() {
       setPinError('Invalid authorisation code.');
       return;
     }
+    if (form.role === 'medical_officer' && form.admin_pin !== MEDICAL_OFFICER_PIN) {
+      setPinError('Invalid Medical Officer authorisation code.');
+      return;
+    }
 
     setSaving(true);
     const isInstr = form.role === 'instructor';
+    const isMORole = form.role === 'medical_officer';
     try {
       await base44.auth.updateMe({
         full_name: form.full_name.trim(),
         display_name: form.full_name.trim(),
-        unit: form.unit,
-        rank: form.rank,
-        platoon: isInstr ? null : (form.platoon || null),
-        section: isInstr ? null : (form.section || null),
+        unit: isMORole ? null : form.unit,
+        rank: isMORole ? null : form.rank,
+        platoon: (isInstr || isMORole) ? null : (form.platoon || null),
+        section: (isInstr || isMORole) ? null : (form.section || null),
         user_role: form.role,
       });
       window.location.href = '/';
@@ -77,9 +84,10 @@ export default function Setup() {
     }
   };
 
-  // Step 1 can proceed when name + unit + rank + (if cadet standard unit) platoon filled
-  const canProceedStep1 = form.full_name.trim().length > 1 && form.unit && form.rank &&
-    (!isCadet || !isStandardUnit || form.platoon);
+  // Step 1 can proceed: MO only needs name; others need unit + rank
+  const canProceedStep1 = form.full_name.trim().length > 1 && (
+    isMO || (form.unit && form.rank && (!isCadet || !isStandardUnit || form.platoon))
+  );
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-5">
@@ -119,12 +127,14 @@ export default function Setup() {
               <p className="text-[10px] text-muted-foreground">This will be your display name across the platform.</p>
             </div>
 
+            {!isMO && (
             <div className="space-y-1.5">
               <Label className="text-sm text-muted-foreground uppercase tracking-wide">Unit</Label>
               <MobileSelect value={form.unit} onValueChange={handleUnitChange} placeholder="Select unit" className="h-11 bg-card border-border text-sm">
                 {UNITS.map(u => <MobileSelectItem key={u} value={u}>{u}</MobileSelectItem>)}
               </MobileSelect>
             </div>
+            )}
 
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground uppercase tracking-wide">Role</Label>
@@ -147,12 +157,14 @@ export default function Setup() {
               </div>
             </div>
 
+            {!isMO && (
             <div className="space-y-1.5">
               <Label className="text-sm text-muted-foreground uppercase tracking-wide">Rank</Label>
               <MobileSelect value={form.rank} onValueChange={(v) => setForm({ ...form, rank: v })} placeholder="Select rank" className="h-11 bg-card border-border text-sm">
                 {rankOptions.map(r => <MobileSelectItem key={r} value={r}>{r}</MobileSelectItem>)}
               </MobileSelect>
             </div>
+            )}
 
             {/* Unit-specific groups (Air/DIS/Mids) — single select, no section */}
             {isCadet && form.unit && UNIT_GROUPS[form.unit] && (
@@ -205,14 +217,14 @@ export default function Setup() {
                 <span className="text-muted-foreground">Name</span>
                 <span className="font-medium">{form.full_name}</span>
               </div>
-              <div className="flex justify-between text-sm">
+              {!isMO && <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Unit</span>
                 <span className="font-medium">{form.unit}</span>
-              </div>
-              <div className="flex justify-between text-sm">
+              </div>}
+              {!isMO && <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Rank</span>
                 <span className="font-medium">{form.rank}</span>
-              </div>
+              </div>}
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Role</span>
                 <span className="font-medium capitalize">{form.role}</span>
@@ -231,7 +243,8 @@ export default function Setup() {
               )}
             </div>
 
-            {/* Unit PIN */}
+            {/* Unit PIN — not required for Medical Officer */}
+            {!isMO && (
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
                 <Lock className="h-3.5 w-3.5" /> Unit PIN
@@ -250,11 +263,12 @@ export default function Setup() {
                 </Alert>
               )}
             </div>
+            )}
 
-            {form.role === 'instructor' && (
+            {(form.role === 'instructor' || form.role === 'medical_officer') && (
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-                  <Lock className="h-3.5 w-3.5" /> Instructor Auth Code
+                  <Lock className="h-3.5 w-3.5" /> {form.role === 'medical_officer' ? 'Medical Officer Auth Code' : 'Instructor Auth Code'}
                 </Label>
                 <Input
                   type="password"

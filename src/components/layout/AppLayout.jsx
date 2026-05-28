@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { base44 } from '@/api/base44Client';
-import { isInstructor, isCadetAdmin } from '@/lib/constants';
+import { isInstructor, isCadetAdmin, isMedicalOfficer } from '@/lib/constants';
 import BottomNav from './BottomNav';
 import LoadingScreen from './LoadingScreen';
 
@@ -26,7 +26,9 @@ export default function AppLayout() {
     base44.auth.me()
       .then((u) => {
         setUser(u);
-        if (!u?.unit && location.pathname !== '/setup') {
+        if (u?.user_role === 'medical_officer') {
+          navigate('/medical', { replace: true });
+        } else if (!u?.unit && location.pathname !== '/setup') {
           navigate('/setup', { replace: true });
         }
       })
@@ -53,7 +55,7 @@ export default function AppLayout() {
           </motion.div>
         </AnimatePresence>
       </main>
-      <BottomNav isInstructor={isInstructor(user)} isCadetAdmin={isCadetAdmin(user)} userEmail={user?.email} />
+      {!isMedicalOfficer(user) && <BottomNav isInstructor={isInstructor(user)} isCadetAdmin={isCadetAdmin(user)} userEmail={user?.email} />}
     </div>
   );
 }

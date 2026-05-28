@@ -151,7 +151,7 @@ export default function CET() {
     }
 
     const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `Give me one unique, short, powerful motivational quote suitable for military cadets. ${themeHint} ${avoidList}Return a fresh quote with its REAL, SPECIFIC author (a real person's name — never use "Unknown", "Anonymous", or similar). The author MUST be a real historical figure, military leader, or well-known person. Format: {"quote": "...", "author": "..."}`,
+      prompt: `Give one short motivational quote for military cadets. ${themeHint} ${avoidList}Author must be a real named person (no "Unknown"/"Anonymous"). Return JSON only.`,
       response_json_schema: {
         type: 'object',
         properties: {

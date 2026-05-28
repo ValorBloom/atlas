@@ -6,6 +6,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { ThemeProvider } from '@/lib/ThemeContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import MOLayout from './components/layout/MOLayout';
 
 // Layout
 import AppLayout from './components/layout/AppLayout';
@@ -28,6 +29,9 @@ import Duty from './pages/Duty';
 import Tasks from './pages/Tasks';
 import TaskDetail from './pages/TaskDetail';
 import TaskWidget from './pages/TaskWidget';
+
+// Medical Officer
+import MedicalDashboard from './pages/medical/MedicalDashboard';
 
 // Admin Pages
 
@@ -69,6 +73,9 @@ const AuthenticatedApp = () => {
     <Routes>
       <Route path="/widget/tasks" element={<TaskWidget />} />
       <Route path="/setup" element={<Setup />} />
+      <Route element={<MOLayout />}>
+        <Route path="/medical" element={<MedicalDashboard />} />
+      </Route>
       <Route element={<AppLayout />}>
         <Route path="/" element={<Home />} />
         <Route path="/actions" element={<Actions />} />
