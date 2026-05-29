@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -75,6 +75,12 @@ function ApprovalModal({ report, instructorName, onConfirm, onCancel }) {
   const [notes, setNotes] = useState('');
   const [action, setAction] = useState(null); // 'approve' | 'reject'
   const [saving, setSaving] = useState(false);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setReady(true), 150);
+    return () => clearTimeout(t);
+  }, []);
 
   const handleConfirm = async () => {
     setSaving(true);
@@ -84,7 +90,7 @@ function ApprovalModal({ report, instructorName, onConfirm, onCancel }) {
 
   if (!action) {
     return (
-      <div className="fixed inset-0 z-50 bg-black/60 flex items-end" onClick={onCancel}>
+      <div className="fixed inset-0 z-50 bg-black/60 flex items-end" onClick={ready ? onCancel : undefined}>
         <div className="w-full bg-card rounded-t-2xl border-t border-border p-5 space-y-4" onClick={e => e.stopPropagation()}>
           <div className="flex items-center justify-between">
             <p className="text-sm font-bold">
@@ -98,7 +104,7 @@ function ApprovalModal({ report, instructorName, onConfirm, onCancel }) {
           {report.details && (
             <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-sans">{report.details}</pre>
           )}
-          <p className="text-xs text-muted-foreground">Date: {report.start_date} · By: {report.reported_by}</p>
+          <p className="text-xs text-muted-foreground">Date: {report.start_date}</p>
           <div className="flex gap-2 pt-1">
             <Button variant="outline" className="flex-1 border-destructive/30 text-destructive"
               onClick={() => setAction('reject')}>
@@ -475,9 +481,9 @@ export default function ParadeState() {
                   </div>
                   {r.symptoms && <p className="text-xs text-muted-foreground mt-1">Symptoms: {r.symptoms}</p>}
                   {r.details && <pre className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap font-sans">{r.details}</pre>}
-                  <p className="text-[10px] text-muted-foreground mt-1">{r.start_date} · {r.reported_by}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">{r.start_date}</p>
                 </div>
-                <Button size="sm" className="w-full h-8 text-xs" onClick={(e) => { e.stopPropagation(); setSelectedPending(r); }}>
+                <Button size="sm" className="w-full h-8 text-xs" onClick={(e) => { e.stopPropagation(); e.preventDefault(); setTimeout(() => setSelectedPending(r), 50); }}>
                   Review Request
                 </Button>
               </div>
