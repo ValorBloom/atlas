@@ -363,9 +363,10 @@ export default function ParadeState() {
           instructor_notes: notes || '',
         });
 
+        const isMedical = r.type === 'RSO' || r.type === 'RSI';
         const approvedMsg = notes
           ? `Your ${r.type} request has been approved.\nInstructor notes: ${notes}`
-          : `Your ${r.type} request has been approved. ${r.type === 'RSO' ? 'Please go see the doctor.' : r.type === 'RSI' ? 'Please go see the MO.' : 'Parade state has been updated.'}`;
+          : `Your ${r.type} request has been approved. ${r.type === 'RSO' ? 'Please go see the doctor, then update your outcome under Update RSO/RSI.' : r.type === 'RSI' ? 'Please go see the MO, then update your outcome under Update RSO/RSI.' : 'Parade state has been updated.'}`;
 
         await base44.entities.Notification.create({
           title: `${r.type} Approved`,
@@ -374,6 +375,7 @@ export default function ParadeState() {
           category: 'approval',
           recipient_email: r.reported_by,
           recipient_unit: unit,
+          ...(isMedical ? { link: '/actions/status/update/medical' } : {}),
         });
 
         toast.success(`${r.type} approved — cadet notified`);

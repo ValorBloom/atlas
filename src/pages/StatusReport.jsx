@@ -130,25 +130,19 @@ export default function StatusReport() {
     try {
       await base44.entities.StatusReport.create(reportData);
 
-      // Notify cadet admins / instructors (unit-wide notification)
-      await base44.entities.Notification.create({
-        title: `${upperType} Request — Pending Approval`,
-        message: notifMessage,
-        type: 'warning',
-        category: 'status',
-        recipient_unit: user?.unit,
-      });
-
-      await base44.entities.AuditLog.create({
-        action: `status_report_${upperType.toLowerCase()}`,
-        category: 'status',
-        details: notifMessage,
-        performed_by: user?.email,
-        unit: user?.unit,
-      });
+      // Audit log (cadets can always create these)
+      try {
+        await base44.entities.AuditLog.create({
+          action: `status_report_${upperType.toLowerCase()}`,
+          category: 'status',
+          details: notifMessage,
+          performed_by: user?.email,
+          unit: user?.unit,
+        });
+      } catch (_) { /* non-critical */ }
 
       toast.success(`${upperType} submitted — pending instructor approval`);
-      navigate('/');
+      navigate('/actions/status');
     } catch (err) {
       toast.error('Failed to submit. Please try again.');
       console.error(err);
