@@ -80,6 +80,7 @@ export default function StatusReport() {
   };
 
   const handleSubmit = async () => {
+    if (saving) return;
     setSaving(true);
 
     const displayName = selfName.toUpperCase();
@@ -126,28 +127,34 @@ export default function StatusReport() {
       notifMessage = `${rankName} — OTHERS — ${data.event_name.toUpperCase()} on ${dateFmt} at ${data.others_time}H`;
     }
 
-    await base44.entities.StatusReport.create(reportData);
+    try {
+      await base44.entities.StatusReport.create(reportData);
 
-    // Notify cadet admins / instructors (unit-wide notification, no recipient_email = broadcast)
-    await base44.entities.Notification.create({
-      title: `${upperType} Request — Pending Approval`,
-      message: notifMessage,
-      type: 'warning',
-      category: 'status',
-      recipient_unit: user?.unit,
-    });
+      // Notify cadet admins / instructors (unit-wide notification)
+      await base44.entities.Notification.create({
+        title: `${upperType} Request — Pending Approval`,
+        message: notifMessage,
+        type: 'warning',
+        category: 'status',
+        recipient_unit: user?.unit,
+      });
 
-    await base44.entities.AuditLog.create({
-      action: `status_report_${upperType.toLowerCase()}`,
-      category: 'status',
-      details: notifMessage,
-      performed_by: user?.email,
-      unit: user?.unit,
-    });
+      await base44.entities.AuditLog.create({
+        action: `status_report_${upperType.toLowerCase()}`,
+        category: 'status',
+        details: notifMessage,
+        performed_by: user?.email,
+        unit: user?.unit,
+      });
 
-    setSaving(false);
-    toast.success(`${upperType} submitted — pending instructor approval`);
-    navigate('/actions/status');
+      toast.success(`${upperType} submitted — pending instructor approval`);
+      navigate('/');
+    } catch (err) {
+      toast.error('Failed to submit. Please try again.');
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
   };
 
   // ── Confirm cards ──────────────────────────────────────────────

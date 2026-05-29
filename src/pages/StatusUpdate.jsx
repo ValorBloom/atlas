@@ -38,14 +38,18 @@ export default function StatusUpdate() {
 
   const selfName = user?.display_name || user?.full_name || '';
 
-  // Load approved RSO or RSI reports for the current user that haven't been diagnosed yet
+  // Load all my StatusReports (RLS ensures we only see our own or our unit's)
   const { data: myReports = [], isLoading } = useQuery({
     queryKey: ['my-medical-reports', user?.id],
-    queryFn: () => base44.entities.StatusReport.filter(
-      { personnel_id: user?.id },
-      '-created_date',
-      20
-    ),
+    queryFn: async () => {
+      const all = await base44.entities.StatusReport.filter(
+        {},
+        '-created_date',
+        50
+      );
+      // Client-side filter to our own reports
+      return all.filter(r => r.personnel_id === user?.id);
+    },
     enabled: !!user?.id,
   });
 
@@ -84,7 +88,7 @@ export default function StatusUpdate() {
   const canSubmit = selectedReport && form.diagnosis && form.status_category && form.start_date && form.end_date;
 
   const handleSubmit = async () => {
-    if (!canSubmit) return;
+    if (!canSubmit || saving) return;
     setSaving(true);
 
     const days = parseInt(form.duration_days) || 1;
@@ -93,43 +97,48 @@ export default function StatusUpdate() {
     const durationText = `${days} ${form.status_category === 'MC' ? 'DAY' : 'DAYS'}`;
     const rankName = formatRankName(user?.rank, selfName.toUpperCase());
 
-    await base44.entities.StatusReport.update(selectedReport.id, {
-      diagnosis: form.diagnosis.toUpperCase(),
-      status_category: form.status_category,
-      start_date: form.start_date,
-      end_date: form.end_date,
-      duration_text: durationText,
-      details: form.notes || selectedReport.details || '',
-      status: 'active',
-    });
+    try {
+      await base44.entities.StatusReport.update(selectedReport.id, {
+        diagnosis: form.diagnosis.toUpperCase(),
+        status_category: form.status_category,
+        start_date: form.start_date,
+        end_date: form.end_date,
+        duration_text: durationText,
+        details: form.notes || selectedReport.details || '',
+        status: 'active',
+      });
 
-    // Notify cadet admin / unit (broadcast)
-    const outcomeMsg = form.status_category === 'MC'
-      ? `${rankName} — ${selectedReport.type} — ${form.diagnosis.toUpperCase()} — ${durationText} MC (${startFmt}-${endFmt})`
-      : `${rankName} — ${selectedReport.type} — ${form.diagnosis.toUpperCase()} — ${durationText} ${form.status_category.toUpperCase()} (${startFmt}-${endFmt})`;
+      const outcomeMsg = form.status_category === 'MC'
+        ? `${rankName} — ${selectedReport.type} — ${form.diagnosis.toUpperCase()} — ${durationText} MC (${startFmt}-${endFmt})`
+        : `${rankName} — ${selectedReport.type} — ${form.diagnosis.toUpperCase()} — ${durationText} ${form.status_category.toUpperCase()} (${startFmt}-${endFmt})`;
 
-    await base44.entities.Notification.create({
-      title: `${selectedReport.type} Outcome Updated`,
-      message: outcomeMsg,
-      type: 'info',
-      category: 'status',
-      recipient_unit: user?.unit,
-    });
+      await base44.entities.Notification.create({
+        title: `${selectedReport.type} Outcome Updated`,
+        message: outcomeMsg,
+        type: 'info',
+        category: 'status',
+        recipient_unit: user?.unit,
+      });
 
-    await base44.entities.AuditLog.create({
-      action: `status_update_${selectedReport.type.toLowerCase()}`,
-      category: 'status',
-      details: outcomeMsg,
-      performed_by: user?.email,
-      unit: user?.unit,
-    });
+      await base44.entities.AuditLog.create({
+        action: `status_update_${selectedReport.type.toLowerCase()}`,
+        category: 'status',
+        details: outcomeMsg,
+        performed_by: user?.email,
+        unit: user?.unit,
+      });
 
-    setSaving(false);
-    toast.success('Status updated');
-    navigate('/actions/status');
+      toast.success('Status updated successfully');
+      navigate('/');
+    } catch (err) {
+      toast.error('Failed to update. Please try again.');
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  if (isLoading) {
+  if (!user || isLoading) {
     return (
       <div>
         <PageHeader title="Update RSO / RSI" backTo="/actions/status" />
@@ -139,6 +148,11 @@ export default function StatusUpdate() {
       </div>
     );
   }
+
+  // All my RSO/RSI reports (any status) for context
+  const allMyMedical = myReports.filter(r => r.type === 'RSO' || r.type === 'RSI');
+  const pendingMedical = allMyMedical.filter(r => r.status === 'pending_approval');
+  const rejectedMedical = allMyMedical.filter(r => r.status === 'rejected');
 
   return (
     <div>
@@ -153,15 +167,33 @@ export default function StatusUpdate() {
         </div>
 
         {updatable.length === 0 ? (
-          <Card>
-            <CardContent className="p-6 text-center">
-              <AlertTriangle className="h-8 w-8 text-muted-foreground/30 mx-auto mb-3" />
-              <p className="text-sm font-medium text-foreground">No approved reports to update</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Your RSO or RSI must be approved by an instructor before you can add a diagnosis.
-              </p>
-            </CardContent>
-          </Card>
+          <div className="space-y-3">
+            <Card>
+              <CardContent className="p-6 text-center">
+                <AlertTriangle className="h-8 w-8 text-muted-foreground/30 mx-auto mb-3" />
+                <p className="text-sm font-medium text-foreground">No approved reports to update</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Your RSO or RSI must be approved by an instructor before you can add a diagnosis.
+                </p>
+              </CardContent>
+            </Card>
+            {pendingMedical.length > 0 && (
+              <div className="p-3 rounded-xl border border-amber-500/25 bg-amber-500/10 space-y-1">
+                <p className="text-xs font-semibold text-amber-400">Awaiting instructor approval</p>
+                {pendingMedical.map(r => (
+                  <p key={r.id} className="text-xs text-muted-foreground">{r.type} — {r.start_date} — {r.symptoms || 'No symptoms recorded'}</p>
+                ))}
+              </div>
+            )}
+            {rejectedMedical.length > 0 && (
+              <div className="p-3 rounded-xl border border-destructive/25 bg-destructive/5 space-y-1">
+                <p className="text-xs font-semibold text-destructive">Denied reports</p>
+                {rejectedMedical.map(r => (
+                  <p key={r.id} className="text-xs text-muted-foreground">{r.type} — {r.start_date}</p>
+                ))}
+              </div>
+            )}
+          </div>
         ) : (
           <>
             {/* Select report */}

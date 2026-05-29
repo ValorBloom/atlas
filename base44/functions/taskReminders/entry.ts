@@ -4,15 +4,10 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 Deno.serve(async (req) => {
   const base44 = createClientFromRequest(req);
 
-  const user = await base44.auth.me();
-  if (user?.role !== 'admin') {
-    return Response.json({ error: 'Forbidden' }, { status: 403 });
-  }
-
   const now = new Date();
   const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
-  // Fetch all open tasks
+  // Fetch all open tasks using service role (scheduled task has no user context)
   const tasks = await base44.asServiceRole.entities.Task.filter({ status: 'Not Done' });
   const inProgressTasks = await base44.asServiceRole.entities.Task.filter({ status: 'In Progress' });
   const allOpen = [...tasks, ...inProgressTasks];
@@ -27,7 +22,6 @@ Deno.serve(async (req) => {
   for (const task of reminders) {
     if (!task.assigned_to_id) continue;
 
-    // Fetch the assignee
     const users = await base44.asServiceRole.entities.User.filter({ id: task.assigned_to_id });
     const assignee = users?.[0];
     if (!assignee?.email) continue;

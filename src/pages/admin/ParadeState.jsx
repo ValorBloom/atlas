@@ -353,63 +353,54 @@ export default function ParadeState() {
     const r = selectedPending;
     if (!r) return;
 
-    if (action === 'approve') {
-      // RSO/RSI stay 'approved' until cadet does post-consult update
-      // MA/OTHERS go directly to 'active'
-      const isMedicalReport = r.type === 'RSO' || r.type === 'RSI';
-      const updateData = {
-        status: isMedicalReport ? 'approved' : 'active',
-        approved_by: instructorDisplayName,
-        approval_date: new Date().toISOString(),
-        instructor_notes: notes || '',
-      };
+    try {
+      if (action === 'approve') {
+        const isMedicalReport = r.type === 'RSO' || r.type === 'RSI';
+        await base44.entities.StatusReport.update(r.id, {
+          status: isMedicalReport ? 'approved' : 'active',
+          approved_by: instructorDisplayName,
+          approval_date: new Date().toISOString(),
+          instructor_notes: notes || '',
+        });
 
-      await base44.entities.StatusReport.update(r.id, updateData);
+        const approvedMsg = notes
+          ? `Your ${r.type} request has been approved.\nInstructor notes: ${notes}`
+          : `Your ${r.type} request has been approved. ${r.type === 'RSO' ? 'Please go see the doctor.' : r.type === 'RSI' ? 'Please go see the MO.' : 'Parade state has been updated.'}`;
 
-      // Notify cadet
-      const approvedMsg = notes
-        ? `Your ${r.type} request has been approved.\nInstructor notes: ${notes}`
-        : `Your ${r.type} request has been approved. ${r.type === 'RSO' ? 'Please go see the doctor.' : r.type === 'RSI' ? 'Please go see the MO.' : 'Parade state has been updated.'}`;
+        await base44.entities.Notification.create({
+          title: `${r.type} Approved`,
+          message: approvedMsg,
+          type: 'success',
+          category: 'approval',
+          recipient_email: r.reported_by,
+          recipient_unit: unit,
+        });
 
-      await base44.entities.Notification.create({
-        title: `${r.type} Approved`,
-        message: approvedMsg,
-        type: 'success',
-        category: 'status',
-        recipient_email: r.reported_by,
-        recipient_unit: unit,
-      });
+        toast.success(`${r.type} approved — cadet notified`);
+      } else {
+        await base44.entities.StatusReport.update(r.id, {
+          status: 'rejected',
+          instructor_notes: notes || '',
+        });
 
-      // Notify cadet admins (unit broadcast)
-      await base44.entities.Notification.create({
-        title: `${r.type} Approved — ${formatRankName(r.personnel_rank, r.personnel_name)}`,
-        message: `${formatRankName(r.personnel_rank, r.personnel_name)} ${r.type} approved by ${instructorDisplayName}.${notes ? ` Notes: ${notes}` : ''}`,
-        type: 'info',
-        category: 'status',
-        recipient_unit: unit,
-      });
+        const deniedMsg = notes
+          ? `Your ${r.type} request has been denied.\nInstructor notes: ${notes}`
+          : `Your ${r.type} request has been denied.`;
 
-      toast.success(`${r.type} approved — cadet notified`);
-    } else {
-      await base44.entities.StatusReport.update(r.id, {
-        status: 'rejected',
-        instructor_notes: notes || '',
-      });
+        await base44.entities.Notification.create({
+          title: `${r.type} Denied`,
+          message: deniedMsg,
+          type: 'error',
+          category: 'approval',
+          recipient_email: r.reported_by,
+          recipient_unit: unit,
+        });
 
-      const deniedMsg = notes
-        ? `Your ${r.type} request has been denied.\nInstructor notes: ${notes}`
-        : `Your ${r.type} request has been denied.`;
-
-      await base44.entities.Notification.create({
-        title: `${r.type} Denied`,
-        message: deniedMsg,
-        type: 'error',
-        category: 'status',
-        recipient_email: r.reported_by,
-        recipient_unit: unit,
-      });
-
-      toast.success(`${r.type} denied — cadet notified`);
+        toast.success(`${r.type} denied — cadet notified`);
+      }
+    } catch (err) {
+      toast.error('Action failed. Please try again.');
+      console.error(err);
     }
 
     qc.invalidateQueries({ queryKey: ['parade-state', unit] });
