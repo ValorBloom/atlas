@@ -26,7 +26,7 @@ export default function AppointAdmin() {
   if (!isInstructor(user)) {
     return (
       <div>
-        <PageHeader title="Appoint Admin" backTo="/profile" />
+        <PageHeader title="Appoint Admin" backTo="/admin" />
         <div className="px-4 py-16 text-center">
           <Shield className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
           <p className="text-sm text-muted-foreground">Instructor access required.</p>
@@ -57,7 +57,7 @@ export default function AppointAdmin() {
 
   return (
     <div>
-      <PageHeader title="Appoint Cadet Admin" backTo="/profile" subtitle="Grant limited admin access to cadets" />
+      <PageHeader title="Appoint Cadet Admin" backTo="/admin" subtitle="Grant limited admin access to cadets" />
       <div className="px-4 py-4 space-y-4">
         <Alert className="py-2 border-primary/20 bg-primary/5">
           <Star className="h-4 w-4 text-primary" />

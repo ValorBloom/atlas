@@ -35,51 +35,59 @@ export default function MOAnnouncement() {
   const handleAiDraft = async () => {
     if (!aiNotes.trim()) return;
     setGeneratingDraft(true);
-    const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `Military health advisory. Convert notes to formal announcement JSON with "title" (short) and "content" (≤120 words, formal tone). Notes: ${aiNotes}`,
-      response_json_schema: { type: 'object', properties: { title: { type: 'string' }, content: { type: 'string' } } },
-      model: 'gpt_5_mini',
-    });
-    setGeneratingDraft(false);
-    if (res?.title || res?.content) {
-      setForm(prev => ({ ...prev, title: res.title || prev.title, content: res.content || prev.content }));
-      setShowAi(false);
-      setAiNotes('');
-      setShowForm(true);
-      toast.success('Draft ready — review before sending');
+    try {
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: `Military health advisory. Convert notes to formal announcement JSON with "title" (short) and "content" (≤120 words, formal tone). Notes: ${aiNotes}`,
+        response_json_schema: { type: 'object', properties: { title: { type: 'string' }, content: { type: 'string' } } },
+      });
+      if (res?.title || res?.content) {
+        setForm(prev => ({ ...prev, title: res.title || prev.title, content: res.content || prev.content }));
+        setShowAi(false);
+        setAiNotes('');
+        setShowForm(true);
+        toast.success('Draft ready — review before sending');
+      }
+    } catch (err) {
+      toast.error('AI draft failed. Please try again.');
+    } finally {
+      setGeneratingDraft(false);
     }
   };
 
   const handleSend = async () => {
-    if (!form.title || !form.content || selectedUnits.length === 0) {
+    if (!form.title || !form.content || selectedUnits.length === 0 || saving) {
       toast.error('Fill in all fields and select at least one unit');
       return;
     }
     setSaving(true);
-    // Send one announcement per unit (so each unit sees it in their feed)
-    await Promise.all(selectedUnits.map(unit =>
-      base44.entities.Announcement.create({
-        ...form,
-        unit,
-        is_active: true,
-        sent_by: 'medical_officer',
-        keywords: ['medical', 'health'],
-      }).then(() =>
-        base44.entities.Notification.create({
-          title: `🏥 ${form.title}`,
-          message: form.content.substring(0, 200),
-          type: 'warning',
-          category: 'announcement',
-          recipient_unit: unit,
-        })
-      )
-    ));
-    setSaving(false);
-    setShowForm(false);
-    setForm({ title: '', content: '', target_role: 'all' });
-    setSelectedUnits([]);
-    qc.invalidateQueries({ queryKey: ['mo-announcements'] });
-    toast.success(`Sent to ${selectedUnits.length} unit(s)`);
+    try {
+      await Promise.all(selectedUnits.map(unit =>
+        base44.entities.Announcement.create({
+          ...form,
+          unit,
+          is_active: true,
+          sent_by: 'medical_officer',
+          keywords: ['medical', 'health'],
+        }).then(() =>
+          base44.entities.Notification.create({
+            title: `🏥 ${form.title}`,
+            message: form.content.substring(0, 200),
+            type: 'warning',
+            category: 'announcement',
+            recipient_unit: unit,
+          })
+        )
+      ));
+      setShowForm(false);
+      setForm({ title: '', content: '', target_role: 'all' });
+      setSelectedUnits([]);
+      qc.invalidateQueries({ queryKey: ['mo-announcements'] });
+      toast.success(`Sent to ${selectedUnits.length} unit(s)`);
+    } catch (err) {
+      toast.error('Failed to send. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (

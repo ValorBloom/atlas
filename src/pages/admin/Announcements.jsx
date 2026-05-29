@@ -33,56 +33,64 @@ export default function Announcements() {
   const handleAiDraft = async () => {
     if (!aiNotes.trim()) return;
     setGeneratingDraft(true);
-    const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `Convert these rough notes into a formal military announcement. Keep all original facts. Return JSON with "title" (short) and "content" (formal body). Notes: ${aiNotes}`,
-      response_json_schema: {
-        type: 'object',
-        properties: {
-          title: { type: 'string' },
-          content: { type: 'string' },
+    try {
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: `Convert these rough notes into a formal military announcement. Keep all original facts. Return JSON with "title" (short) and "content" (formal body). Notes: ${aiNotes}`,
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            title: { type: 'string' },
+            content: { type: 'string' },
+          },
         },
-      },
-    });
-    setGeneratingDraft(false);
-    if (res?.title || res?.content) {
-      setForm(prev => ({ ...prev, title: res.title || prev.title, content: res.content || prev.content }));
-      setShowAiDraft(false);
-      setAiNotes('');
-      setShowForm(true);
-      toast.success('Draft ready — review and edit before sending');
+      });
+      if (res?.title || res?.content) {
+        setForm(prev => ({ ...prev, title: res.title || prev.title, content: res.content || prev.content }));
+        setShowAiDraft(false);
+        setAiNotes('');
+        setShowForm(true);
+        toast.success('Draft ready — review and edit before sending');
+      }
+    } catch (err) {
+      toast.error('AI draft failed. Please try again.');
+    } finally {
+      setGeneratingDraft(false);
     }
   };
 
   const handleCreate = async () => {
-    if (!form.title || !form.content) return;
+    if (!form.title || !form.content || saving) return;
     setSaving(true);
-    await base44.entities.Announcement.create({
-      ...form,
-      unit: user?.unit,
-      is_active: true,
-      sent_by: user?.email,
-    });
-
-    await base44.entities.Notification.create({
-      title: `📢 ${form.title}`,
-      message: form.content.substring(0, 200),
-      type: 'info',
-      category: 'announcement',
-      recipient_unit: user?.unit,
-    });
-
-    setSaving(false);
-    setShowForm(false);
-    setForm({ title: '', content: '', target_role: 'all' });
-    toast.success('Announcement sent');
-    queryClient.invalidateQueries({ queryKey: ['announcements'] });
+    try {
+      await base44.entities.Announcement.create({
+        ...form,
+        unit: user?.unit,
+        is_active: true,
+        sent_by: user?.email,
+      });
+      await base44.entities.Notification.create({
+        title: `📢 ${form.title}`,
+        message: form.content.substring(0, 200),
+        type: 'info',
+        category: 'announcement',
+        recipient_unit: user?.unit,
+      });
+      setShowForm(false);
+      setForm({ title: '', content: '', target_role: 'all' });
+      toast.success('Announcement sent');
+      queryClient.invalidateQueries({ queryKey: ['announcements'] });
+    } catch (err) {
+      toast.error('Failed to send. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <div>
       <PageHeader 
         title="Announcements" 
-        backTo="/"
+        backTo="/admin"
         rightAction={
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="sm" className="gap-1 text-xs text-primary" onClick={() => { setShowAiDraft(!showAiDraft); setShowForm(false); }}>

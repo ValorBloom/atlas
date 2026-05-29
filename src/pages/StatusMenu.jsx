@@ -6,7 +6,7 @@ import { FilePlus, RefreshCw } from 'lucide-react';
 export default function StatusMenu() {
   return (
     <div>
-      <PageHeader title="Status Reporting" backTo="/" subtitle="RSO / MA / RSI / Others" />
+      <PageHeader title="Status Reporting" backTo="/actions" subtitle="RSO / MA / RSI / Others" />
       <div className="px-4 py-5 space-y-3">
         <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Report New</h2>
         <QuickAction to="/actions/status/report/RSO" icon={FilePlus} label="Report RSO" description="Report Sick Outside — pending instructor approval" />

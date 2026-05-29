@@ -1,19 +1,24 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useOutletContext } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Stethoscope, AlertTriangle, Users, Sparkles, RefreshCw, Activity, BarChart2, LogOut } from 'lucide-react';
-import { format, subDays, eachDayOfInterval, startOfDay } from 'date-fns';
+import { Stethoscope, AlertTriangle, Users, Sparkles, RefreshCw, Activity, BarChart2 } from 'lucide-react';
+import { format, subDays, eachDayOfInterval } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 import MOAnnouncement from './MOAnnouncement';
+import MOProfile from './MOProfile';
+import MOBottomNav from '@/components/layout/MOBottomNav';
 import { toast } from 'sonner';
 
 const COLORS = ['#3b82f6', '#f59e0b', '#ef4444', '#10b981', '#8b5cf6', '#f97316'];
 
 export default function MedicalDashboard() {
+  const { user } = useOutletContext() || {};
   const [activeTab, setActiveTab] = useState('overview');
+  const [activeAnalyticsTab, setActiveAnalyticsTab] = useState('overview');
   const [aiInsight, setAiInsight] = useState(null);
   const [loadingInsight, setLoadingInsight] = useState(false);
 
@@ -119,17 +124,16 @@ export default function MedicalDashboard() {
     setAiInsight(res);
   };
 
-  const tabs = [
+  const analyticsTabs = [
     { key: 'overview', label: 'Overview' },
     { key: 'epidemic', label: 'Epi Curve' },
     { key: 'wings', label: 'Wings' },
     { key: 'clusters', label: 'Clusters', badge: clusters.length },
     { key: 'frequent', label: 'Watch List', badge: frequentFilers.length },
-    { key: 'announce', label: 'Announce' },
   ];
 
   return (
-    <div className="min-h-screen bg-background pb-8">
+    <div className="min-h-screen bg-background pb-20">
       {/* Header */}
       <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border">
         <div className="px-4 h-14 flex items-center justify-between max-w-lg mx-auto">
@@ -140,42 +144,45 @@ export default function MedicalDashboard() {
               <p className="text-[10px] text-muted-foreground">Health Analytics</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="text-[10px]">{activeReports.length} Active</Badge>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => base44.auth.logout('/')}>
-              <LogOut className="h-4 w-4" />
-            </Button>
+          <Badge variant="secondary" className="text-[10px]">{activeReports.length} Active</Badge>
+        </div>
+        {/* Analytics sub-tabs — only show when on dashboard tab */}
+        {activeTab === 'overview' && (
+          <div className="flex gap-1 px-4 pb-2 overflow-x-auto max-w-lg mx-auto">
+            {analyticsTabs.map(t => (
+              <button
+                key={t.key}
+                onClick={() => setActiveAnalyticsTab(t.key)}
+                className={`relative px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
+                  activeAnalyticsTab === t.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {t.label}
+                {t.badge > 0 && (
+                  <span className="ml-1 bg-destructive text-white text-[9px] px-1 rounded-full">{t.badge}</span>
+                )}
+              </button>
+            ))}
           </div>
-        </div>
-        {/* Tabs */}
-        <div className="flex gap-1 px-4 pb-2 overflow-x-auto max-w-lg mx-auto">
-          {tabs.map(t => (
-            <button
-              key={t.key}
-              onClick={() => setActiveTab(t.key)}
-              className={`relative px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
-                activeTab === t.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {t.label}
-              {t.badge > 0 && (
-                <span className="ml-1 bg-destructive text-white text-[9px] px-1 rounded-full">{t.badge}</span>
-              )}
-            </button>
-          ))}
-        </div>
+        )}
       </div>
 
       <div className="px-4 py-4 space-y-4 max-w-lg mx-auto">
 
-        {isLoading && (
+        {/* PROFILE TAB */}
+        {activeTab === 'profile' && <MOProfile user={user} />}
+
+        {/* ANNOUNCE TAB */}
+        {activeTab === 'announce' && <MOAnnouncement />}
+
+        {isLoading && activeTab === 'overview' && (
           <div className="flex items-center justify-center py-16">
             <div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" />
           </div>
         )}
 
-        {/* OVERVIEW TAB */}
-        {activeTab === 'overview' && (
+        {/* ANALYTICS TAB */}
+        {activeTab === 'overview' && activeAnalyticsTab === 'overview' && (
           <>
             {/* Stat cards */}
             <div className="grid grid-cols-3 gap-2">
@@ -270,7 +277,7 @@ export default function MedicalDashboard() {
         )}
 
         {/* EPIDEMIC CURVE TAB */}
-        {activeTab === 'epidemic' && (
+        {activeTab === 'overview' && activeAnalyticsTab === 'epidemic' && (
           <>
             <Card>
               <CardContent className="p-4">
@@ -314,7 +321,7 @@ export default function MedicalDashboard() {
         )}
 
         {/* WINGS COMPARISON TAB */}
-        {activeTab === 'wings' && (
+        {activeTab === 'overview' && activeAnalyticsTab === 'wings' && (
           <>
             <Card>
               <CardContent className="p-4">
@@ -366,7 +373,7 @@ export default function MedicalDashboard() {
         )}
 
         {/* CLUSTERS TAB */}
-        {activeTab === 'clusters' && (
+        {activeTab === 'overview' && activeAnalyticsTab === 'clusters' && (
           <>
             <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
               <div className="flex items-center gap-2">
@@ -399,7 +406,7 @@ export default function MedicalDashboard() {
         )}
 
         {/* FREQUENT FILERS TAB */}
-        {activeTab === 'frequent' && (
+        {activeTab === 'overview' && activeAnalyticsTab === 'frequent' && (
           <>
             <div className="p-3 bg-primary/8 border border-primary/20 rounded-xl">
               <p className="text-xs text-primary font-medium">Personnel with ≥3 reports in the last 30 days</p>
@@ -425,10 +432,9 @@ export default function MedicalDashboard() {
           </>
         )}
 
-        {/* ANNOUNCE TAB */}
-        {activeTab === 'announce' && <MOAnnouncement />}
-
       </div>
+
+      <MOBottomNav activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
   );
 }

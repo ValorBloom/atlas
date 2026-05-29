@@ -43,12 +43,10 @@ export default function LocationTracker() {
     return differenceInMinutes(now, leaveDate) > 60;
   };
 
-  const backPath = '/';
-
   return (
     <div className="pb-24 relative">
       <PullToRefresh pullDistance={pullDistance} refreshing={refreshing} />
-      <PageHeader title="Movement Log" backTo={backPath} subtitle={`Today · ${todayMovements.length} movements`} />
+      <PageHeader title="Movement Log" backTo="/admin" subtitle={`Today · ${todayMovements.length} movements`} />
       <div className="px-4 py-4 space-y-5">
 
         {/* Pending Out Banner */}

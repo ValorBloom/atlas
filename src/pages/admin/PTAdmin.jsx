@@ -166,7 +166,7 @@ export default function PTAdmin() {
 
   return (
     <div>
-      <PageHeader title="PT Admin" backTo="/" subtitle={instructor ? 'SFT approval' : 'SFT session management'} />
+      <PageHeader title="PT Admin" backTo="/admin" subtitle={instructor ? 'SFT approval' : 'SFT session management'} />
       <div className="px-4 py-4 space-y-5">
 
         {/* Active or Create Window */}
