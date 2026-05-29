@@ -281,7 +281,7 @@ export default function CET() {
   if (!isInstructor(user)) {
     return (
       <div>
-        <PageHeader title="CET" backTo="/" />
+        <PageHeader title="CET" backTo="/admin" />
         <div className="px-4 py-16 text-center">
           <p className="text-sm text-muted-foreground">Instructors only.</p>
         </div>
@@ -294,7 +294,7 @@ export default function CET() {
 
   return (
     <div className="pb-24">
-      <PageHeader title="Send CET" backTo="/" subtitle="Daily Training Programme" />
+      <PageHeader title="Send CET" backTo="/admin" subtitle="Daily Training Programme" />
 
       {/* ── Date Scroll — centered on selected ── */}
       <div className="px-4 pt-3 pb-1">

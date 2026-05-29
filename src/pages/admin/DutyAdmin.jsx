@@ -210,7 +210,7 @@ export default function DutyAdmin() {
   if (!canManage) {
     return (
       <div>
-        <PageHeader title="Duty Admin" backTo="/" />
+        <PageHeader title="Duty Admin" backTo="/admin" />
         <div className="px-4 py-16 text-center">
           <Shield className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
           <p className="text-sm text-muted-foreground">Admin access required.</p>
@@ -227,7 +227,7 @@ export default function DutyAdmin() {
       <PageHeader
         title="Duty Admin"
         subtitle={user?.unit}
-        backTo="/"
+        backTo="/admin"
         rightAction={
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={openSettings}>
             <Settings className="h-4 w-4" />
