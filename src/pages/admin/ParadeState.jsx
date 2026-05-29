@@ -84,13 +84,13 @@ function ApprovalModal({ report, instructorName, onConfirm, onCancel }) {
 
   if (!action) {
     return (
-      <div className="fixed inset-0 z-50 bg-black/60 flex items-end">
-        <div className="w-full bg-card rounded-t-2xl border-t border-border p-5 space-y-4">
+      <div className="fixed inset-0 z-50 bg-black/60 flex items-end" onClick={onCancel}>
+        <div className="w-full bg-card rounded-t-2xl border-t border-border p-5 space-y-4" onClick={e => e.stopPropagation()}>
           <div className="flex items-center justify-between">
             <p className="text-sm font-bold">
               {report.type} — {formatRankName(report.personnel_rank, report.personnel_name)}
             </p>
-            <button onClick={onCancel}><X className="h-4 w-4 text-muted-foreground" /></button>
+            <button type="button" onClick={onCancel}><X className="h-4 w-4 text-muted-foreground" /></button>
           </div>
           {report.symptoms && (
             <p className="text-xs text-muted-foreground">Symptoms: {report.symptoms}</p>
@@ -477,7 +477,7 @@ export default function ParadeState() {
                   {r.details && <pre className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap font-sans">{r.details}</pre>}
                   <p className="text-[10px] text-muted-foreground mt-1">{r.start_date} · {r.reported_by}</p>
                 </div>
-                <Button size="sm" className="w-full h-8 text-xs" onClick={() => setSelectedPending(r)}>
+                <Button size="sm" className="w-full h-8 text-xs" onClick={(e) => { e.stopPropagation(); setSelectedPending(r); }}>
                   Review Request
                 </Button>
               </div>
