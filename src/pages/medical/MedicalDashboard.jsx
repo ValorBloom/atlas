@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Stethoscope, AlertTriangle, Users, Sparkles, RefreshCw, Activity, BarChart2 } from 'lucide-react';
+import { Stethoscope, AlertTriangle, Users, Sparkles, RefreshCw, Activity, BarChart2, LogOut } from 'lucide-react';
 import { format, subDays, eachDayOfInterval, startOfDay } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 import MOAnnouncement from './MOAnnouncement';
@@ -19,7 +19,7 @@ export default function MedicalDashboard() {
 
   const { data: allReports = [], isLoading } = useQuery({
     queryKey: ['all-status-reports-mo'],
-    queryFn: () => base44.entities.StatusReport.filter({}, '-created_date', 500),
+    queryFn: () => base44.entities.StatusReport.list('-created_date', 500),
   });
 
   const activeReports = allReports.filter(r => r.status === 'active' || r.status === 'approved');
@@ -140,7 +140,12 @@ export default function MedicalDashboard() {
               <p className="text-[10px] text-muted-foreground">Health Analytics</p>
             </div>
           </div>
-          <Badge variant="secondary" className="text-[10px]">{activeReports.length} Active</Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="text-[10px]">{activeReports.length} Active</Badge>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => base44.auth.logout('/')}>
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
         {/* Tabs */}
         <div className="flex gap-1 px-4 pb-2 overflow-x-auto max-w-lg mx-auto">
@@ -162,6 +167,12 @@ export default function MedicalDashboard() {
       </div>
 
       <div className="px-4 py-4 space-y-4 max-w-lg mx-auto">
+
+        {isLoading && (
+          <div className="flex items-center justify-center py-16">
+            <div className="w-6 h-6 border-2 border-muted border-t-primary rounded-full animate-spin" />
+          </div>
+        )}
 
         {/* OVERVIEW TAB */}
         {activeTab === 'overview' && (

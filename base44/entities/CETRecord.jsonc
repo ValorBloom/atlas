@@ -52,7 +52,7 @@
   "rls": {
     "create": {
       "user_condition": {
-        "role": "instructor"
+        "user_role": "instructor"
       },
       "data.unit": "{{user.data.unit}}"
     },
@@ -64,7 +64,7 @@
         },
         {
           "user_condition": {
-            "role": "instructor"
+            "user_role": "instructor"
           },
           "data.unit": "{{user.data.unit}}"
         }
@@ -72,13 +72,13 @@
     },
     "update": {
       "user_condition": {
-        "role": "instructor"
+        "user_role": "instructor"
       },
       "data.unit": "{{user.data.unit}}"
     },
     "delete": {
       "user_condition": {
-        "role": "instructor"
+        "user_role": "instructor"
       },
       "data.unit": "{{user.data.unit}}"
     }

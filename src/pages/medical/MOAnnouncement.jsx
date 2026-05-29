@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Megaphone, Send, Sparkles, X, Plus, CheckSquare, Square } from 'lucide-react';
+import { Megaphone, Send, Sparkles, X, Plus, CheckSquare, Square, Users, Shield, UserCheck } from 'lucide-react';
+import { MobileSelect, MobileSelectItem } from '@/components/ui/MobileSelect';
 import { UNITS } from '@/lib/constants';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -15,7 +16,7 @@ import { toast } from 'sonner';
 export default function MOAnnouncement() {
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ title: '', content: '' });
+  const [form, setForm] = useState({ title: '', content: '', target_role: 'all' });
   const [selectedUnits, setSelectedUnits] = useState([]);
   const [saving, setSaving] = useState(false);
   const [aiNotes, setAiNotes] = useState('');
@@ -35,8 +36,9 @@ export default function MOAnnouncement() {
     if (!aiNotes.trim()) return;
     setGeneratingDraft(true);
     const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `Convert these health/medical notes into a formal military health advisory announcement. Keep facts accurate. Return JSON with "title" and "content". Notes: ${aiNotes}`,
+      prompt: `Military health advisory. Convert notes to formal announcement JSON with "title" (short) and "content" (≤120 words, formal tone). Notes: ${aiNotes}`,
       response_json_schema: { type: 'object', properties: { title: { type: 'string' }, content: { type: 'string' } } },
+      model: 'gpt_5_mini',
     });
     setGeneratingDraft(false);
     if (res?.title || res?.content) {
@@ -59,7 +61,6 @@ export default function MOAnnouncement() {
       base44.entities.Announcement.create({
         ...form,
         unit,
-        target_role: 'all',
         is_active: true,
         sent_by: 'medical_officer',
         keywords: ['medical', 'health'],
@@ -75,7 +76,7 @@ export default function MOAnnouncement() {
     ));
     setSaving(false);
     setShowForm(false);
-    setForm({ title: '', content: '' });
+    setForm({ title: '', content: '', target_role: 'all' });
     setSelectedUnits([]);
     qc.invalidateQueries({ queryKey: ['mo-announcements'] });
     toast.success(`Sent to ${selectedUnits.length} unit(s)`);
@@ -129,6 +130,31 @@ export default function MOAnnouncement() {
               <Label className="text-xs">Content</Label>
               <Textarea value={form.content} onChange={e => setForm({ ...form, content: e.target.value })} placeholder="Write advisory..." className="min-h-[100px]" />
             </div>
+            {/* Audience */}
+            <div className="space-y-1.5">
+              <Label className="text-xs">Audience</Label>
+              <div className="flex gap-2">
+                {[
+                  { value: 'all', label: 'Everyone', icon: Users },
+                  { value: 'instructor', label: 'Instructors', icon: Shield },
+                  { value: 'cadet', label: 'Cadets', icon: UserCheck },
+                ].map(({ value, label, icon: Icon }) => (
+                  <button
+                    key={value}
+                    onClick={() => setForm(f => ({ ...f, target_role: value }))}
+                    className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-lg border text-xs font-medium transition-all ${
+                      form.target_role === value
+                        ? 'bg-primary/15 border-primary/30 text-primary'
+                        : 'bg-muted/30 border-border text-muted-foreground'
+                    }`}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="text-xs">Target Units</Label>
