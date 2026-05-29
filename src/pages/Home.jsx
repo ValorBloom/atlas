@@ -41,29 +41,38 @@ const ACTION_ICON_STYLES = {
 };
 
 function SectionLabel({ children }) {
-  return <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest px-0.5">{children}</p>;
+  return <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.15em] px-0.5">{children}</p>;
+}
+
+function InitialsAvatar({ name, size = 'sm' }) {
+  const initials = name ? name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : '?';
+  return (
+    <div className={`rounded-xl bg-primary/15 border border-primary/20 flex items-center justify-center shrink-0 ${size === 'sm' ? 'w-9 h-9' : 'w-10 h-10'}`}>
+      <span className="text-[11px] font-bold text-primary">{initials}</span>
+    </div>
+  );
 }
 
 // Compact action tile for instructors on home (2-col grid)
 function InstructorTile({ to, icon: Icon, label, sub, accent = 'default', badge }) {
   const styles = {
-    blue: { wrap: 'bg-primary/10 border-primary/20', icon: 'text-primary' },
-    amber: { wrap: 'bg-amber-500/10 border-amber-500/20', icon: 'text-amber-400' },
-    green: { wrap: 'bg-green-500/10 border-green-500/20', icon: 'text-green-400' },
-    default: { wrap: 'bg-muted/60 border-border', icon: 'text-muted-foreground' },
+    blue: { wrap: 'bg-primary/10', icon: 'text-primary' },
+    amber: { wrap: 'bg-amber-500/10', icon: 'text-amber-400' },
+    green: { wrap: 'bg-green-500/10', icon: 'text-green-400' },
+    default: { wrap: 'bg-muted/50', icon: 'text-muted-foreground' },
   };
   const s = styles[accent] || styles.default;
   return (
-    <Link to={to} className="flex flex-col gap-2.5 p-3.5 rounded-xl border bg-card hover:bg-muted/20 active:scale-[0.97] transition-all relative overflow-hidden">
-      <div className={cn('w-9 h-9 rounded-lg border flex items-center justify-center shrink-0', s.wrap)}>
-        <Icon className={cn('h-4 w-4', s.icon)} />
+    <Link to={to} className="flex flex-col gap-2.5 p-3.5 rounded-2xl border border-border/60 bg-card hover:bg-muted/20 active:scale-[0.97] transition-all relative overflow-hidden">
+      <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center shrink-0', s.wrap)}>
+        <Icon className={cn('h-[18px] w-[18px]', s.icon)} />
       </div>
       <div>
         <p className="text-xs font-semibold text-foreground leading-tight">{label}</p>
         {sub && <p className="text-[10px] text-muted-foreground mt-0.5">{sub}</p>}
       </div>
       {badge && (
-        <span className="absolute top-2 right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-white text-[9px] font-bold flex items-center justify-center">
+        <span className="absolute top-2.5 right-2.5 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-white text-[9px] font-bold flex items-center justify-center">
           {badge}
         </span>
       )}
@@ -198,26 +207,25 @@ export default function Home() {
       <div className="pb-24 relative" ref={containerRef}>
         <PullToRefresh pullDistance={pullDistance} refreshing={refreshing} lastUpdated={lastUpdated} />
         {/* Header */}
-        <div className="px-4 pt-10 pb-6">
-          <div className="flex items-start justify-between">
+        <div className="px-4 pt-12 pb-5">
+          <div className="flex items-center justify-between">
             <div>
-              <div className="flex items-center gap-1.5 mb-2.5">
-                <img src={ATLAS_LOGO_DARK} alt="ATLAS" width={16} height={16} style={{ objectFit: 'contain', opacity: 0.7 }} />
-                <span className="text-[9px] tracking-[0.2em] uppercase text-muted-foreground font-semibold">Atlas · {user?.unit}</span>
+              <div className="flex items-center gap-1.5 mb-2">
+                <img src={ATLAS_LOGO_DARK} alt="ATLAS" width={14} height={14} style={{ objectFit: 'contain', opacity: 0.5 }} />
+                <span className="text-[10px] tracking-[0.15em] uppercase text-muted-foreground font-medium">{user?.unit}</span>
               </div>
-              <p className="text-sm text-muted-foreground mb-0.5">{greeting()}</p>
-              <h1 className="text-2xl font-bold text-foreground leading-tight">{displayName}</h1>
-              {summary && <p className="text-xs text-muted-foreground mt-1">{summary}</p>}
+              <h1 className="text-[22px] font-bold text-foreground leading-tight">{displayName}</h1>
+              {summary && <p className="text-[11px] text-muted-foreground mt-1">{summary}</p>}
             </div>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2">
               <Link to="/notifications" className="relative w-9 h-9 rounded-xl bg-muted border border-border flex items-center justify-center">
                 <Bell className="h-4 w-4 text-muted-foreground" />
                 {unread > 0 && (
                   <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-white text-[9px] font-bold flex items-center justify-center">{unread}</span>
                 )}
               </Link>
-              <Link to="/profile" className="w-9 h-9 rounded-xl bg-muted border border-border flex items-center justify-center">
-                <Shield className="h-4 w-4 text-muted-foreground" />
+              <Link to="/profile">
+                <InitialsAvatar name={name} />
               </Link>
             </div>
           </div>
@@ -252,17 +260,17 @@ export default function Home() {
           </div>
 
           {/* Dashboard shortcut */}
-          <Link to="/admin" className="flex items-center justify-between p-3.5 rounded-xl border border-border bg-card hover:bg-muted/30 transition-colors">
+          <Link to="/admin" className="flex items-center justify-between p-3.5 rounded-2xl border border-border/60 bg-card hover:bg-muted/30 active:scale-[0.98] transition-all">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
+              <div className="w-9 h-9 rounded-xl bg-muted/60 flex items-center justify-center">
                 <Users className="h-4 w-4 text-muted-foreground" />
               </div>
               <div>
                 <p className="text-sm font-semibold">Command Centre</p>
-                <p className="text-xs text-muted-foreground">Unit overview & management</p>
+                <p className="text-[11px] text-muted-foreground">Unit overview & management</p>
               </div>
             </div>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
           </Link>
         </div>
       </div>
@@ -274,29 +282,28 @@ export default function Home() {
     <div className="pb-24 relative" ref={containerRef}>
       <PullToRefresh pullDistance={pullDistance} refreshing={refreshing} lastUpdated={lastUpdated} />
       {/* Cadet header */}
-      <div className="px-4 pt-10 pb-6">
-        <div className="flex items-start justify-between">
+      <div className="px-4 pt-12 pb-5">
+        <div className="flex items-center justify-between">
           <div>
-            <div className="flex items-center gap-1.5 mb-2.5">
-              <img src={ATLAS_LOGO_DARK} alt="ATLAS" width={16} height={16} style={{ objectFit: 'contain', opacity: 0.7 }} />
-              <span className="text-[9px] tracking-[0.2em] uppercase text-muted-foreground font-semibold">Atlas · {user?.unit}</span>
+            <div className="flex items-center gap-1.5 mb-2">
+              <img src={ATLAS_LOGO_DARK} alt="ATLAS" width={14} height={14} style={{ objectFit: 'contain', opacity: 0.5 }} />
+              <span className="text-[10px] tracking-[0.15em] uppercase text-muted-foreground font-medium">{user?.unit}</span>
+              {cadetAdmin && (
+                <span className="text-[10px] bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full font-semibold border border-amber-500/20">Admin</span>
+              )}
             </div>
-            <p className="text-sm text-muted-foreground mb-0.5">{greeting()}</p>
-            <h1 className="text-2xl font-bold text-foreground leading-tight">{displayName}</h1>
-            {summary && <p className="text-xs text-muted-foreground mt-1">{summary}</p>}
-            {cadetAdmin && (
-              <span className="inline-block mt-2 text-[10px] bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full font-semibold border border-amber-500/25">Cadet Admin</span>
-            )}
+            <h1 className="text-[22px] font-bold text-foreground leading-tight">{displayName}</h1>
+            {summary && <p className="text-[11px] text-muted-foreground mt-1">{summary}</p>}
           </div>
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-center gap-2">
             <Link to="/notifications" className="relative w-9 h-9 rounded-xl bg-muted border border-border flex items-center justify-center">
               <Bell className="h-4 w-4 text-muted-foreground" />
               {unread > 0 && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-white text-[9px] font-bold flex items-center justify-center">{unread}</span>
               )}
             </Link>
-            <Link to="/profile" className="w-9 h-9 rounded-xl bg-muted border border-border flex items-center justify-center">
-              <Shield className="h-4 w-4 text-muted-foreground" />
+            <Link to="/profile">
+              <InitialsAvatar name={name} />
             </Link>
           </div>
         </div>
@@ -304,28 +311,29 @@ export default function Home() {
 
       <div className="px-4 space-y-4">
 
-        {/* SFT alert — shown only if active window (not duplicated in TodaySummary) */}
+        {/* SFT alert — left-accent strip style */}
         {activeWindows.length > 0 && (
-          <Link to="/actions/sft" className="flex items-center justify-between p-3 bg-primary/8 border border-primary/20 rounded-xl active:scale-[0.98] transition-all">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-primary/15 flex items-center justify-center">
-                <Activity className="h-3.5 w-3.5 text-primary" />
+          <Link to="/actions/sft" className="flex items-stretch rounded-xl overflow-hidden border border-border active:scale-[0.98] transition-all bg-card">
+            <div className="w-1 bg-primary shrink-0" />
+            <div className="flex items-center justify-between flex-1 px-3 py-2.5">
+              <div className="flex items-center gap-2.5">
+                <Activity className="h-4 w-4 text-primary shrink-0" />
+                <div>
+                  <p className="text-xs font-semibold text-foreground">SFT Window Open</p>
+                  <p className="text-[10px] text-muted-foreground">{activeWindows[0].start_time}H – {activeWindows[0].end_time}H</p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs font-semibold text-primary">SFT Window Open</p>
-                <p className="text-[10px] text-muted-foreground">{activeWindows[0].start_time}H – {activeWindows[0].end_time}H</p>
-              </div>
+              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
             </div>
-            <ChevronRight className="h-3.5 w-3.5 text-primary/40" />
           </Link>
         )}
 
         {/* ── Daily CET Quote bar (always shown if CET published, toggleable) ── */}
         {todayCET?.quote ? (
-          <div className="rounded-xl border border-primary/25 bg-primary/8 overflow-hidden">
+          <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
             <div className="flex items-stretch">
               {/* Accent bar */}
-              <div className="w-1 bg-primary/50 shrink-0" />
+              <div className="w-1 bg-primary shrink-0" />
               <div className="flex-1 px-3 py-3 min-w-0">
                 <p className="text-[9px] font-bold text-primary uppercase tracking-[0.2em] mb-1">Quote of the Day</p>
                 {showQuote ? (
@@ -401,12 +409,12 @@ export default function Home() {
                   >
                     <Link
                       to={action.to}
-                      className="flex flex-col items-center justify-center gap-2 p-3.5 rounded-xl border border-border bg-card hover:bg-muted/40 transition-all w-full"
+                      className="flex flex-col items-center justify-center gap-2.5 py-4 px-2 rounded-2xl border border-border/60 bg-card hover:bg-muted/30 active:scale-[0.96] transition-all w-full"
                     >
-                      <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', styles.wrap)}>
+                      <div className={cn('w-11 h-11 rounded-2xl flex items-center justify-center', styles.wrap)}>
                         <ActionIcon className={cn('h-5 w-5', styles.icon)} />
                       </div>
-                      <p className="text-xs font-semibold text-foreground">{action.label}</p>
+                      <p className="text-[11px] font-semibold text-foreground">{action.label}</p>
                     </Link>
                   </motion.div>
                 );

@@ -62,7 +62,7 @@ export default function BottomNav({ isInstructor, isCadetAdmin, userEmail }) {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border safe-area-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-t border-border safe-area-bottom">
       <div className="flex items-center justify-around max-w-lg mx-auto h-16 px-2">
         {items.map(({ key, icon: Icon, label, default: defaultPath, badge }) => {
           const isActive = currentTab === key;
@@ -71,19 +71,24 @@ export default function BottomNav({ isInstructor, isCadetAdmin, userEmail }) {
               key={key}
               onClick={() => goToTab(key, defaultPath)}
               className={cn(
-                'flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-lg transition-colors min-w-0 flex-1 relative',
+                'flex flex-col items-center justify-center gap-0.5 px-3 py-1 rounded-lg transition-all min-w-0 flex-1 relative',
                 isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
               )}
             >
-              <div className="relative">
-                <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
+              {/* Active pill indicator */}
+              <div className={cn(
+                'absolute top-0 left-1/2 -translate-x-1/2 h-0.5 rounded-full transition-all duration-200',
+                isActive ? 'w-6 bg-primary' : 'w-0 bg-transparent'
+              )} />
+              <div className="relative mt-1">
+                <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 1.8} />
                 {badge > 0 && (
                   <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] px-0.5 rounded-full bg-destructive text-white text-[9px] font-bold flex items-center justify-center pulse-soft">
                     {badge > 9 ? '9+' : badge}
                   </span>
                 )}
               </div>
-              <span className={cn('text-[10px] leading-tight', isActive ? 'font-semibold' : 'font-medium')}>
+              <span className={cn('text-[10px] leading-tight', isActive ? 'font-semibold' : 'font-normal')}>
                 {label}
               </span>
             </button>

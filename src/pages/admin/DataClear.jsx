@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertTriangle, Trash2, ShieldAlert } from 'lucide-react';
+import { AlertTriangle, Trash2, ShieldAlert, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 
 const DATA_TARGETS = [
@@ -24,6 +24,7 @@ export default function DataClear() {
   const [selected, setSelected] = useState(null);
   const [confirmText, setConfirmText] = useState('');
   const [clearing, setClearing] = useState(false);
+  const [clearAllMode, setClearAllMode] = useState(false);
 
   const handleClear = async () => {
     if (!selected || confirmText !== 'DELETE') return;
@@ -48,6 +49,33 @@ export default function DataClear() {
     toast.success(`${selected.label} cleared (${records.length} records)`);
   };
 
+  const handleClearAll = async () => {
+    if (confirmText !== 'DELETE ALL') return;
+    setClearing(true);
+    let totalDeleted = 0;
+
+    for (const target of DATA_TARGETS) {
+      const records = await base44.entities[target.entity].filter({ unit: user?.unit });
+      for (const record of records) {
+        await base44.entities[target.entity].delete(record.id);
+      }
+      totalDeleted += records.length;
+    }
+
+    await base44.entities.AuditLog.create({
+      action: 'data_clear_all',
+      category: 'data_clear',
+      details: `Cleared ALL data (${totalDeleted} records total) for ${user?.unit}`,
+      performed_by: user?.email,
+      unit: user?.unit,
+    });
+
+    setClearing(false);
+    setClearAllMode(false);
+    setConfirmText('');
+    toast.success(`All data cleared (${totalDeleted} records)`);
+  };
+
   return (
     <div>
       <PageHeader title="Data Clear" backTo="/" subtitle="Controlled data operations" />
@@ -63,7 +91,7 @@ export default function DataClear() {
           {DATA_TARGETS.map(target => (
             <button
               key={target.key}
-              onClick={() => { setSelected(target); setConfirmText(''); }}
+              onClick={() => { setSelected(target); setClearAllMode(false); setConfirmText(''); }}
               className={`w-full text-left p-3.5 rounded-xl border text-sm transition-all ${
                 selected?.key === target.key 
                   ? 'border-destructive bg-destructive/5' 
@@ -75,6 +103,24 @@ export default function DataClear() {
             </button>
           ))}
         </div>
+
+        {/* Clear All button */}
+        <button
+          onClick={() => { setClearAllMode(true); setSelected(null); setConfirmText(''); }}
+          className={`w-full text-left p-3.5 rounded-xl border text-sm transition-all ${
+            clearAllMode
+              ? 'border-destructive bg-destructive/10'
+              : 'border-destructive/30 bg-destructive/5'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Zap className="h-4 w-4 text-destructive shrink-0" />
+            <div>
+              <p className="font-semibold text-destructive">Clear All Data</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Delete every record across all categories for {user?.unit}</p>
+            </div>
+          </div>
+        </button>
 
         {selected && (
           <Card className="border-destructive/30">
@@ -106,6 +152,41 @@ export default function DataClear() {
               >
                 <Trash2 className="h-4 w-4 mr-1" />
                 {clearing ? 'Clearing...' : `Delete All ${selected.label}`}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {clearAllMode && (
+          <Card className="border-destructive/40 bg-destructive/5">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-destructive flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4" />
+                Confirm — Delete ALL Data
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                This will permanently delete <strong>all records</strong> across every category for <strong>{user?.unit}</strong>. 
+                This is irreversible.
+              </p>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Type <span className="font-mono font-bold">DELETE ALL</span> to confirm</Label>
+                <Input
+                  placeholder="DELETE ALL"
+                  value={confirmText}
+                  onChange={(e) => setConfirmText(e.target.value)}
+                  className="font-mono text-center"
+                />
+              </div>
+              <Button 
+                variant="destructive" 
+                className="w-full" 
+                onClick={handleClearAll}
+                disabled={confirmText !== 'DELETE ALL' || clearing}
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                {clearing ? 'Clearing All...' : 'Delete All Data'}
               </Button>
             </CardContent>
           </Card>
