@@ -30,5 +30,13 @@
     "section": {
       "type": "string"
     }
-  }
+  },
+  "required": [
+    "display_name",
+    "unit",
+    "rank",
+    "user_role",
+    "platoon",
+    "section"
+  ]
 }

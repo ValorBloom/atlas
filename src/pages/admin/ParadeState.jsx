@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import PageHeader from '@/components/layout/PageHeader';
@@ -70,80 +70,6 @@ function formatStatusLine(r) {
   return `${name}\n${dur} ${(r.status_category || 'LIGHT DUTY').toUpperCase()}${dates}`;
 }
 
-// ── Approve / Deny modal with optional notes ──────────────────────
-function ApprovalModal({ report, instructorName, onConfirm, onCancel }) {
-  const [notes, setNotes] = useState('');
-  const [action, setAction] = useState(null); // 'approve' | 'reject'
-  const [saving, setSaving] = useState(false);
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    const t = setTimeout(() => setReady(true), 150);
-    return () => clearTimeout(t);
-  }, []);
-
-  const handleConfirm = async () => {
-    setSaving(true);
-    await onConfirm(action, notes);
-    setSaving(false);
-  };
-
-  if (!action) {
-    return (
-      <div className="fixed inset-0 z-50 bg-black/60 flex items-end" onClick={ready ? onCancel : undefined}>
-        <div className="w-full bg-card rounded-t-2xl border-t border-border p-5 space-y-4" onClick={e => e.stopPropagation()}>
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-bold">
-              {report.type} — {formatRankName(report.personnel_rank, report.personnel_name)}
-            </p>
-            <button type="button" onClick={onCancel}><X className="h-4 w-4 text-muted-foreground" /></button>
-          </div>
-          {report.symptoms && (
-            <p className="text-xs text-muted-foreground">Symptoms: {report.symptoms}</p>
-          )}
-          {report.details && (
-            <pre className="text-xs text-muted-foreground whitespace-pre-wrap font-sans">{report.details}</pre>
-          )}
-          <p className="text-xs text-muted-foreground">Date: {report.start_date}</p>
-          <div className="flex gap-2 pt-1">
-            <Button variant="outline" className="flex-1 border-destructive/30 text-destructive"
-              onClick={() => setAction('reject')}>
-              <X className="h-3.5 w-3.5 mr-1" />Deny
-            </Button>
-            <Button className="flex-1" onClick={() => setAction('approve')}>
-              <Check className="h-3.5 w-3.5 mr-1" />Approve
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-end">
-      <div className="w-full bg-card rounded-t-2xl border-t border-border p-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-bold text-foreground">
-            {action === 'approve' ? '✓ Approve' : '✗ Deny'} — {report.type}
-          </p>
-          <button onClick={() => setAction(null)}><X className="h-4 w-4 text-muted-foreground" /></button>
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs text-muted-foreground uppercase tracking-wide">Notes (optional)</Label>
-          <Textarea
-            placeholder="Add any remarks or instructions..."
-            value={notes}
-            onChange={e => setNotes(e.target.value)}
-            className="min-h-[80px] text-sm"
-          />
-        </div>
-        <Button className="w-full" onClick={handleConfirm} disabled={saving}>
-          {saving ? 'Processing…' : `Confirm ${action === 'approve' ? 'Approval' : 'Denial'}`}
-        </Button>
-      </div>
-    </div>
-  );
-}
 
 // ── Add Manual Status ──────────────────────────────────────────────
 function AddManualStatus({ unit, user, onClose, onSaved }) {
@@ -271,16 +197,11 @@ export default function ParadeState() {
   const cadetAdmin = isCadetAdmin(user);
   const canAdmin = instructor || cadetAdmin;
   const unit = user?.unit;
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const [showAddManual, setShowAddManual] = useState(false);
-  const [selectedPending, setSelectedPending] = useState(null);
 
   const today = format(new Date(), 'yyyy-MM-dd');
-
-  // Instructor display name for endorsement
-  const instructorDisplayName = user
-    ? formatRankName(user.rank || '', (user.display_name || user.full_name || '').toUpperCase())
-    : '';
 
   const { data: allReports = [], isLoading } = useQuery({
     queryKey: ['parade-state', unit],
@@ -354,67 +275,6 @@ export default function ParadeState() {
     ...awaitingUpdate,
   ].map(r => r.personnel_id).filter(Boolean)).size;
 
-  // Approve / deny handler
-  const handleDecision = async (action, notes) => {
-    const r = selectedPending;
-    if (!r) return;
-
-    try {
-      if (action === 'approve') {
-        const isMedicalReport = r.type === 'RSO' || r.type === 'RSI';
-        await base44.entities.StatusReport.update(r.id, {
-          status: isMedicalReport ? 'approved' : 'active',
-          approved_by: instructorDisplayName,
-          approval_date: new Date().toISOString(),
-          instructor_notes: notes || '',
-        });
-
-        const isMedical = r.type === 'RSO' || r.type === 'RSI';
-        const approvedMsg = notes
-          ? `Your ${r.type} request has been approved.\nInstructor notes: ${notes}`
-          : `Your ${r.type} request has been approved. ${r.type === 'RSO' ? 'Please go see the doctor, then update your outcome under Update RSO/RSI.' : r.type === 'RSI' ? 'Please go see the MO, then update your outcome under Update RSO/RSI.' : 'Parade state has been updated.'}`;
-
-        await base44.entities.Notification.create({
-          title: `${r.type} Approved`,
-          message: approvedMsg,
-          type: 'success',
-          category: 'approval',
-          recipient_email: r.reported_by,
-          recipient_unit: unit,
-          ...(isMedical ? { link: '/actions/status/update/medical' } : {}),
-        });
-
-        toast.success(`${r.type} approved — cadet notified`);
-      } else {
-        await base44.entities.StatusReport.update(r.id, {
-          status: 'rejected',
-          instructor_notes: notes || '',
-        });
-
-        const deniedMsg = notes
-          ? `Your ${r.type} request has been denied.\nInstructor notes: ${notes}`
-          : `Your ${r.type} request has been denied.`;
-
-        await base44.entities.Notification.create({
-          title: `${r.type} Denied`,
-          message: deniedMsg,
-          type: 'error',
-          category: 'approval',
-          recipient_email: r.reported_by,
-          recipient_unit: unit,
-        });
-
-        toast.success(`${r.type} denied — cadet notified`);
-      }
-    } catch (err) {
-      toast.error('Action failed. Please try again.');
-      console.error(err);
-    }
-
-    qc.invalidateQueries({ queryKey: ['parade-state', unit] });
-    setSelectedPending(null);
-  };
-
   const handleDelete = async (r) => {
     await base44.entities.StatusReport.delete(r.id);
     qc.invalidateQueries({ queryKey: ['parade-state', unit] });
@@ -465,30 +325,18 @@ export default function ParadeState() {
           </CardContent></Card>
         </div>
 
-        {/* Pending Approvals — visible to instructors and cadet admins */}
+        {/* Pending Approvals banner */}
         {canAdmin && pendingApproval.length > 0 && (
-          <div className="space-y-2">
+          <button
+            className="w-full flex items-center justify-between p-3 rounded-xl border border-amber-500/25 bg-amber-500/8 text-left"
+            onClick={() => navigate('/admin/status-approvals')}
+          >
             <div className="flex items-center gap-2">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-amber-400">Pending Approval</p>
               <span className="text-[10px] font-bold text-amber-400 bg-amber-500/15 px-1.5 py-0.5 rounded">{pendingApproval.length}</span>
+              <p className="text-xs font-semibold text-amber-400">Pending Approvals</p>
             </div>
-            {pendingApproval.map(r => (
-              <div key={r.id} className="p-3 rounded-xl border border-amber-500/25 bg-amber-500/8 space-y-2">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-amber-400 bg-amber-500/15 px-1.5 py-0.5 rounded">{r.type}</span>
-                    <p className="text-sm font-semibold">{formatRankName(r.personnel_rank, r.personnel_name)}</p>
-                  </div>
-                  {r.symptoms && <p className="text-xs text-muted-foreground mt-1">Symptoms: {r.symptoms}</p>}
-                  {r.details && <pre className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap font-sans">{r.details}</pre>}
-                  <p className="text-[10px] text-muted-foreground mt-1">{r.start_date}</p>
-                </div>
-                <Button size="sm" className="w-full h-8 text-xs" onClick={(e) => { e.stopPropagation(); e.preventDefault(); setTimeout(() => setSelectedPending(r), 50); }}>
-                  Review Request
-                </Button>
-              </div>
-            ))}
-          </div>
+            <span className="text-xs text-amber-400/70">Review →</span>
+          </button>
         )}
 
         {/* RSO/RSI — awaiting post-consult update */}
@@ -559,14 +407,7 @@ export default function ParadeState() {
         />
       )}
 
-      {selectedPending && (
-        <ApprovalModal
-          report={selectedPending}
-          instructorName={instructorDisplayName}
-          onConfirm={handleDecision}
-          onCancel={() => setSelectedPending(null)}
-        />
-      )}
+
     </div>
   );
 }

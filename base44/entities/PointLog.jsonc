@@ -35,32 +35,41 @@
   ],
   "rls": {
     "create": {
-      "data.unit": "{{user.data.unit}}",
       "$or": [
         {
           "user_condition": {
-            "role": "instructor"
-          }
+            "user_role": "instructor"
+          },
+          "data.unit": "{{user.unit}}"
         },
         {
           "user_condition": {
-            "role": "cadet_admin"
-          }
+            "user_role": "cadet_admin"
+          },
+          "data.unit": "{{user.unit}}"
         }
       ]
     },
     "read": {
-      "data.unit": "{{user.data.unit}}"
+      "$or": [
+        {
+          "data.user_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "user_role": "instructor"
+          },
+          "data.unit": "{{user.unit}}"
+        },
+        {
+          "user_condition": {
+            "user_role": "cadet_admin"
+          },
+          "data.unit": "{{user.unit}}"
+        }
+      ]
     },
-    "update": {
-      "user_condition": {
-        "role": "admin"
-      }
-    },
-    "delete": {
-      "user_condition": {
-        "role": "admin"
-      }
-    }
+    "update": false,
+    "delete": false
   }
 }

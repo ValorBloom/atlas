@@ -61,79 +61,60 @@
   ],
   "rls": {
     "create": {
-      "$and": [
+      "$or": [
         {
-          "data.unit": "{{user.data.unit}}"
+          "data.personnel_id": "{{user.id}}"
         },
         {
-          "$or": [
-            {
-              "data.personnel_id": "{{user.id}}"
-            },
-            {
-              "user_condition": {
-                "role": "instructor"
-              }
-            },
-            {
-              "user_condition": {
-                "role": "cadet_admin"
-              }
-            }
-          ]
+          "user_condition": {
+            "role": "instructor"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "cadet_admin"
+          }
         }
-      ]
+      ],
+      "data.unit": "{{user.unit}}"
     },
     "read": {
-      "$and": [
+      "$or": [
         {
-          "data.unit": "{{user.data.unit}}"
+          "data.personnel_id": "{{user.id}}"
         },
         {
-          "$or": [
-            {
-              "data.personnel_id": "{{user.id}}"
-            },
-            {
-              "user_condition": {
-                "role": "instructor"
-              }
-            },
-            {
-              "user_condition": {
-                "role": "cadet_admin"
-              }
-            }
-          ]
+          "user_condition": {
+            "role": "instructor"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "cadet_admin"
+          }
         }
-      ]
+      ],
+      "data.unit": "{{user.unit}}"
     },
     "update": {
-      "$and": [
+      "$or": [
         {
-          "data.unit": "{{user.data.unit}}"
+          "data.personnel_id": "{{user.id}}"
         },
         {
-          "$or": [
-            {
-              "data.personnel_id": "{{user.id}}"
-            },
-            {
-              "user_condition": {
-                "role": "instructor"
-              }
-            },
-            {
-              "user_condition": {
-                "role": "cadet_admin"
-              }
-            }
-          ]
+          "user_condition": {
+            "role": "instructor"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "cadet_admin"
+          }
         }
-      ]
+      ],
+      "data.unit": "{{user.unit}}"
     },
     "delete": {
-      "data.unit": "{{user.data.unit}}",
       "$or": [
         {
           "user_condition": {
@@ -145,7 +126,8 @@
             "role": "cadet_admin"
           }
         }
-      ]
+      ],
+      "data.unit": "{{user.unit}}"
     }
   }
 }

@@ -40,46 +40,5 @@
     "duty_type",
     "personnel_name",
     "unit"
-  ],
-  "rls": {
-    "create": {
-      "data.unit": "{{user.data.unit}}",
-      "$or": [
-        {
-          "user_condition": {
-            "user_role": "instructor"
-          }
-        },
-        {
-          "user_condition": {
-            "user_role": "cadet_admin"
-          }
-        }
-      ]
-    },
-    "read": {
-      "$or": [
-        {
-          "data.personnel_id": "{{user.id}}"
-        },
-        {
-          "data.unit": "{{user.data.unit}}",
-          "$or": [
-            {
-              "user_condition": {
-                "user_role": "instructor"
-              }
-            },
-            {
-              "user_condition": {
-                "user_role": "cadet_admin"
-              }
-            }
-          ]
-        }
-      ]
-    },
-    "update": null,
-    "delete": null
-  }
+  ]
 }

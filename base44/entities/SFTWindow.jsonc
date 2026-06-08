@@ -35,27 +35,5 @@
     "start_time",
     "end_time",
     "unit"
-  ],
-  "rls": {
-    "create": {
-      "data.unit": "{{user.data.unit}}",
-      "$or": [
-        {
-          "user_condition": {
-            "user_role": "instructor"
-          }
-        },
-        {
-          "user_condition": {
-            "user_role": "cadet_admin"
-          }
-        }
-      ]
-    },
-    "read": {
-      "data.unit": "{{user.data.unit}}"
-    },
-    "update": null,
-    "delete": null
-  }
+  ]
 }

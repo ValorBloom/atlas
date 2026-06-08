@@ -131,7 +131,7 @@ export default function Dashboard() {
         {(pendingApprovals.length > 0 || outNow > 0) && (
           <div className="space-y-1.5">
             {pendingApprovals.length > 0 && (
-              <Link to="/admin/parade-state" className="flex items-center gap-3 p-3 rounded-xl border border-amber-500/25 bg-amber-500/8">
+              <Link to="/admin/status-approvals" className="flex items-center gap-3 p-3 rounded-xl border border-amber-500/25 bg-amber-500/8">
                 <FileText className="h-4 w-4 text-amber-400 shrink-0" />
                 <p className="text-xs font-semibold text-amber-300 flex-1">{pendingApprovals.length} status pending approval</p>
                 <ChevronRight className="h-3.5 w-3.5 text-amber-500/50" />
@@ -227,7 +227,7 @@ export default function Dashboard() {
           <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Management</p>
           <div className="space-y-1.5">
             <NavLink to="/admin/locations" icon={MapPin} label="Movement Log" badge={outNow > 0 ? `${outNow} out` : null} />
-            <NavLink to="/admin/parade-state" icon={FileText} label="Status Approvals" badge={pendingApprovals.length > 0 ? `${pendingApprovals.length}` : null} />
+            <NavLink to="/admin/status-approvals" icon={FileText} label="Status Approvals" badge={pendingApprovals.length > 0 ? `${pendingApprovals.length}` : null} />
             <NavLink to="/admin/cet" icon={Calendar} label="Send CET" />
             <NavLink to="/admin/announcements" icon={Megaphone} label="Announcements" />
             <NavLink to="/admin/duty" icon={CalendarDays} label="Duty Admin" />

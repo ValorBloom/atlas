@@ -45,6 +45,7 @@ import DataClear from './pages/admin/DataClear';
 import Announcements from './pages/admin/Announcements';
 import CET from './pages/admin/CET';
 import DutyAdmin from './pages/admin/DutyAdmin';
+import StatusApprovals from './pages/admin/StatusApprovals';
 
 
 const AuthenticatedApp = () => {
@@ -102,6 +103,7 @@ const AuthenticatedApp = () => {
         <Route path="/admin/announcements" element={<Announcements />} />
         <Route path="/admin/cet" element={<CET />} />
         <Route path="/admin/duty" element={<DutyAdmin />} />
+        <Route path="/admin/status-approvals" element={<StatusApprovals />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
