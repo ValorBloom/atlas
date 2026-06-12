@@ -46,7 +46,7 @@ export default function Actions() {
           <div className="space-y-2">
             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Approvals</p>
             <div className="grid grid-cols-2 gap-2">
-              <ActionTile to="/admin/parade-state" icon={CheckSquare} label="Status Approvals" sub="RSO · RSI · MA" accent="amber" />
+              <ActionTile to="/admin/status-approvals" icon={CheckSquare} label="Status Approvals" sub="RSO · RSI · MA" accent="amber" />
               <ActionTile to="/admin/pt" icon={Activity} label="SFT Approval" sub="Review submission list" accent="green" />
             </div>
           </div>

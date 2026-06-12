@@ -427,14 +427,14 @@ export default function Profile() {
               </div>
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </Link>
-            <Link to="/admin/import" className="flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors border-t border-border">
+            <Link to="/admin/nominal" className="flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors border-t border-border">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
                   <Upload className="h-3.5 w-3.5 text-foreground/60" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium">Import Users</p>
-                  <p className="text-xs text-muted-foreground">Mass import via CSV</p>
+                  <p className="text-sm font-medium">Nominal Role</p>
+                  <p className="text-xs text-muted-foreground">View & manage all personnel</p>
                 </div>
               </div>
               <ChevronRight className="h-4 w-4 text-muted-foreground" />

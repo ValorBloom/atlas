@@ -53,15 +53,17 @@ function RequestCard({ report, instructorDisplayName, unit, onResolved }) {
                 : 'Parade state has been updated.'
             }`;
 
-        await base44.entities.Notification.create({
-          title: `${report.type} Approved`,
-          message: approvedMsg,
-          type: 'success',
-          category: 'approval',
-          recipient_email: report.reported_by,
-          recipient_unit: unit,
-          ...(isMedical ? { link: '/actions/status/update/medical' } : {}),
-        });
+        try {
+          await base44.entities.Notification.create({
+            title: `${report.type} Approved`,
+            message: approvedMsg,
+            type: 'success',
+            category: 'approval',
+            recipient_email: report.reported_by,
+            recipient_unit: unit,
+            ...(isMedical ? { link: '/actions/status/update/medical' } : {}),
+          });
+        } catch (_) { /* notification failure is non-blocking */ }
 
         toast.success(`${report.type} approved — cadet notified`);
       } else {
@@ -71,17 +73,19 @@ function RequestCard({ report, instructorDisplayName, unit, onResolved }) {
         });
 
         const deniedMsg = notes
-          ? `Your ${report.type} request has been denied.\nInstructor notes: ${notes}`
+          ? `Your ${report.type} request has been denied.\nReason: ${notes}`
           : `Your ${report.type} request has been denied.`;
 
-        await base44.entities.Notification.create({
-          title: `${report.type} Denied`,
-          message: deniedMsg,
-          type: 'error',
-          category: 'approval',
-          recipient_email: report.reported_by,
-          recipient_unit: unit,
-        });
+        try {
+          await base44.entities.Notification.create({
+            title: `${report.type} Denied`,
+            message: deniedMsg,
+            type: 'error',
+            category: 'approval',
+            recipient_email: report.reported_by,
+            recipient_unit: unit,
+          });
+        } catch (_) { /* notification failure is non-blocking */ }
 
         toast.success(`${report.type} denied — cadet notified`);
       }

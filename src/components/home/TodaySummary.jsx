@@ -15,7 +15,7 @@ export default function TodaySummary({ taskCount = 0, statusCount = 0, outCount 
 
   const items = [
     taskCount > 0 && { icon: ListTodo, label: `${taskCount} task${taskCount > 1 ? 's' : ''} pending`, to: '/tasks', color: 'text-primary' },
-    statusCount > 0 && { icon: FileText, label: `${statusCount} on status`, to: '/actions/status/update/RSO', color: 'text-amber-400' },
+    statusCount > 0 && { icon: FileText, label: `${statusCount} status pending approval`, to: '/admin/status-approvals', color: 'text-amber-400' },
     outCount > 0 && { icon: MapPin, label: `${outCount} personnel out`, to: '/admin/locations', color: 'text-orange-400' },
   ].filter(Boolean);
 

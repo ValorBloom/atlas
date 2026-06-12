@@ -242,7 +242,7 @@ export default function Home() {
           <div className="space-y-2">
             <SectionLabel>Approvals & Reports</SectionLabel>
             <div className="grid grid-cols-2 gap-2">
-              <InstructorTile to="/admin/parade-state" icon={CheckSquare} label="Status Approvals" sub="RSO · RSI · MA" accent="amber" badge={pendingStatus.length > 0 ? pendingStatus.length : null} />
+              <InstructorTile to="/admin/status-approvals" icon={CheckSquare} label="Status Approvals" sub="RSO · RSI · MA" accent="amber" badge={pendingStatus.length > 0 ? pendingStatus.length : null} />
               <InstructorTile to="/admin/pt" icon={Activity} label="SFT Approval" sub="Review submissions" accent="green" />
               <InstructorTile to="/admin/parade-state" icon={ClipboardList} label="Parade State" sub="View & finalise" accent="blue" />
               <InstructorTile to="/admin/locations" icon={MapPin} label="Movement Log" sub="Live tracking" accent="default" badge={activeMovements.length > 0 ? activeMovements.length : null} />
