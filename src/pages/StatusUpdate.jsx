@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
@@ -38,6 +38,10 @@ export default function StatusUpdate() {
 
   const selfName = user?.display_name || user?.full_name || '';
 
+  // Auto-select report if ?id= is in the URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const preselectedId = urlParams.get('id');
+
   // Load all my StatusReports (RLS ensures we only see our own or our unit's)
   const { data: myReports = [], isLoading } = useQuery({
     queryKey: ['my-medical-reports', user?.id],
@@ -59,6 +63,14 @@ export default function StatusUpdate() {
     r.status === 'approved' &&
     !r.diagnosis
   );
+
+  // Auto-select if navigated from a notification link with ?id=
+  useEffect(() => {
+    if (preselectedId && updatable.length > 0 && !selectedReport) {
+      const match = updatable.find(r => r.id === preselectedId);
+      if (match) setSelectedReport(match);
+    }
+  }, [preselectedId, updatable.length]);
 
   const handleCategoryChange = (cat) => {
     const start = form.start_date || format(new Date(), 'yyyy-MM-dd');
@@ -186,10 +198,17 @@ export default function StatusUpdate() {
               </div>
             )}
             {rejectedMedical.length > 0 && (
-              <div className="p-3 rounded-xl border border-destructive/25 bg-destructive/5 space-y-1">
-                <p className="text-xs font-semibold text-destructive">Denied reports</p>
+              <div className="p-3 rounded-xl border border-destructive/25 bg-destructive/5 space-y-2">
+                <p className="text-xs font-semibold text-destructive">Denied requests</p>
                 {rejectedMedical.map(r => (
-                  <p key={r.id} className="text-xs text-muted-foreground">{r.type} — {r.start_date}</p>
+                  <div key={r.id} className="space-y-0.5">
+                    <p className="text-xs font-medium text-foreground">{r.type} — {r.start_date} — {r.symptoms || 'No symptoms'}</p>
+                    {r.instructor_notes ? (
+                      <p className="text-xs text-destructive/80 italic">Reason: {r.instructor_notes}</p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">No reason provided.</p>
+                    )}
+                  </div>
                 ))}
               </div>
             )}

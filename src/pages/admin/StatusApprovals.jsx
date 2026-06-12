@@ -61,7 +61,7 @@ function RequestCard({ report, instructorDisplayName, unit, onResolved }) {
             category: 'approval',
             recipient_email: report.reported_by,
             recipient_unit: unit,
-            ...(isMedical ? { link: '/actions/status/update/medical' } : {}),
+            ...(isMedical ? { link: `/actions/status/update/medical?id=${report.id}` } : {}),
           });
         } catch (_) { /* notification failure is non-blocking */ }
 
