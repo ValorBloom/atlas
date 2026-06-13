@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { isCadetAdmin, isInstructor, formatRankName } from '@/lib/constants';
-import { Plus, X, Check } from 'lucide-react';
+import { Plus, X, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, isAfter, parseISO, startOfDay } from 'date-fns';
 
@@ -165,26 +165,59 @@ function AddManualStatus({ unit, user, onClose, onSaved }) {
 }
 
 // ── Section component ─────────────────────────────────────────────
-function Section({ title, items, emptyText, canAdmin, onDelete }) {
+// collapsed=true → compact chip row; collapsed=false → full cards (default for pending/urgent)
+function Section({ title, items, emptyText, canAdmin, onDelete, collapsed = false }) {
+  const [expanded, setExpanded] = useState(!collapsed);
+
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2">
+      <button
+        className="w-full flex items-center gap-2 group"
+        onClick={() => setExpanded(v => !v)}
+      >
         <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{title}</p>
-        <span className="text-[10px] font-bold text-foreground bg-muted px-1.5 py-0.5 rounded">{items.length}</span>
-      </div>
-      {items.length === 0 ? (
-        <p className="text-xs text-muted-foreground px-1">{emptyText}</p>
-      ) : (
-        items.map(r => (
-          <div key={r.id} className="p-3 rounded-xl border border-border bg-card flex items-start justify-between gap-2">
-            <pre className="text-xs font-mono leading-relaxed text-foreground flex-1 whitespace-pre-wrap">{formatStatusLine(r)}</pre>
-            {canAdmin && (
-              <button onClick={() => onDelete(r)} className="shrink-0 text-muted-foreground hover:text-destructive transition-colors mt-0.5">
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
+        {items.length > 0 && (
+          <span className="text-[10px] font-bold text-foreground bg-muted px-1.5 py-0.5 rounded">{items.length}</span>
+        )}
+        <span className="ml-auto text-muted-foreground/40 group-hover:text-muted-foreground transition-colors">
+          {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+        </span>
+      </button>
+
+      {expanded && (
+        items.length === 0 ? (
+          <p className="text-xs text-muted-foreground/50 px-1 py-1">{emptyText}</p>
+        ) : collapsed ? (
+          // Compact chip row
+          <div className="flex flex-wrap gap-1.5">
+            {items.map(r => {
+              const name = formatRankName(r.personnel_rank, r.personnel_name);
+              const label = name.split(' ').slice(-1)[0] || name;
+              return (
+                <div key={r.id} className="flex items-center gap-1 bg-muted/60 border border-border rounded-full px-2.5 py-1">
+                  <span className="text-[11px] font-medium text-foreground">{label}</span>
+                  {r.end_date && <span className="text-[9px] text-muted-foreground">·{r.end_date.slice(5).replace('-', '/')}</span>}
+                  {canAdmin && (
+                    <button onClick={() => onDelete(r)} className="text-muted-foreground/40 hover:text-destructive transition-colors ml-0.5">
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        ))
+        ) : (
+          items.map(r => (
+            <div key={r.id} className="p-3 rounded-xl border border-border bg-card flex items-start justify-between gap-2">
+              <pre className="text-xs font-mono leading-relaxed text-foreground flex-1 whitespace-pre-wrap">{formatStatusLine(r)}</pre>
+              {canAdmin && (
+                <button onClick={() => onDelete(r)} className="shrink-0 text-muted-foreground hover:text-destructive transition-colors mt-0.5">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          ))
+        )
       )}
     </div>
   );
@@ -352,45 +385,50 @@ export default function ParadeState() {
         <Section
           title="MC"
           items={mcStatuses}
-          emptyText="No personnel on MC"
+          emptyText="None"
           canAdmin={canAdmin}
           onDelete={handleDelete}
+          collapsed
         />
 
         {/* MA */}
         <Section
           title="Medical Appointments"
           items={maStatuses}
-          emptyText="No medical appointments"
+          emptyText="None"
           canAdmin={canAdmin}
           onDelete={handleDelete}
+          collapsed
         />
 
         {/* Others */}
         <Section
           title="Others"
           items={othersStatuses}
-          emptyText="No others statuses"
+          emptyText="None"
           canAdmin={canAdmin}
           onDelete={handleDelete}
+          collapsed
         />
 
         {/* Temporary Statuses */}
         <Section
           title="Temporary Statuses"
           items={tempStatuses}
-          emptyText="No temporary statuses"
+          emptyText="None"
           canAdmin={canAdmin}
           onDelete={handleDelete}
+          collapsed
         />
 
         {/* Permanent Statuses */}
         <Section
           title="Permanent Statuses"
           items={permStatuses}
-          emptyText="No permanent statuses"
+          emptyText="None"
           canAdmin={canAdmin}
           onDelete={handleDelete}
+          collapsed
         />
 
       </div>

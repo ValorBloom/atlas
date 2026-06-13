@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useOutletContext, useNavigate, Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -11,15 +11,14 @@ import {
   MapPin, Activity, FileText, Bell,
   ClipboardList, ChevronRight, Megaphone,
   Calendar, Dumbbell, Users, Shield, CheckSquare, Settings, X, Check, CalendarDays,
-  Eye, EyeOff, ListTodo
+  Eye, EyeOff, ListTodo, Trash2, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import TodaySummary from '@/components/home/TodaySummary';
-import { SkeletonGrid } from '@/components/ui/SkeletonCard';
 import { motion } from 'framer-motion';
 
-// All available pinnable actions for cadets
+// ── Pinnable quick action config ──────────────────────────────────
 const ALL_CADET_ACTIONS = [
   { key: 'movement', to: '/actions/movement', icon: MapPin, label: 'Movement', color: 'primary' },
   { key: 'sft', to: '/actions/sft', icon: Activity, label: 'SFT', color: 'green' },
@@ -40,6 +39,7 @@ const ACTION_ICON_STYLES = {
   default: { wrap: 'bg-muted', icon: 'text-foreground/60' },
 };
 
+// ── Shared UI primitives ───────────────────────────────────────────
 function SectionLabel({ children }) {
   return <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.15em] px-0.5">{children}</p>;
 }
@@ -53,12 +53,13 @@ function InitialsAvatar({ name, size = 'sm' }) {
   );
 }
 
-// Compact action tile for instructors on home (2-col grid)
-function InstructorTile({ to, icon: Icon, label, sub, accent = 'default', badge }) {
+// 2-col action grid tile
+function ActionTile({ to, icon: Icon, label, sub, accent = 'default', badge }) {
   const styles = {
     blue: { wrap: 'bg-primary/10', icon: 'text-primary' },
     amber: { wrap: 'bg-amber-500/10', icon: 'text-amber-400' },
     green: { wrap: 'bg-green-500/10', icon: 'text-green-400' },
+    red: { wrap: 'bg-destructive/10', icon: 'text-destructive' },
     default: { wrap: 'bg-muted/50', icon: 'text-muted-foreground' },
   };
   const s = styles[accent] || styles.default;
@@ -71,12 +72,32 @@ function InstructorTile({ to, icon: Icon, label, sub, accent = 'default', badge 
         <p className="text-xs font-semibold text-foreground leading-tight">{label}</p>
         {sub && <p className="text-[10px] text-muted-foreground mt-0.5">{sub}</p>}
       </div>
-      {badge && (
+      {badge != null && badge > 0 && (
         <span className="absolute top-2.5 right-2.5 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-white text-[9px] font-bold flex items-center justify-center">
           {badge}
         </span>
       )}
     </Link>
+  );
+}
+
+// Collapsible section wrapper
+function CollapsibleSection({ label, defaultOpen = true, children }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="space-y-2">
+      <button
+        className="w-full flex items-center justify-between group"
+        onClick={() => setOpen(v => !v)}
+      >
+        <SectionLabel>{label}</SectionLabel>
+        {open
+          ? <ChevronUp className="h-3 w-3 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors" />
+          : <ChevronDown className="h-3 w-3 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors" />
+        }
+      </button>
+      {open && children}
+    </div>
   );
 }
 
@@ -88,6 +109,8 @@ export default function Home() {
   const cadetAdmin = isCadetAdmin(user);
   const containerRef = useRef(null);
   const [lastUpdated, setLastUpdated] = useState(Date.now());
+  const [customizing, setCustomizing] = useState(false);
+  const [showQuote, setShowQuote] = useState(true);
 
   const refresh = async () => {
     await qc.invalidateQueries({ queryKey: ['notifications-unread'] });
@@ -98,8 +121,6 @@ export default function Home() {
     setLastUpdated(Date.now());
   };
   const { pullDistance, refreshing } = usePullToRefresh(refresh, containerRef);
-  const [customizing, setCustomizing] = useState(false);
-  const [showQuote, setShowQuote] = useState(true);
 
   useEffect(() => {
     if (user && !user.unit) navigate('/setup', { replace: true });
@@ -164,11 +185,7 @@ export default function Home() {
 
   const togglePin = (key) => {
     const current = [...pinnedKeys];
-    if (current.includes(key)) {
-      savePinned(current.filter(k => k !== key));
-    } else {
-      savePinned([...current, key]);
-    }
+    savePinned(current.includes(key) ? current.filter(k => k !== key) : [...current, key]);
   };
 
   const greeting = () => {
@@ -187,7 +204,6 @@ export default function Home() {
   const unread = notifications.length;
   const pinnedActions = ALL_CADET_ACTIONS.filter(a => pinnedKeys.includes(a.key));
 
-  // One-line day summary
   const daySummary = () => {
     const parts = [];
     if (!instructor) {
@@ -201,65 +217,72 @@ export default function Home() {
   };
   const summary = daySummary();
 
-  // ── INSTRUCTOR HOME ──
+  // ── Shared header ──────────────────────────────────────────────
+  const Header = () => (
+    <div className="px-4 pt-12 pb-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-1.5 mb-2">
+            <img src={ATLAS_LOGO_DARK} alt="ATLAS" width={14} height={14} style={{ objectFit: 'contain', opacity: 0.5 }} />
+            <span className="text-[10px] tracking-[0.15em] uppercase text-muted-foreground font-medium">{user?.unit}</span>
+            {cadetAdmin && !instructor && (
+              <span className="text-[10px] bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full font-semibold border border-amber-500/20">Admin</span>
+            )}
+          </div>
+          <h1 className="text-[22px] font-bold text-foreground leading-tight">{displayName}</h1>
+          {summary && <p className="text-[11px] text-muted-foreground mt-1">{summary}</p>}
+        </div>
+        <div className="flex items-center gap-2">
+          <Link to="/notifications" className="relative w-9 h-9 rounded-xl bg-muted border border-border flex items-center justify-center">
+            <Bell className="h-4 w-4 text-muted-foreground" />
+            {unread > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-white text-[9px] font-bold flex items-center justify-center">{unread}</span>
+            )}
+          </Link>
+          <Link to="/profile">
+            <InitialsAvatar name={name} />
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── INSTRUCTOR HOME ──────────────────────────────────────────
   if (instructor) {
     return (
       <div className="pb-24 relative" ref={containerRef}>
         <PullToRefresh pullDistance={pullDistance} refreshing={refreshing} lastUpdated={lastUpdated} />
-        {/* Header */}
-        <div className="px-4 pt-12 pb-5">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-1.5 mb-2">
-                <img src={ATLAS_LOGO_DARK} alt="ATLAS" width={14} height={14} style={{ objectFit: 'contain', opacity: 0.5 }} />
-                <span className="text-[10px] tracking-[0.15em] uppercase text-muted-foreground font-medium">{user?.unit}</span>
-              </div>
-              <h1 className="text-[22px] font-bold text-foreground leading-tight">{displayName}</h1>
-              {summary && <p className="text-[11px] text-muted-foreground mt-1">{summary}</p>}
-            </div>
-            <div className="flex items-center gap-2">
-              <Link to="/notifications" className="relative w-9 h-9 rounded-xl bg-muted border border-border flex items-center justify-center">
-                <Bell className="h-4 w-4 text-muted-foreground" />
-                {unread > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-white text-[9px] font-bold flex items-center justify-center">{unread}</span>
-                )}
-              </Link>
-              <Link to="/profile">
-                <InitialsAvatar name={name} />
-              </Link>
-            </div>
-          </div>
-        </div>
+        <Header />
 
-        <div className="px-4 space-y-4">
-          {/* Today summary — single consolidated alert, no duplicate strip */}
-          <TodaySummary
-            statusCount={pendingStatus.length}
-            outCount={activeMovements.length}
-          />
+        <div className="px-4 space-y-5">
+          <TodaySummary statusCount={pendingStatus.length} outCount={activeMovements.length} />
 
-          {/* Primary action grid */}
-          <div className="space-y-2">
-            <SectionLabel>Approvals & Reports</SectionLabel>
+          <CollapsibleSection label="Approvals & Reports">
             <div className="grid grid-cols-2 gap-2">
-              <InstructorTile to="/admin/status-approvals" icon={CheckSquare} label="Status Approvals" sub="RSO · RSI · MA" accent="amber" badge={pendingStatus.length > 0 ? pendingStatus.length : null} />
-              <InstructorTile to="/admin/pt" icon={Activity} label="SFT Approval" sub="Review submissions" accent="green" />
-              <InstructorTile to="/admin/parade-state" icon={ClipboardList} label="Parade State" sub="View & finalise" accent="blue" />
-              <InstructorTile to="/admin/locations" icon={MapPin} label="Movement Log" sub="Live tracking" accent="default" badge={activeMovements.length > 0 ? activeMovements.length : null} />
+              <ActionTile to="/admin/status-approvals" icon={CheckSquare} label="Status Approvals" sub="RSO · RSI · MA" accent="amber" badge={pendingStatus.length > 0 ? pendingStatus.length : null} />
+              <ActionTile to="/admin/pt" icon={Activity} label="SFT Approval" sub="Review submissions" accent="green" />
+              <ActionTile to="/admin/parade-state" icon={ClipboardList} label="Parade State" sub="View & finalise" accent="blue" />
+              <ActionTile to="/admin/locations" icon={MapPin} label="Movement Log" sub="Live tracking" accent="default" badge={activeMovements.length > 0 ? activeMovements.length : null} />
             </div>
-          </div>
+          </CollapsibleSection>
 
-          <div className="space-y-2">
-            <SectionLabel>Communications & Duties</SectionLabel>
+          <CollapsibleSection label="Communications & Duties">
             <div className="grid grid-cols-2 gap-2">
-              <InstructorTile to="/admin/cet" icon={Calendar} label="Send CET" sub="Daily programme" accent="green" />
-              <InstructorTile to="/admin/announcements" icon={Megaphone} label="Announcements" sub="Unit notices" accent="default" />
-              <InstructorTile to="/admin/duty" icon={CalendarDays} label="Duty Admin" sub="Assign & track duty" accent="blue" />
-              <InstructorTile to="/tasks" icon={ListTodo} label="Tasks" sub="Assign & track tasks" accent="green" />
+              <ActionTile to="/admin/cet" icon={Calendar} label="Send CET" sub="Daily programme" accent="green" />
+              <ActionTile to="/admin/announcements" icon={Megaphone} label="Announcements" sub="Unit notices" accent="default" />
+              <ActionTile to="/admin/duty" icon={CalendarDays} label="Duty Admin" sub="Assign & track duty" accent="blue" />
+              <ActionTile to="/tasks" icon={ListTodo} label="Tasks" sub="Assign & track tasks" accent="green" />
             </div>
-          </div>
+          </CollapsibleSection>
 
-          {/* Dashboard shortcut */}
+          <CollapsibleSection label="System" defaultOpen={false}>
+            <div className="grid grid-cols-2 gap-2">
+              <ActionTile to="/admin/appoint" icon={Shield} label="Appoint Admin" sub="Grant cadet access" accent="amber" />
+              <ActionTile to="/admin/nominal" icon={Users} label="Nominal Role" sub="View all personnel" accent="default" />
+              <ActionTile to="/admin/data-clear" icon={Trash2} label="Data Clear" sub="Controlled wipe" accent="red" />
+            </div>
+          </CollapsibleSection>
+
           <Link to="/admin" className="flex items-center justify-between p-3.5 rounded-2xl border border-border/60 bg-card hover:bg-muted/30 active:scale-[0.98] transition-all">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-muted/60 flex items-center justify-center">
@@ -277,41 +300,15 @@ export default function Home() {
     );
   }
 
-  // ── CADET / CADET ADMIN HOME ──
+  // ── CADET / CADET ADMIN HOME ─────────────────────────────────
   return (
     <div className="pb-24 relative" ref={containerRef}>
       <PullToRefresh pullDistance={pullDistance} refreshing={refreshing} lastUpdated={lastUpdated} />
-      {/* Cadet header */}
-      <div className="px-4 pt-12 pb-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-1.5 mb-2">
-              <img src={ATLAS_LOGO_DARK} alt="ATLAS" width={14} height={14} style={{ objectFit: 'contain', opacity: 0.5 }} />
-              <span className="text-[10px] tracking-[0.15em] uppercase text-muted-foreground font-medium">{user?.unit}</span>
-              {cadetAdmin && (
-                <span className="text-[10px] bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full font-semibold border border-amber-500/20">Admin</span>
-              )}
-            </div>
-            <h1 className="text-[22px] font-bold text-foreground leading-tight">{displayName}</h1>
-            {summary && <p className="text-[11px] text-muted-foreground mt-1">{summary}</p>}
-          </div>
-          <div className="flex items-center gap-2">
-            <Link to="/notifications" className="relative w-9 h-9 rounded-xl bg-muted border border-border flex items-center justify-center">
-              <Bell className="h-4 w-4 text-muted-foreground" />
-              {unread > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-white text-[9px] font-bold flex items-center justify-center">{unread}</span>
-              )}
-            </Link>
-            <Link to="/profile">
-              <InitialsAvatar name={name} />
-            </Link>
-          </div>
-        </div>
-      </div>
+      <Header />
 
-      <div className="px-4 space-y-4">
+      <div className="px-4 space-y-5">
 
-        {/* SFT alert — left-accent strip style */}
+        {/* SFT alert strip */}
         {activeWindows.length > 0 && (
           <Link to="/actions/sft" className="flex items-stretch rounded-xl overflow-hidden border border-border active:scale-[0.98] transition-all bg-card">
             <div className="w-1 bg-primary shrink-0" />
@@ -328,11 +325,10 @@ export default function Home() {
           </Link>
         )}
 
-        {/* ── Daily CET Quote bar (always shown if CET published, toggleable) ── */}
-        {todayCET?.quote ? (
+        {/* Daily CET Quote */}
+        {todayCET?.quote && (
           <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
             <div className="flex items-stretch">
-              {/* Accent bar */}
               <div className="w-1 bg-primary shrink-0" />
               <div className="flex-1 px-3 py-3 min-w-0">
                 <p className="text-[9px] font-bold text-primary uppercase tracking-[0.2em] mb-1">Quote of the Day</p>
@@ -342,26 +338,19 @@ export default function Home() {
                     {todayCET.quote_author && <p className="text-xs text-primary/60 mt-1">— {todayCET.quote_author}</p>}
                   </>
                 ) : (
-                  <p className="text-xs text-muted-foreground">Hidden — tap eye to show</p>
+                  <p className="text-xs text-muted-foreground">Tap eye to show</p>
                 )}
               </div>
-              <button
-                onClick={() => setShowQuote(v => !v)}
-                className="px-3 flex items-center text-primary/50 hover:text-primary transition-colors"
-              >
+              <button onClick={() => setShowQuote(v => !v)} className="px-3 flex items-center text-primary/50 hover:text-primary transition-colors">
                 {showQuote ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
           </div>
-        ) : null}
+        )}
 
-        {/* Today summary for cadets — includes outCount for cadet admin */}
-        <TodaySummary
-          taskCount={myTasks.length}
-          outCount={cadetAdmin ? activeMovements.length : 0}
-        />
+        <TodaySummary taskCount={myTasks.length} outCount={cadetAdmin ? activeMovements.length : 0} />
 
-        {/* ── Quick Actions (customizable grid) ── */}
+        {/* Quick Actions (customizable pinned) */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <SectionLabel>Quick Actions</SectionLabel>
@@ -423,19 +412,30 @@ export default function Home() {
           )}
         </div>
 
-        {/* ── Cadet Admin section ── */}
-        {cadetAdmin && (
-          <div className="space-y-2">
-            <SectionLabel>Admin</SectionLabel>
-            <div className="grid grid-cols-2 gap-2">
-              <InstructorTile to="/admin/pt" icon={Dumbbell} label="PT Admin" sub="SFT session" accent="blue" />
-              <InstructorTile to="/admin/parade-state" icon={ClipboardList} label="Parade State" sub="Compile & send" accent="default" />
-              <InstructorTile to="/admin/locations" icon={MapPin} label="Movement Log" sub="Track personnel" accent="default" />
-              <InstructorTile to="/admin/announcements" icon={Megaphone} label="Announcements" sub="Unit notices" accent="default" />
-              <InstructorTile to="/admin/duty" icon={CalendarDays} label="Duty Admin" sub="Assign & track duty" accent="blue" />
-              <InstructorTile to="/tasks" icon={ListTodo} label="Tasks" sub="Assign & track tasks" accent="green" />
-            </div>
+        {/* All Actions — collapsible */}
+        <CollapsibleSection label="All Actions" defaultOpen={false}>
+          <div className="grid grid-cols-2 gap-2">
+            <ActionTile to="/actions/movement" icon={MapPin} label="Movement" sub="Departure & arrival" accent="default" />
+            <ActionTile to="/actions/sft" icon={Activity} label="SFT" sub="Submit activity" accent="green" />
+            <ActionTile to="/actions/status" icon={FileText} label="Status" sub="RSO / MA / RSI" accent="amber" />
+            <ActionTile to="/actions/cet" icon={Calendar} label="View CET" sub="Daily programme" accent="blue" />
+            <ActionTile to="/actions/duty" icon={CalendarDays} label="Duty" sub="View roster" accent="default" />
+            <ActionTile to="/tasks" icon={ListTodo} label="Tasks" sub="My tasks" accent="green" />
           </div>
+        </CollapsibleSection>
+
+        {/* Cadet Admin section */}
+        {cadetAdmin && (
+          <CollapsibleSection label="Admin">
+            <div className="grid grid-cols-2 gap-2">
+              <ActionTile to="/admin/pt" icon={Dumbbell} label="PT Admin" sub="SFT session" accent="blue" />
+              <ActionTile to="/admin/parade-state" icon={ClipboardList} label="Parade State" sub="Compile & send" accent="default" />
+              <ActionTile to="/admin/locations" icon={MapPin} label="Movement Log" sub="Track personnel" accent="default" />
+              <ActionTile to="/admin/announcements" icon={Megaphone} label="Announcements" sub="Unit notices" accent="default" />
+              <ActionTile to="/admin/duty" icon={CalendarDays} label="Duty Admin" sub="Assign & track" accent="blue" />
+              <ActionTile to="/tasks" icon={ListTodo} label="Tasks" sub="Assign & track" accent="green" />
+            </div>
+          </CollapsibleSection>
         )}
       </div>
     </div>

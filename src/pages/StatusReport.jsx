@@ -5,7 +5,6 @@ import PageHeader from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatRankName } from '@/lib/constants';
 import { Check, ArrowRight, Stethoscope } from 'lucide-react';
@@ -248,30 +247,21 @@ export default function StatusReport() {
 
         {/* ── RSO / RSI Form ── */}
         {isMedical && step === 0 && (
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Symptoms *</Label>
-              <Textarea
-                placeholder={upperType === 'RSI' ? 'e.g. Fever, Headache, Bodyache' : 'e.g. Knee pain, Swollen ankle'}
-                value={data.symptoms}
-                onChange={(e) => setData({ ...data, symptoms: e.target.value })}
-                className="min-h-[90px]"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Date *</Label>
-              <Input type="date" value={data.date}
-                onChange={(e) => setData({ ...data, date: e.target.value })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Notes (optional)</Label>
-              <Textarea
-                placeholder="Any other relevant info..."
-                value={data.notes}
-                onChange={(e) => setData({ ...data, notes: e.target.value })}
-                className="min-h-[60px]"
-              />
-            </div>
+          <div className="space-y-3">
+            <Textarea
+              placeholder={upperType === 'RSI' ? 'Symptoms — e.g. Fever, Headache, Bodyache *' : 'Symptoms — e.g. Knee pain, Swollen ankle *'}
+              value={data.symptoms}
+              onChange={(e) => setData({ ...data, symptoms: e.target.value })}
+              className="min-h-[90px]"
+            />
+            <Input type="date" value={data.date}
+              onChange={(e) => setData({ ...data, date: e.target.value })} />
+            <Textarea
+              placeholder="Additional notes (optional)"
+              value={data.notes}
+              onChange={(e) => setData({ ...data, notes: e.target.value })}
+              className="min-h-[60px]"
+            />
           </div>
         )}
         {isMedical && step === confirmStep && (
@@ -286,44 +276,29 @@ export default function StatusReport() {
 
         {/* ── MA Form ── */}
         {isMA && step === 0 && (
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Name of Appointment *</Label>
-              <Input
-                placeholder="e.g. DENTAL APPOINTMENT"
-                value={data.appointment_name}
-                onChange={(e) => setData({ ...data, appointment_name: e.target.value.toUpperCase() })}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Location *</Label>
-              <Input
-                placeholder=""
-                value={data.location}
-                onChange={(e) => setData({ ...data, location: e.target.value.toUpperCase() })}
-              />
-            </div>
+          <div className="space-y-3">
+            <Input
+              placeholder="Appointment name — e.g. DENTAL APPOINTMENT *"
+              value={data.appointment_name}
+              onChange={(e) => setData({ ...data, appointment_name: e.target.value.toUpperCase() })}
+            />
+            <Input
+              placeholder="Location *"
+              value={data.location}
+              onChange={(e) => setData({ ...data, location: e.target.value.toUpperCase() })}
+            />
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Date *</Label>
-                <Input type="date" value={data.appointment_date}
-                  onChange={(e) => setData({ ...data, appointment_date: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Time (HHmm) *</Label>
-                <Input placeholder="0840" value={data.appointment_time} maxLength={4}
-                  onChange={(e) => setData({ ...data, appointment_time: e.target.value.replace(/\D/g, '') })} />
-              </div>
+              <Input type="date" value={data.appointment_date}
+                onChange={(e) => setData({ ...data, appointment_date: e.target.value })} />
+              <Input placeholder="Time HHmm *" value={data.appointment_time} maxLength={4}
+                onChange={(e) => setData({ ...data, appointment_time: e.target.value.replace(/\D/g, '') })} />
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Notes (optional)</Label>
-              <Textarea
-                placeholder="Any additional info..."
-                value={data.ma_notes}
-                onChange={(e) => setData({ ...data, ma_notes: e.target.value })}
-                className="min-h-[60px]"
-              />
-            </div>
+            <Textarea
+              placeholder="Additional notes (optional)"
+              value={data.ma_notes}
+              onChange={(e) => setData({ ...data, ma_notes: e.target.value })}
+              className="min-h-[60px]"
+            />
           </div>
         )}
         {isMA && step === confirmStep && (
@@ -338,44 +313,29 @@ export default function StatusReport() {
 
         {/* ── OTHERS Form ── */}
         {isOthers && step === 0 && (
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Name of Event / Status *</Label>
-              <Input
-                placeholder="e.g. AWARD CEREMONY, INTERVIEW"
-                value={data.event_name}
-                onChange={(e) => setData({ ...data, event_name: e.target.value.toUpperCase() })}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Location (optional)</Label>
-              <Input
-                placeholder="e.g. ORCHARD ROAD"
-                value={data.others_location}
-                onChange={(e) => setData({ ...data, others_location: e.target.value.toUpperCase() })}
-              />
-            </div>
+          <div className="space-y-3">
+            <Input
+              placeholder="Event / status name — e.g. AWARD CEREMONY *"
+              value={data.event_name}
+              onChange={(e) => setData({ ...data, event_name: e.target.value.toUpperCase() })}
+            />
+            <Input
+              placeholder="Location (optional)"
+              value={data.others_location}
+              onChange={(e) => setData({ ...data, others_location: e.target.value.toUpperCase() })}
+            />
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Date *</Label>
-                <Input type="date" value={data.others_date}
-                  onChange={(e) => setData({ ...data, others_date: e.target.value })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground uppercase tracking-wide">Time (HHmm) *</Label>
-                <Input placeholder="1315" value={data.others_time} maxLength={4}
-                  onChange={(e) => setData({ ...data, others_time: e.target.value.replace(/\D/g, '') })} />
-              </div>
+              <Input type="date" value={data.others_date}
+                onChange={(e) => setData({ ...data, others_date: e.target.value })} />
+              <Input placeholder="Time HHmm *" value={data.others_time} maxLength={4}
+                onChange={(e) => setData({ ...data, others_time: e.target.value.replace(/\D/g, '') })} />
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Notes (optional)</Label>
-              <Textarea
-                placeholder="Any additional info..."
-                value={data.others_notes}
-                onChange={(e) => setData({ ...data, others_notes: e.target.value })}
-                className="min-h-[60px]"
-              />
-            </div>
+            <Textarea
+              placeholder="Additional notes (optional)"
+              value={data.others_notes}
+              onChange={(e) => setData({ ...data, others_notes: e.target.value })}
+              className="min-h-[60px]"
+            />
           </div>
         )}
         {isOthers && step === confirmStep && (
