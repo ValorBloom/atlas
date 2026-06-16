@@ -65,6 +65,17 @@ function RequestCard({ report, instructorDisplayName, unit, onResolved }) {
           });
         } catch (_) { /* notification failure is non-blocking */ }
 
+          // Audit log
+        await base44.entities.AuditLog.create({
+          action: `status_approved_${report.type}`,
+          category: 'approval',
+          details: `${instructorDisplayName} approved ${report.type} for ${report.personnel_name} (${report.unit})${notes ? `. Notes: ${notes}` : ''}`,
+          target_entity: 'StatusReport',
+          target_id: report.id,
+          performed_by: instructorDisplayName,
+          unit,
+        });
+
         toast.success(`${report.type} approved — cadet notified`);
       } else {
         await base44.entities.StatusReport.update(report.id, {
@@ -86,6 +97,17 @@ function RequestCard({ report, instructorDisplayName, unit, onResolved }) {
             recipient_unit: unit,
           });
         } catch (_) { /* notification failure is non-blocking */ }
+
+        // Audit log
+        await base44.entities.AuditLog.create({
+          action: `status_denied_${report.type}`,
+          category: 'approval',
+          details: `${instructorDisplayName} denied ${report.type} for ${report.personnel_name} (${report.unit}). Reason: ${notes}`,
+          target_entity: 'StatusReport',
+          target_id: report.id,
+          performed_by: instructorDisplayName,
+          unit,
+        });
 
         toast.success(`${report.type} denied — cadet notified`);
       }

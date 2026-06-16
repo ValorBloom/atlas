@@ -1,17 +1,20 @@
 /**
  * secureProxy — backend security middleware / health endpoint
- * - Input sanitization helpers
+ * Features:
+ * - Zod schema validation on all incoming payloads
  * - Rate limiting per user (in-memory, resets on cold start)
- * - Request logging for audit trail
- * - Content Security Policy headers
+ * - Input sanitization (XSS / injection stripping)
+ * - Security response headers (CSP, X-Frame-Options, etc.)
+ * - Request audit logging
  */
 
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
+import { z } from 'npm:zod@3.22.4';
 
-// Simple in-memory rate limiter: userId -> [timestamps]
+// ── Rate limiter (in-memory) ──────────────────────────────────────
 const rateLimitMap = new Map();
-const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
-const RATE_LIMIT_MAX = 60; // 60 requests per minute per user
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = 60;
 
 function checkRateLimit(userId) {
   const now = Date.now();
@@ -22,7 +25,7 @@ function checkRateLimit(userId) {
   return true;
 }
 
-// Strip dangerous characters from any string input
+// ── Input sanitization ────────────────────────────────────────────
 export function sanitizeString(value) {
   if (typeof value !== 'string') return value;
   return value
@@ -33,7 +36,6 @@ export function sanitizeString(value) {
     .trim();
 }
 
-// Recursively sanitize an object
 export function sanitizeObject(obj) {
   if (typeof obj === 'string') return sanitizeString(obj);
   if (Array.isArray(obj)) return obj.map(sanitizeObject);
@@ -47,13 +49,22 @@ export function sanitizeObject(obj) {
   return obj;
 }
 
-// Security headers to set on all responses
+// ── Zod schemas ───────────────────────────────────────────────────
+const HealthSchema = z.object({ action: z.literal('health') });
+const ValidateSchema = z.object({
+  action: z.literal('validate'),
+  payload: z.record(z.unknown()).optional(),
+});
+const BodySchema = z.union([HealthSchema, ValidateSchema]);
+
+// ── Security headers ──────────────────────────────────────────────
 const SECURITY_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
   'X-XSS-Protection': '1; mode=block',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Cache-Control': 'no-store',
+  'Content-Security-Policy': "default-src 'self'",
 };
 
 Deno.serve(async (req) => {
@@ -65,7 +76,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401, headers: SECURITY_HEADERS });
     }
 
-    // Rate limit check
+    // Rate limit
     if (!checkRateLimit(user.id)) {
       return Response.json({ error: 'Too many requests. Please slow down.' }, {
         status: 429,
@@ -73,22 +84,30 @@ Deno.serve(async (req) => {
       });
     }
 
-    const body = await req.json().catch(() => ({}));
-    const action = body?.action;
+    const rawBody = await req.json().catch(() => ({}));
 
-    // Health/status check
-    if (action === 'health') {
+    // Zod validation
+    const parsed = BodySchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return Response.json(
+        { error: 'Invalid request payload', details: parsed.error.flatten() },
+        { status: 400, headers: SECURITY_HEADERS }
+      );
+    }
+
+    const body = parsed.data;
+
+    if (body.action === 'health') {
       return Response.json({
         status: 'ok',
         timestamp: new Date().toISOString(),
-        unit: user.unit,
+        unit: user.data?.unit,
         role: user.role,
       }, { headers: SECURITY_HEADERS });
     }
 
-    // Validate and sanitize entity write payloads
-    if (action === 'validate') {
-      const payload = sanitizeObject(body?.payload || {});
+    if (body.action === 'validate') {
+      const payload = sanitizeObject(body.payload || {});
       return Response.json({ sanitized: payload }, { headers: SECURITY_HEADERS });
     }
 

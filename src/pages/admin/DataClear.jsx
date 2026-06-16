@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertTriangle, Trash2, ShieldAlert, Zap } from 'lucide-react';
+import { AlertTriangle, Trash2, ShieldAlert, Zap, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
 const DATA_TARGETS = [
@@ -25,6 +25,8 @@ export default function DataClear() {
   const [confirmText, setConfirmText] = useState('');
   const [clearing, setClearing] = useState(false);
   const [clearAllMode, setClearAllMode] = useState(false);
+  const [witnessName, setWitnessName] = useState('');
+  const [witnessConfirmed, setWitnessConfirmed] = useState(false);
 
   const handleClear = async () => {
     if (!selected || confirmText !== 'DELETE') return;
@@ -50,7 +52,7 @@ export default function DataClear() {
   };
 
   const handleClearAll = async () => {
-    if (confirmText !== 'DELETE ALL') return;
+    if (confirmText !== 'DELETE ALL' || !witnessConfirmed || !witnessName.trim()) return;
     setClearing(true);
     let totalDeleted = 0;
 
@@ -65,7 +67,7 @@ export default function DataClear() {
     await base44.entities.AuditLog.create({
       action: 'data_clear_all',
       category: 'data_clear',
-      details: `Cleared ALL data (${totalDeleted} records total) for ${user?.unit}`,
+      details: `Cleared ALL data (${totalDeleted} records total) for ${user?.unit}. Witness: ${witnessName.trim()}`,
       performed_by: user?.email,
       unit: user?.unit,
     });
@@ -73,6 +75,8 @@ export default function DataClear() {
     setClearing(false);
     setClearAllMode(false);
     setConfirmText('');
+    setWitnessName('');
+    setWitnessConfirmed(false);
     toast.success(`All data cleared (${totalDeleted} records)`);
   };
 
@@ -106,7 +110,7 @@ export default function DataClear() {
 
         {/* Clear All button */}
         <button
-          onClick={() => { setClearAllMode(true); setSelected(null); setConfirmText(''); }}
+          onClick={() => { setClearAllMode(true); setSelected(null); setConfirmText(''); setWitnessName(''); setWitnessConfirmed(false); }}
           className={`w-full text-left p-3.5 rounded-xl border text-sm transition-all ${
             clearAllMode
               ? 'border-destructive bg-destructive/10'
@@ -170,20 +174,47 @@ export default function DataClear() {
                 This will permanently delete <strong>all records</strong> across every category for <strong>{user?.unit}</strong>. 
                 This is irreversible.
               </p>
+              {/* Step 1: Witness */}
               <div className="space-y-1.5">
-                <Label className="text-xs">Type <span className="font-mono font-bold">DELETE ALL</span> to confirm</Label>
+                <Label className="text-xs flex items-center gap-1"><Users className="h-3 w-3" /> Step 1 — Witness name (another admin present)</Label>
                 <Input
-                  placeholder="DELETE ALL"
-                  value={confirmText}
-                  onChange={(e) => setConfirmText(e.target.value)}
-                  className="font-mono text-center"
+                  placeholder="Rank Name of witnessing admin"
+                  value={witnessName}
+                  onChange={(e) => { setWitnessName(e.target.value); setWitnessConfirmed(false); }}
                 />
+                {witnessName.trim().length > 2 && !witnessConfirmed && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full text-xs border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                    onClick={() => setWitnessConfirmed(true)}
+                  >
+                    Confirm witness — {witnessName.trim()}
+                  </Button>
+                )}
+                {witnessConfirmed && (
+                  <p className="text-[11px] text-green-400">✓ Witness confirmed: {witnessName.trim()}</p>
+                )}
               </div>
+
+              {/* Step 2: Type confirmation */}
+              {witnessConfirmed && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Step 2 — Type <span className="font-mono font-bold">DELETE ALL</span> to confirm</Label>
+                  <Input
+                    placeholder="DELETE ALL"
+                    value={confirmText}
+                    onChange={(e) => setConfirmText(e.target.value)}
+                    className="font-mono text-center"
+                  />
+                </div>
+              )}
+
               <Button 
                 variant="destructive" 
                 className="w-full" 
                 onClick={handleClearAll}
-                disabled={confirmText !== 'DELETE ALL' || clearing}
+                disabled={confirmText !== 'DELETE ALL' || !witnessConfirmed || clearing}
               >
                 <Trash2 className="h-4 w-4 mr-1" />
                 {clearing ? 'Clearing All...' : 'Delete All Data'}
