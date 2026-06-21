@@ -72,7 +72,7 @@ function RequestCard({ report, instructorDisplayName, unit, canApprove, onResolv
           });
         } catch (_) {}
 
-        toast.success(`${report.type} approved — cadet notified`);
+        toast.success(`${rankName}'s ${report.type} has been approved.`);
       } else {
         await base44.entities.StatusReport.update(report.id, {
           status: 'rejected',
@@ -106,7 +106,7 @@ function RequestCard({ report, instructorDisplayName, unit, canApprove, onResolv
           });
         } catch (_) {}
 
-        toast.success(`${report.type} denied — cadet notified`);
+        toast.success(`${rankName}'s ${report.type} request has been denied.`);
       }
 
       onResolved();

@@ -122,7 +122,7 @@ export default function SFTSubmission() {
   const handleSubmit = async () => {
     setSaving(true);
     // Optimistic: navigate away immediately
-    toast.success('SFT submitted');
+    toast.success(`SFT submitted — ${activities.join(', ')} from ${formatDisplay(fromMinutes(startMins))} to ${formatDisplay(fromMinutes(endMins))}.`);
     navigate('/');
     // Then persist in background
     base44.entities.SFTSubmission.create({
@@ -143,7 +143,7 @@ export default function SFTSubmission() {
     if (!mySubmissions[0]) return;
     // Optimistic: update cache immediately
     queryClient.setQueryData(['sft-my', user?.email, user?.unit], []);
-    toast.success('SFT submission withdrawn');
+    toast.success('Your SFT submission has been withdrawn.');
     base44.entities.SFTSubmission.update(mySubmissions[0].id, { status: 'withdrawn' })
       .then(() => queryClient.invalidateQueries({ queryKey: ['sft-my'] }));
   };

@@ -135,7 +135,7 @@ export default function StatusReport() {
 
       if (res.data?.error) throw new Error(res.data.error);
 
-      toast.success(`${upperType} submitted — pending instructor approval`);
+      toast.success(`Your ${upperType} request has been submitted — pending instructor approval.`);
       navigate('/actions/status');
     } catch (err) {
       toast.error('Failed to submit. Please try again.');

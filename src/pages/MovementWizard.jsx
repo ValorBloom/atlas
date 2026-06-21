@@ -128,7 +128,11 @@ export default function MovementWizard() {
     const date = format(new Date(), 'yyyy-MM-dd');
 
     // Optimistic: show success and switch tab immediately
-    toast.success(`${selectedPersonnel.length > 1 ? selectedPersonnel.length + ' movements' : 'Movement'} reported`);
+    toast.success(
+      selectedPersonnel.length > 1
+        ? `Movement reported for ${selectedPersonnel.length} personnel from ${fromLoc} to ${toLoc}.`
+        : `Movement reported — ${formatRankName(selectedPersonnel[0].rank || '', selectedPersonnel[0].full_name || '')} departing ${fromLoc} to ${toLoc}.`
+    );
     // Build optimistic log entries to show in reached tab right away
     const optimisticLogs = selectedPersonnel.map((person, idx) => ({
       id: `optimistic-${idx}`,
@@ -604,7 +608,11 @@ export default function MovementWizard() {
                                   queryClient.setQueryData(['movement-pending', user?.unit], prev =>
                                     (prev || []).filter(l => !groupIds.has(l.id))
                                   );
-                                  toast.success(group.length > 1 ? `${group.length} personnel marked reached` : 'Reached recorded');
+                                  toast.success(
+                                   group.length > 1
+                                     ? `${group.length} personnel confirmed reached ${rep.to_location} at ${formatTime(reachedTime)}.`
+                                     : `${formatRankName(rep.personnel_rank, rep.personnel_name)} confirmed reached ${rep.to_location} at ${formatTime(reachedTime)}.`
+                                  );
                                   setSelectedLog(null);
                                   setReachedTime('');
                                   // Persist in background
