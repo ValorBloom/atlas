@@ -29,86 +29,21 @@ function RequestCard({ report, instructorDisplayName, unit, canApprove, onResolv
     if (saving) return;
     setSaving(true);
     try {
-      if (action === 'approve') {
-        const isMedical = report.type === 'RSO' || report.type === 'RSI';
-        await base44.entities.StatusReport.update(report.id, {
-          status: isMedical ? 'approved' : 'active',
-          approved_by: instructorDisplayName,
-          approval_date: new Date().toISOString(),
-          instructor_notes: notes || '',
-        });
+      const res = await base44.functions.invoke('resolveStatusReport', {
+        reportId: report.id,
+        action: action === 'approve' ? 'approve' : 'deny',
+        notes: notes || '',
+        instructorDisplayName,
+        unit,
+      });
 
-        const approvedMsg = notes
-          ? `Your ${report.type} request has been approved.\nInstructor notes: ${notes}`
-          : `Your ${report.type} request has been approved. ${
-              report.type === 'RSO'
-                ? 'Please go see the doctor, then update your outcome under Update RSO/RSI.'
-                : report.type === 'RSI'
-                ? 'Please go see the MO, then update your outcome under Update RSO/RSI.'
-                : 'Parade state has been updated.'
-            }`;
+      if (res.data?.error) throw new Error(res.data.error);
 
-        try {
-          await base44.entities.Notification.create({
-            title: `${report.type} Approved`,
-            message: approvedMsg,
-            type: 'success',
-            category: 'approval',
-            recipient_email: report.reported_by,
-            recipient_unit: unit,
-            ...(isMedical ? { link: `/actions/status/update/medical?id=${report.id}` } : {}),
-          });
-        } catch (_) {}
-
-        try {
-          await base44.entities.AuditLog.create({
-            action: `status_approved_${report.type}`,
-            category: 'approval',
-            details: `${instructorDisplayName} approved ${report.type} for ${report.personnel_name} (${report.unit})${notes ? `. Notes: ${notes}` : ''}`,
-            target_entity: 'StatusReport',
-            target_id: report.id,
-            performed_by: instructorDisplayName,
-            unit,
-          });
-        } catch (_) {}
-
-        toast.success(`${rankName}'s ${report.type} has been approved.`);
-      } else {
-        await base44.entities.StatusReport.update(report.id, {
-          status: 'rejected',
-          instructor_notes: notes || '',
-        });
-
-        const deniedMsg = notes
-          ? `Your ${report.type} request has been denied.\nReason: ${notes}`
-          : `Your ${report.type} request has been denied.`;
-
-        try {
-          await base44.entities.Notification.create({
-            title: `${report.type} Denied`,
-            message: deniedMsg,
-            type: 'error',
-            category: 'approval',
-            recipient_email: report.reported_by,
-            recipient_unit: unit,
-          });
-        } catch (_) {}
-
-        try {
-          await base44.entities.AuditLog.create({
-            action: `status_denied_${report.type}`,
-            category: 'approval',
-            details: `${instructorDisplayName} denied ${report.type} for ${report.personnel_name} (${report.unit}). Reason: ${notes}`,
-            target_entity: 'StatusReport',
-            target_id: report.id,
-            performed_by: instructorDisplayName,
-            unit,
-          });
-        } catch (_) {}
-
-        toast.success(`${rankName}'s ${report.type} request has been denied.`);
-      }
-
+      toast.success(
+        action === 'approve'
+          ? `${rankName}'s ${report.type} has been approved.`
+          : `${rankName}'s ${report.type} request has been denied.`
+      );
       onResolved();
     } catch (err) {
       toast.error('Action failed. Please try again.');
