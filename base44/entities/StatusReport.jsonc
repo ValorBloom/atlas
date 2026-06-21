@@ -90,7 +90,7 @@
   ],
   "rls": {
     "create": {
-      "data.unit": "{{user.data.unit}}"
+      "data.unit": "{{user.unit}}"
     },
     "read": {
       "$or": [
@@ -101,7 +101,7 @@
           "data.reported_by": "{{user.email}}"
         },
         {
-          "data.unit": "{{user.data.unit}}",
+          "data.unit": "{{user.unit}}",
           "$or": [
             {
               "user_condition": {
@@ -112,6 +112,11 @@
               "user_condition": {
                 "user_role": "cadet_admin"
               }
+            },
+            {
+              "user_condition": {
+                "user_role": "medical_officer"
+              }
             }
           ]
         }
@@ -121,10 +126,10 @@
       "$or": [
         {
           "data.reported_by": "{{user.email}}",
-          "data.unit": "{{user.data.unit}}"
+          "data.unit": "{{user.unit}}"
         },
         {
-          "data.unit": "{{user.data.unit}}",
+          "data.unit": "{{user.unit}}",
           "$or": [
             {
               "user_condition": {
@@ -141,7 +146,7 @@
       ]
     },
     "delete": {
-      "data.unit": "{{user.data.unit}}",
+      "data.unit": "{{user.unit}}",
       "$or": [
         {
           "user_condition": {
