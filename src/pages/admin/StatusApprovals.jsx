@@ -11,11 +11,6 @@ import { isInstructor, isCadetAdmin, formatRankName } from '@/lib/constants';
 import { Check, X, ClipboardList, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 
-function fmtDate(d) {
-  if (!d) return '—';
-  return d.replace(/-/g, '').slice(2);
-}
-
 const TYPE_LABELS = {
   RSO: 'Report Sick Outside',
   RSI: 'Report Sick Inside',
@@ -24,9 +19,9 @@ const TYPE_LABELS = {
 };
 
 // ── Individual request card ────────────────────────────────────────
-function RequestCard({ report, instructorDisplayName, unit, onResolved }) {
+function RequestCard({ report, instructorDisplayName, unit, canApprove, onResolved }) {
   const [expanded, setExpanded] = useState(false);
-  const [action, setAction] = useState(null); // 'approve' | 'reject'
+  const [action, setAction] = useState(null);
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -63,18 +58,19 @@ function RequestCard({ report, instructorDisplayName, unit, onResolved }) {
             recipient_unit: unit,
             ...(isMedical ? { link: `/actions/status/update/medical?id=${report.id}` } : {}),
           });
-        } catch (_) { /* notification failure is non-blocking */ }
+        } catch (_) {}
 
-          // Audit log
-        await base44.entities.AuditLog.create({
-          action: `status_approved_${report.type}`,
-          category: 'approval',
-          details: `${instructorDisplayName} approved ${report.type} for ${report.personnel_name} (${report.unit})${notes ? `. Notes: ${notes}` : ''}`,
-          target_entity: 'StatusReport',
-          target_id: report.id,
-          performed_by: instructorDisplayName,
-          unit,
-        });
+        try {
+          await base44.entities.AuditLog.create({
+            action: `status_approved_${report.type}`,
+            category: 'approval',
+            details: `${instructorDisplayName} approved ${report.type} for ${report.personnel_name} (${report.unit})${notes ? `. Notes: ${notes}` : ''}`,
+            target_entity: 'StatusReport',
+            target_id: report.id,
+            performed_by: instructorDisplayName,
+            unit,
+          });
+        } catch (_) {}
 
         toast.success(`${report.type} approved — cadet notified`);
       } else {
@@ -96,18 +92,19 @@ function RequestCard({ report, instructorDisplayName, unit, onResolved }) {
             recipient_email: report.reported_by,
             recipient_unit: unit,
           });
-        } catch (_) { /* notification failure is non-blocking */ }
+        } catch (_) {}
 
-        // Audit log
-        await base44.entities.AuditLog.create({
-          action: `status_denied_${report.type}`,
-          category: 'approval',
-          details: `${instructorDisplayName} denied ${report.type} for ${report.personnel_name} (${report.unit}). Reason: ${notes}`,
-          target_entity: 'StatusReport',
-          target_id: report.id,
-          performed_by: instructorDisplayName,
-          unit,
-        });
+        try {
+          await base44.entities.AuditLog.create({
+            action: `status_denied_${report.type}`,
+            category: 'approval',
+            details: `${instructorDisplayName} denied ${report.type} for ${report.personnel_name} (${report.unit}). Reason: ${notes}`,
+            target_entity: 'StatusReport',
+            target_id: report.id,
+            performed_by: instructorDisplayName,
+            unit,
+          });
+        } catch (_) {}
 
         toast.success(`${report.type} denied — cadet notified`);
       }
@@ -134,6 +131,11 @@ function RequestCard({ report, instructorDisplayName, unit, onResolved }) {
                 {report.type}
               </span>
               <p className="text-sm font-bold text-foreground">{rankName}</p>
+              {report.unit && (
+                <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                  {report.unit}
+                </span>
+              )}
             </div>
             <p className="text-[10px] text-muted-foreground mt-0.5">
               {TYPE_LABELS[report.type] || report.type} · {report.start_date || '—'}
@@ -165,57 +167,63 @@ function RequestCard({ report, instructorDisplayName, unit, onResolved }) {
           </div>
         )}
 
-        {/* Action area */}
-        {!action ? (
-          <div className="flex gap-2 pt-1">
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1 h-9 text-xs border-destructive/30 text-destructive hover:bg-destructive/10"
-              onClick={() => setAction('reject')}
-            >
-              <X className="h-3.5 w-3.5 mr-1" /> Deny
-            </Button>
-            <Button
-              size="sm"
-              className="flex-1 h-9 text-xs"
-              onClick={() => setAction('approve')}
-            >
-              <Check className="h-3.5 w-3.5 mr-1" /> Approve
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-3 pt-1 border-t border-border">
-            <div className="flex items-center gap-2">
-              <span className={`text-xs font-semibold ${action === 'approve' ? 'text-primary' : 'text-destructive'}`}>
-                {action === 'approve' ? '✓ Approving' : '✗ Denying'} — {rankName}
-              </span>
-              <button
-                className="ml-auto text-muted-foreground hover:text-foreground text-xs"
-                onClick={() => setAction(null)}
+        {/* Action area — only instructors of the same unit can approve/deny */}
+        {canApprove ? (
+          !action ? (
+            <div className="flex gap-2 pt-1">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 h-9 text-xs border-destructive/30 text-destructive hover:bg-destructive/10"
+                onClick={() => setAction('reject')}
               >
-                Cancel
-              </button>
+                <X className="h-3.5 w-3.5 mr-1" /> Deny
+              </Button>
+              <Button
+                size="sm"
+                className="flex-1 h-9 text-xs"
+                onClick={() => setAction('approve')}
+              >
+                <Check className="h-3.5 w-3.5 mr-1" /> Approve
+              </Button>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                {action === 'reject' ? 'Reason (shown to cadet) *' : 'Notes for cadet (optional)'}
-              </Label>
-              <Textarea
-                placeholder={action === 'reject' ? 'Explain why the request is denied…' : 'Any instructions for the cadet…'}
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                className="min-h-[70px] text-sm"
-              />
+          ) : (
+            <div className="space-y-3 pt-1 border-t border-border">
+              <div className="flex items-center gap-2">
+                <span className={`text-xs font-semibold ${action === 'approve' ? 'text-primary' : 'text-destructive'}`}>
+                  {action === 'approve' ? '✓ Approving' : '✗ Denying'} — {rankName}
+                </span>
+                <button
+                  className="ml-auto text-muted-foreground hover:text-foreground text-xs"
+                  onClick={() => setAction(null)}
+                >
+                  Cancel
+                </button>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                  {action === 'reject' ? 'Reason (shown to cadet) *' : 'Notes for cadet (optional)'}
+                </Label>
+                <Textarea
+                  placeholder={action === 'reject' ? 'Explain why the request is denied…' : 'Any instructions for the cadet…'}
+                  value={notes}
+                  onChange={e => setNotes(e.target.value)}
+                  className="min-h-[70px] text-sm"
+                />
+              </div>
+              <Button
+                className="w-full"
+                onClick={handleConfirm}
+                disabled={saving || (action === 'reject' && !notes.trim())}
+              >
+                {saving ? 'Processing…' : `Confirm ${action === 'approve' ? 'Approval' : 'Denial'}`}
+              </Button>
             </div>
-            <Button
-              className="w-full"
-              onClick={handleConfirm}
-              disabled={saving || (action === 'reject' && !notes.trim())}
-            >
-              {saving ? 'Processing…' : `Confirm ${action === 'approve' ? 'Approval' : 'Denial'}`}
-            </Button>
-          </div>
+          )
+        ) : (
+          <p className="text-[11px] text-muted-foreground pt-1 italic">
+            View only — only instructors from {report.unit} can approve this request.
+          </p>
         )}
       </CardContent>
     </Card>
@@ -225,9 +233,10 @@ function RequestCard({ report, instructorDisplayName, unit, onResolved }) {
 // ── Main Page ──────────────────────────────────────────────────────
 export default function StatusApprovals() {
   const { user } = useOutletContext();
-  const unit = user?.unit || user?.data?.unit;
   const qc = useQueryClient();
 
+  const userUnit = user?.unit;
+  const userRole = user?.user_role;
   const instructor = isInstructor(user);
   const cadetAdmin = isCadetAdmin(user);
   const canAccess = instructor || cadetAdmin;
@@ -236,16 +245,22 @@ export default function StatusApprovals() {
     ? formatRankName(user.rank || '', (user.display_name || user.full_name || '').toUpperCase())
     : '';
 
-  const { data: pendingReports = [], isLoading } = useQuery({
-    queryKey: ['status-approvals', unit],
-    queryFn: () => base44.entities.StatusReport.filter({ unit, status: 'pending_approval' }, '-created_date', 100),
-    enabled: !!unit && canAccess,
+  // Use backend function to bypass RLS and get pending reports for our unit
+  const { data: fetchResult, isLoading, error } = useQuery({
+    queryKey: ['status-approvals', userUnit, userRole],
+    queryFn: async () => {
+      const res = await base44.functions.invoke('getPendingApprovals', {});
+      return res.data;
+    },
+    enabled: canAccess,
     refetchInterval: 30000,
   });
 
+  const pendingReports = fetchResult?.reports || [];
+
   const handleResolved = () => {
-    qc.invalidateQueries({ queryKey: ['status-approvals', unit] });
-    qc.invalidateQueries({ queryKey: ['parade-state', unit] });
+    qc.invalidateQueries({ queryKey: ['status-approvals'] });
+    qc.invalidateQueries({ queryKey: ['parade-state'] });
   };
 
   if (!canAccess) {
@@ -264,12 +279,11 @@ export default function StatusApprovals() {
       <PageHeader
         title="Status Approvals"
         backTo="/admin/parade-state"
-        subtitle={unit}
+        subtitle={userUnit}
       />
 
       <div className="px-4 py-4 space-y-4 pb-24">
 
-        {/* Summary banner */}
         <div className="flex items-center gap-3 p-3 rounded-xl bg-amber-500/8 border border-amber-500/20">
           <div className="h-8 w-8 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
             <ClipboardList className="h-4 w-4 text-amber-400" />
@@ -279,10 +293,18 @@ export default function StatusApprovals() {
               {isLoading ? '…' : pendingReports.length} Pending {pendingReports.length === 1 ? 'Request' : 'Requests'}
             </p>
             <p className="text-[11px] text-muted-foreground">
-              Denied requests will notify the cadet with your note. Approved RSO/RSI cadets can update their diagnosis afterwards.
+              {instructor
+                ? 'You can approve or deny requests from your unit.'
+                : 'Viewing pending requests — only instructors can approve or deny.'}
             </p>
           </div>
         </div>
+
+        {error && (
+          <div className="text-sm text-destructive text-center py-4">
+            Failed to load requests. Please refresh.
+          </div>
+        )}
 
         {isLoading && (
           <div className="flex justify-center py-12">
@@ -290,7 +312,7 @@ export default function StatusApprovals() {
           </div>
         )}
 
-        {!isLoading && pendingReports.length === 0 && (
+        {!isLoading && !error && pendingReports.length === 0 && (
           <div className="flex flex-col items-center gap-3 py-16 text-center">
             <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
               <Check className="h-6 w-6 text-muted-foreground" />
@@ -305,7 +327,8 @@ export default function StatusApprovals() {
             key={report.id}
             report={report}
             instructorDisplayName={instructorDisplayName}
-            unit={unit}
+            unit={userUnit}
+            canApprove={instructor && report.unit === userUnit}
             onResolved={handleResolved}
           />
         ))}

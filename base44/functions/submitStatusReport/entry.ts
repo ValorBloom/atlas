@@ -1,6 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
-// Creates a status report and fires notification to the cadet's own unit instructors
+// Creates a status report and fires a notification to the cadet's unit (instructors + cadet_admins see it)
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -10,36 +10,38 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { reportData, notifMessage, upperType } = body;
 
-    // Validate that cadet is only creating for their own unit
-    const userUnit = user.unit || user.data?.unit;
+    // user.unit is the top-level field set via base44.auth.updateMe during setup
+    const userUnit = user.unit;
+    if (!userUnit) {
+      return Response.json({ error: 'User has no unit assigned' }, { status: 400 });
+    }
     if (reportData.unit !== userUnit) {
       return Response.json({ error: 'Unit mismatch' }, { status: 403 });
     }
 
-    // Create the status report as the user
+    // Create the status report as the user (RLS allows this)
     const created = await base44.entities.StatusReport.create(reportData);
 
-    // Notify only the cadet's own unit instructors
+    // Notify via service role so all instructors + cadet_admins in this unit see it
     try {
       await base44.asServiceRole.entities.Notification.create({
         title: `New ${upperType} Request`,
         message: notifMessage,
         type: 'warning',
         category: 'approval',
-        recipient_unit: reportData.unit,
+        recipient_unit: userUnit,
       });
-    } catch (_) { /* non-critical */ }
+    } catch (_) {}
 
-    // Audit log
     try {
       await base44.asServiceRole.entities.AuditLog.create({
         action: `status_report_${upperType.toLowerCase()}`,
         category: 'status',
         details: notifMessage,
         performed_by: user.email,
-        unit: reportData.unit,
+        unit: userUnit,
       });
-    } catch (_) { /* non-critical */ }
+    } catch (_) {}
 
     return Response.json({ success: true, id: created?.id });
   } catch (error) {
