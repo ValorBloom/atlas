@@ -24,7 +24,10 @@ export default function MedicalDashboard() {
 
   const { data: allReports = [], isLoading } = useQuery({
     queryKey: ['all-status-reports-mo'],
-    queryFn: () => base44.entities.StatusReport.list('-created_date', 500),
+    queryFn: async () => {
+      const res = await base44.functions.invoke('getAllStatusReports', {});
+      return res.data?.reports || [];
+    },
   });
 
   const activeReports = allReports.filter(r => r.status === 'active' || r.status === 'approved');

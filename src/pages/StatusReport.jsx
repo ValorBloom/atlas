@@ -127,18 +127,13 @@ export default function StatusReport() {
     }
 
     try {
-      await base44.entities.StatusReport.create(reportData);
+      const res = await base44.functions.invoke('submitStatusReport', {
+        reportData,
+        notifMessage,
+        upperType,
+      });
 
-      // Audit log (cadets can always create these)
-      try {
-        await base44.entities.AuditLog.create({
-          action: `status_report_${upperType.toLowerCase()}`,
-          category: 'status',
-          details: notifMessage,
-          performed_by: user?.email,
-          unit: user?.unit,
-        });
-      } catch (_) { /* non-critical */ }
+      if (res.data?.error) throw new Error(res.data.error);
 
       toast.success(`${upperType} submitted — pending instructor approval`);
       navigate('/actions/status');
