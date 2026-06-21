@@ -140,34 +140,44 @@ export default function DutyAdmin() {
     const weekend = isWeekend(selectedDay);
     let assigned = 0, skipped = 0;
 
-    for (const person of selectedPersonnel) {
-      if (isDuplicate(person.id, assignDutyType, dateStr)) { skipped++; continue; }
-      await base44.entities.DutyRoster.create({
-        date: dateStr,
-        duty_type: assignDutyType,
-        personnel_name: person.full_name,
-        personnel_rank: person.rank || '',
-        personnel_id: person.id,
-        unit: user?.unit,
-        notes,
-        is_weekend: weekend,
-        assigned_by: user?.email,
-      });
-      await base44.entities.Notification.create({
-        title: 'Duty Assigned',
-        message: `You have been assigned ${assignDutyType} duty on ${dateStr}.`,
-        type: 'info',
-        category: 'admin',
-        recipient_email: person.email,
-      });
-      assigned++;
-    }
+    try {
+      const toAssign = selectedPersonnel.filter(p => !isDuplicate(p.id, assignDutyType, dateStr));
+      skipped = selectedPersonnel.length - toAssign.length;
 
-    setSaving(false);
-    qc.invalidateQueries({ queryKey: ['duties'] });
-    if (assigned > 0) toast.success(`${assigned} duty assignment${assigned > 1 ? 's' : ''} saved`);
-    if (skipped > 0) toast.warning(`${skipped} skipped — duplicate`);
-    setShowAssign(false);
+      await Promise.all(toAssign.map(async (person) => {
+        await base44.entities.DutyRoster.create({
+          date: dateStr,
+          duty_type: assignDutyType,
+          personnel_name: person.full_name,
+          personnel_rank: person.rank || '',
+          personnel_id: person.id,
+          unit: user?.unit,
+          notes,
+          is_weekend: weekend,
+          assigned_by: user?.email,
+        });
+        try {
+          await base44.entities.Notification.create({
+            title: 'Duty Assigned',
+            message: `You have been assigned ${assignDutyType} duty on ${dateStr}.`,
+            type: 'info',
+            category: 'admin',
+            recipient_email: person.email,
+            recipient_unit: user?.unit,
+          });
+        } catch (_) { /* notifications are best-effort */ }
+        assigned++;
+      }));
+
+      qc.invalidateQueries({ queryKey: ['duties'] });
+      if (assigned > 0) toast.success(`${assigned} duty assignment${assigned > 1 ? 's' : ''} saved`);
+      if (skipped > 0) toast.warning(`${skipped} skipped — duplicate`);
+      setShowAssign(false);
+    } catch (err) {
+      toast.error('Failed to save assignments. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleDelete = async (duty) => {
