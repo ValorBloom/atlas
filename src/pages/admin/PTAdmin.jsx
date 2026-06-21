@@ -15,6 +15,7 @@ import { Activity, Clock, Check, XCircle, Copy, Send, AlertTriangle, Users, Shie
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { isCadetAdmin, isInstructor } from '@/lib/constants';
+import SuccessDialog from '@/components/ui/SuccessDialog';
 
 // Convert HHmm to display
 const fmt = (hhmm) => hhmm ? `${hhmm}H` : '';
@@ -31,6 +32,7 @@ export default function PTAdmin() {
   const [salutation, setSalutation] = useState('');
   const [sending, setSending] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [successMsg, setSuccessMsg] = useState(null);
 
   const { data: activeWindows = [] } = useQuery({
     queryKey: ['sft-windows-active', user?.unit],
@@ -136,25 +138,28 @@ export default function PTAdmin() {
   const handleSendToInstructor = async () => {
     setSending(true);
     const report = generateReport();
-    await base44.entities.AuditLog.create({
-      action: 'sft_submitted_to_instructor',
-      category: 'sft',
-      details: report,
-      performed_by: user?.email,
-      unit: user?.unit,
-    });
-    // Notify instructors with full report
-    await base44.entities.Notification.create({
-      title: '🏃 SFT List for Approval',
-      message: report,
-      type: 'info',
-      category: 'sft',
-      recipient_unit: user?.unit,
-    });
-    setSending(false);
-    setConfirming(false);
-    toast.success('SFT submitted to instructor');
-    queryClient.invalidateQueries({ queryKey: ['sft-submissions'] });
+    try {
+      await base44.functions.invoke('broadcastNotification', {
+        notification: {
+          title: '🏃 SFT List for Approval',
+          message: report,
+          type: 'info',
+          category: 'sft',
+        },
+        audit: {
+          action: 'sft_submitted_to_instructor',
+          category: 'sft',
+          details: report,
+        },
+      });
+      setConfirming(false);
+      setSuccessMsg('The SFT list has been submitted to the instructors for approval.');
+      queryClient.invalidateQueries({ queryKey: ['sft-submissions'] });
+    } catch (err) {
+      toast.error('Failed to submit. Please try again.');
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleCopy = () => {
@@ -305,6 +310,13 @@ export default function PTAdmin() {
           </div>
         )}
       </div>
+
+      <SuccessDialog
+        open={!!successMsg}
+        onClose={() => setSuccessMsg(null)}
+        title="SFT Submitted"
+        message={successMsg}
+      />
     </div>
   );
 }

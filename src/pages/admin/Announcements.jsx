@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Megaphone, Plus, Send, X, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import SuccessDialog from '@/components/ui/SuccessDialog';
 
 export default function Announcements() {
   const { user } = useOutletContext();
@@ -23,6 +24,7 @@ export default function Announcements() {
   const [showAiDraft, setShowAiDraft] = useState(false);
   const [aiNotes, setAiNotes] = useState('');
   const [generatingDraft, setGeneratingDraft] = useState(false);
+  const [successMsg, setSuccessMsg] = useState(null);
 
   const { data: announcements = [], isLoading } = useQuery({
     queryKey: ['announcements', user?.unit],
@@ -68,16 +70,17 @@ export default function Announcements() {
         is_active: true,
         sent_by: user?.email,
       });
-      await base44.entities.Notification.create({
-        title: `📢 ${form.title}`,
-        message: form.content.substring(0, 200),
-        type: 'info',
-        category: 'announcement',
-        recipient_unit: user?.unit,
+      await base44.functions.invoke('broadcastNotification', {
+        notification: {
+          title: `📢 ${form.title}`,
+          message: form.content.substring(0, 200),
+          type: 'info',
+          category: 'announcement',
+        },
       });
       setShowForm(false);
       setForm({ title: '', content: '', target_role: 'all' });
-      toast.success('Announcement sent');
+      setSuccessMsg('Your announcement has been sent to the unit.');
       queryClient.invalidateQueries({ queryKey: ['announcements'] });
     } catch (err) {
       toast.error('Failed to send. Please try again.');
@@ -187,6 +190,13 @@ export default function Announcements() {
           ))
         )}
       </div>
+
+      <SuccessDialog
+        open={!!successMsg}
+        onClose={() => setSuccessMsg(null)}
+        title="Announcement Sent"
+        message={successMsg}
+      />
     </div>
   );
 }

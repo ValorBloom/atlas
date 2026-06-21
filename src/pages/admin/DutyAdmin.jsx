@@ -157,13 +157,14 @@ export default function DutyAdmin() {
           assigned_by: user?.email,
         });
         try {
-          await base44.entities.Notification.create({
-            title: 'Duty Assigned',
-            message: `You have been assigned ${assignDutyType} duty on ${dateStr}.`,
-            type: 'info',
-            category: 'admin',
-            recipient_email: person.email,
-            recipient_unit: user?.unit,
+          await base44.functions.invoke('broadcastNotification', {
+            notification: {
+              title: 'Duty Assigned',
+              message: `You have been assigned ${assignDutyType} duty on ${dateStr}.`,
+              type: 'info',
+              category: 'admin',
+              recipient_email: person.email,
+            },
           });
         } catch (_) { /* notifications are best-effort */ }
         assigned++;

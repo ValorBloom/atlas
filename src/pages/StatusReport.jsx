@@ -10,6 +10,7 @@ import { formatRankName } from '@/lib/constants';
 import { Check, ArrowRight, Stethoscope } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import SuccessDialog from '@/components/ui/SuccessDialog';
 
 // Format yyyy-MM-dd → DDMMYY
 function fmtDate(d) {
@@ -38,6 +39,7 @@ export default function StatusReport() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   const selfName = user?.display_name || user?.full_name || '';
   const selfRank = user?.rank || '';
@@ -135,8 +137,7 @@ export default function StatusReport() {
 
       if (res.data?.error) throw new Error(res.data.error);
 
-      toast.success(`Your ${upperType} request has been submitted — pending instructor approval.`);
-      navigate('/actions/status');
+      setSubmitted(true);
     } catch (err) {
       toast.error('Failed to submit. Please try again.');
       console.error(err);
@@ -360,6 +361,13 @@ export default function StatusReport() {
         </div>
 
       </div>
+
+      <SuccessDialog
+        open={submitted}
+        onClose={() => navigate('/actions/status')}
+        title="Request Submitted"
+        message={`Your ${upperType} request has been submitted and is pending instructor approval.`}
+      />
     </div>
   );
 }

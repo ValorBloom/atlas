@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, addDays, subDays, parseISO } from 'date-fns';
+import SuccessDialog from '@/components/ui/SuccessDialog';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const TODAY_STR = format(new Date(), 'yyyy-MM-dd');
@@ -78,6 +79,7 @@ export default function CET() {
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [usedQuotes, setUsedQuotes] = useState([]);
   const [customWdi, setCustomWdi] = useState('');
+  const [successMsg, setSuccessMsg] = useState(null);
 
   // Fetch instructors in same unit
   const { data: unitUsers = [] } = useQuery({
@@ -265,12 +267,13 @@ export default function CET() {
       } catch (_) { /* best-effort */ }
 
       try {
-        await base44.entities.Notification.create({
-          title: isUpdate ? `📋 CET Updated — ${dateStr}` : `📋 CET Posted — ${dateStr}`,
-          message: isUpdate ? `The CET for ${dateStr} has been updated.\n\n${cet}` : `The CET for ${dateStr} has been posted.\n\n${cet}`,
-          type: 'info',
-          category: 'announcement',
-          recipient_unit: user?.unit,
+        await base44.functions.invoke('broadcastNotification', {
+          notification: {
+            title: isUpdate ? `📋 CET Updated — ${dateStr}` : `📋 CET Posted — ${dateStr}`,
+            message: isUpdate ? `The CET for ${dateStr} has been updated.\n\n${cet}` : `The CET for ${dateStr} has been posted.\n\n${cet}`,
+            type: 'info',
+            category: 'announcement',
+          },
         });
       } catch (_) { /* best-effort */ }
 
@@ -279,7 +282,9 @@ export default function CET() {
       setExistingId(savedId);
       qc.invalidateQueries({ queryKey: ['cet-records'] });
       qc.invalidateQueries({ queryKey: ['announcements'] });
-      toast.success(isUpdate ? 'CET updated & notified' : 'CET sent to unit');
+      setSuccessMsg(isUpdate
+        ? `The CET for ${dateStr} has been updated and your unit has been notified.`
+        : `The CET for ${dateStr} has been sent to your unit.`);
     } catch (err) {
       toast.error('Failed to save CET. Please try again.');
     } finally {
@@ -572,6 +577,13 @@ export default function CET() {
         )}
 
       </div>
+
+      <SuccessDialog
+        open={!!successMsg}
+        onClose={() => setSuccessMsg(null)}
+        title="CET Sent"
+        message={successMsg}
+      />
     </div>
   );
 }
