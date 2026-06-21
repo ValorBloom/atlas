@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { SFT_ACTIVITIES } from '@/lib/constants';
 import { Activity, Check, ArrowRight, XCircle, Clock, Minus, Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import SuccessDialog from '@/components/ui/SuccessDialog';
 
 const toMinutes = (hhmm) => {
   if (!hhmm || hhmm.length !== 4) return 0;
@@ -74,6 +75,7 @@ export default function SFTSubmission() {
   const [activities, setActivities] = useState([]);
   const [startMins, setStartMins] = useState(null);
   const [endMins, setEndMins] = useState(null);
+  const [submitted, setSubmitted] = useState(false);
 
   const { data: activeWindows = [] } = useQuery({
     queryKey: ['sft-windows-active', user?.unit],
@@ -121,10 +123,8 @@ export default function SFTSubmission() {
 
   const handleSubmit = async () => {
     setSaving(true);
-    // Optimistic: navigate away immediately
-    toast.success(`SFT submitted — ${activities.join(', ')} from ${formatDisplay(fromMinutes(startMins))} to ${formatDisplay(fromMinutes(endMins))}.`);
-    navigate('/');
-    // Then persist in background
+    // Show confirmation dialog, then persist in background
+    setSubmitted(true);
     base44.entities.SFTSubmission.create({
       cadet_name: user?.full_name,
       cadet_rank: user?.rank,
@@ -172,6 +172,12 @@ export default function SFTSubmission() {
 
   return (
     <div>
+      <SuccessDialog
+        open={submitted}
+        onClose={() => { setSubmitted(false); navigate('/'); }}
+        title="SFT Submitted"
+        message={`${activities.join(', ')} from ${formatDisplay(fromMinutes(startMins))} to ${formatDisplay(fromMinutes(endMins))}.`}
+      />
       <PageHeader
         title="SFT Submission"
         backTo="/"
