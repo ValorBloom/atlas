@@ -225,7 +225,7 @@ function RequestCard({ report, instructorDisplayName, unit, onResolved }) {
 // ── Main Page ──────────────────────────────────────────────────────
 export default function StatusApprovals() {
   const { user } = useOutletContext();
-  const unit = user?.unit;
+  const unit = user?.unit || user?.data?.unit;
   const qc = useQueryClient();
 
   const instructor = isInstructor(user);
