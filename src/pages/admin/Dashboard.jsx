@@ -58,8 +58,13 @@ export default function Dashboard() {
 
   const { data: activeStatuses = [] } = useQuery({
     queryKey: ['active-statuses-dash', user?.unit],
-    queryFn: () => base44.entities.StatusReport.filter({ unit: user?.unit, status: 'active' }),
+    queryFn: () => base44.entities.StatusReport.filter(
+      { unit: user?.unit, status: { $in: ['active', 'approved'] } },
+      '-created_date',
+      100
+    ),
     enabled: !!user?.unit && instructor,
+    refetchInterval: 30000,
   });
 
   if (!instructor && !cadetAdmin) {
