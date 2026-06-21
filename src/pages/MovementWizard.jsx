@@ -175,54 +175,23 @@ export default function MovementWizard() {
           movement_date: date,
         });
       }
-      await base44.entities.Notification.create({
-        title: 'Movement Reported',
-        message: instructorNotificationMessage(),
-        type: 'info',
-        category: 'movement',
-        recipient_unit: user?.unit,
-      });
-      await base44.entities.AuditLog.create({
-        action: 'movement_report',
-        category: 'movement',
-        details: reportLines(),
-        performed_by: user?.email,
-        unit: user?.unit,
-      });
-      setTimeout(async () => {
-        await base44.entities.Notification.create({
-          title: '⏱ Report Reached Time',
-          message: `Reminder: ${selectedPersonnel.map(p => p.full_name).join(', ')} departed 20 mins ago. Please update reached time.`,
-          type: 'warning',
+      await base44.functions.invoke('broadcastNotification', {
+        notification: {
+          title: 'Movement Reported',
+          message: instructorNotificationMessage(),
+          type: 'info',
           category: 'movement',
-          recipient_unit: user?.unit,
-        });
-      }, 20 * 60 * 1000);
+        },
+        audit: {
+          action: 'movement_report',
+          category: 'movement',
+          details: reportLines(),
+        },
+      });
     };
     persistAll()
       .then(() => queryClient.invalidateQueries({ queryKey: ['movement-pending'] }))
       .finally(() => setSaving(false));
-  };
-
-  const handleReached = async () => {
-    if (!selectedLog || !TIME_REGEX.test(reachedTime)) return;
-    setReachedSaving(true);
-    await base44.entities.MovementLog.update(selectedLog.id, {
-      reached_time: reachedTime,
-      status: 'reached',
-    });
-    await base44.entities.Notification.create({
-      title: 'Reached Confirmed',
-      message: `${formatRankName(selectedLog.personnel_rank, selectedLog.personnel_name)} reached ${selectedLog.to_location} at ${formatTime(reachedTime)}`,
-      type: 'success',
-      category: 'movement',
-      recipient_unit: user?.unit,
-    });
-    setReachedSaving(false);
-    toast.success('Reached recorded');
-    setSelectedLog(null);
-    setReachedTime('');
-    queryClient.invalidateQueries({ queryKey: ['movement-pending'] });
   };
 
   const locOptions = [...LOCATIONS, 'Other'];
@@ -618,14 +587,15 @@ export default function MovementWizard() {
                                   // Persist in background
                                   Promise.all(group.map(l =>
                                     base44.entities.MovementLog.update(l.id, { reached_time: reachedTime, status: 'reached' })
-                                  )).then(() => base44.entities.Notification.create({
-                                    title: 'Reached Confirmed',
-                                    message: group.length === 1
-                                      ? `${formatRankName(rep.personnel_rank, rep.personnel_name)} reached ${rep.to_location} at ${formatTime(reachedTime)}`
-                                      : `${group.length} personnel reached ${rep.to_location} at ${formatTime(reachedTime)}`,
-                                    type: 'success',
-                                    category: 'movement',
-                                    recipient_unit: user?.unit,
+                                  )).then(() => base44.functions.invoke('broadcastNotification', {
+                                    notification: {
+                                      title: 'Reached Confirmed',
+                                      message: group.length === 1
+                                        ? `${formatRankName(rep.personnel_rank, rep.personnel_name)} reached ${rep.to_location} at ${formatTime(reachedTime)}`
+                                        : `${group.length} personnel reached ${rep.to_location} at ${formatTime(reachedTime)}`,
+                                      type: 'success',
+                                      category: 'movement',
+                                    },
                                   })).then(() =>
                                     queryClient.invalidateQueries({ queryKey: ['movement-pending'] })
                                   ).finally(() => setReachedSaving(false));

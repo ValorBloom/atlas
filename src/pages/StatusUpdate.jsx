@@ -109,36 +109,23 @@ export default function StatusUpdate() {
     const durationText = `${days} ${form.status_category === 'MC' ? 'DAY' : 'DAYS'}`;
     const rankName = formatRankName(user?.rank, selfName.toUpperCase());
 
+    const outcomeMsg = form.status_category === 'MC'
+      ? `${rankName} — ${selectedReport.type} — ${form.diagnosis.toUpperCase()} — ${durationText} MC (${startFmt}-${endFmt})`
+      : `${rankName} — ${selectedReport.type} — ${form.diagnosis.toUpperCase()} — ${durationText} ${form.status_category.toUpperCase()} (${startFmt}-${endFmt})`;
+
     try {
-      await base44.entities.StatusReport.update(selectedReport.id, {
-        diagnosis: form.diagnosis.toUpperCase(),
+      const res = await base44.functions.invoke('submitStatusUpdate', {
+        reportId: selectedReport.id,
+        diagnosis: form.diagnosis,
         status_category: form.status_category,
         start_date: form.start_date,
         end_date: form.end_date,
         duration_text: durationText,
-        details: form.notes || selectedReport.details || '',
-        status: 'active',
+        notes: form.notes || '',
+        outcomeMsg,
       });
 
-      const outcomeMsg = form.status_category === 'MC'
-        ? `${rankName} — ${selectedReport.type} — ${form.diagnosis.toUpperCase()} — ${durationText} MC (${startFmt}-${endFmt})`
-        : `${rankName} — ${selectedReport.type} — ${form.diagnosis.toUpperCase()} — ${durationText} ${form.status_category.toUpperCase()} (${startFmt}-${endFmt})`;
-
-      await base44.entities.Notification.create({
-        title: `${selectedReport.type} Outcome Updated`,
-        message: outcomeMsg,
-        type: 'info',
-        category: 'status',
-        recipient_unit: user?.unit,
-      });
-
-      await base44.entities.AuditLog.create({
-        action: `status_update_${selectedReport.type.toLowerCase()}`,
-        category: 'status',
-        details: outcomeMsg,
-        performed_by: user?.email,
-        unit: user?.unit,
-      });
+      if (res.data?.error) throw new Error(res.data.error);
 
       toast.success('Status updated successfully');
       navigate('/');

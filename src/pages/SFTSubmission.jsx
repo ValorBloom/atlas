@@ -134,7 +134,14 @@ export default function SFTSubmission() {
       window_id: activeWindow.id,
       unit: user?.unit,
       status: 'active',
-    }).then(() => {
+    }).then(() => base44.functions.invoke('broadcastNotification', {
+      notification: {
+        title: 'SFT Submitted',
+        message: `${user?.rank || ''} ${user?.full_name || ''} — ${activities.join(', ')} (${formatDisplay(fromMinutes(startMins))}–${formatDisplay(fromMinutes(endMins))})`,
+        type: 'info',
+        category: 'sft',
+      },
+    })).then(() => {
       queryClient.invalidateQueries({ queryKey: ['sft-my'] });
     }).finally(() => setSaving(false));
   };
