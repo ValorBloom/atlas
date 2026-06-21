@@ -244,38 +244,47 @@ export default function CET() {
       is_published: true,
     };
 
-    let savedId = existingId;
-    if (isUpdate) {
-      await base44.entities.CETRecord.update(existingId, payload);
-    } else {
-      const created = await base44.entities.CETRecord.create(payload);
-      savedId = created?.id || null;
+    try {
+      let savedId = existingId;
+      if (isUpdate) {
+        await base44.entities.CETRecord.update(existingId, payload);
+      } else {
+        const created = await base44.entities.CETRecord.create(payload);
+        savedId = created?.id || null;
+      }
+
+      try {
+        await base44.entities.Announcement.create({
+          title: isUpdate ? `CET Updated — ${dateStr} (${dayStr})` : `CET — ${dateStr} (${dayStr})`,
+          content: cet,
+          unit: user?.unit,
+          target_role: 'all',
+          is_active: true,
+          sent_by: user?.email,
+        });
+      } catch (_) { /* best-effort */ }
+
+      try {
+        await base44.entities.Notification.create({
+          title: isUpdate ? `📋 CET Updated — ${dateStr}` : `📋 CET Posted — ${dateStr}`,
+          message: isUpdate ? `The CET for ${dateStr} has been updated.\n\n${cet}` : `The CET for ${dateStr} has been posted.\n\n${cet}`,
+          type: 'info',
+          category: 'announcement',
+          recipient_unit: user?.unit,
+        });
+      } catch (_) { /* best-effort */ }
+
+      setConfirming(false);
+      setIsEditing(false);
+      setExistingId(savedId);
+      qc.invalidateQueries({ queryKey: ['cet-records'] });
+      qc.invalidateQueries({ queryKey: ['announcements'] });
+      toast.success(isUpdate ? 'CET updated & notified' : 'CET sent to unit');
+    } catch (err) {
+      toast.error('Failed to save CET. Please try again.');
+    } finally {
+      setSending(false);
     }
-
-    await base44.entities.Announcement.create({
-      title: isUpdate ? `CET Updated — ${dateStr} (${dayStr})` : `CET — ${dateStr} (${dayStr})`,
-      content: cet,
-      unit: user?.unit,
-      target_role: 'all',
-      is_active: true,
-      sent_by: user?.email,
-    });
-
-    await base44.entities.Notification.create({
-      title: isUpdate ? `📋 CET Updated — ${dateStr}` : `📋 CET Posted — ${dateStr}`,
-      message: isUpdate ? `The CET for ${dateStr} has been updated.\n\n${cet}` : `The CET for ${dateStr} has been posted.\n\n${cet}`,
-      type: 'info',
-      category: 'announcement',
-      recipient_unit: user?.unit,
-    });
-
-    setSending(false);
-    setConfirming(false);
-    setIsEditing(false);
-    setExistingId(savedId);
-    qc.invalidateQueries({ queryKey: ['cet-records'] });
-    qc.invalidateQueries({ queryKey: ['announcements'] });
-    toast.success(isUpdate ? 'CET updated & notified' : 'CET sent to unit');
   };
 
   if (!isInstructor(user)) {
