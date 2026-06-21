@@ -279,12 +279,16 @@ export default function ParadeState() {
     !r.diagnosis
   );
 
+  // A report has an MC outcome (new multi-outcome array OR legacy status_category)
+  const reportHasMC = (r) =>
+    r.status_category === 'MC' ||
+    (Array.isArray(r.outcomes) && r.outcomes.some(o => o.category === 'MC'));
+
   // MC — RSO/RSI with MC outcome
   const mcStatuses = activeReports.filter(r =>
     (r.type === 'RSO' || r.type === 'RSI') &&
-    r.status_category === 'MC' &&
     r.status === 'active' &&
-    r.end_date
+    reportHasMC(r)
   );
 
   // MA statuses — approved
@@ -301,7 +305,7 @@ export default function ParadeState() {
   const tempStatuses = activeReports.filter(r => {
     if (r.type === 'PERM') return false;
     if (r.type === 'TEMP') return r.status === 'active';
-    if ((r.type === 'RSO' || r.type === 'RSI') && r.status === 'active' && r.end_date && r.status_category !== 'MC') return true;
+    if ((r.type === 'RSO' || r.type === 'RSI') && r.status === 'active' && r.end_date && !reportHasMC(r)) return true;
     return false;
   });
 

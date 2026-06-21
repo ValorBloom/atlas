@@ -59,7 +59,7 @@ export default function Dashboard() {
   const { data: activeStatuses = [] } = useQuery({
     queryKey: ['active-statuses-dash', user?.unit],
     queryFn: () => base44.entities.StatusReport.filter(
-      { unit: user?.unit, status: { $in: ['active', 'approved'] } },
+      { unit: user?.unit, status: { $in: ['active', 'approved', 'pending_approval'] } },
       '-created_date',
       100
     ),
@@ -113,14 +113,35 @@ export default function Dashboard() {
   }
 
   const cadets = allUsers.filter(u => u.user_role === 'cadet' || u.user_role === 'cadet_admin');
-  const outNow = activeMovements.length;
   const cadetTotal = cadets.length;
+
+  // A report has an MC if any outcome is MC (new multi-outcome) or legacy status_category is MC
+  const hasMC = (s) =>
+    s.status_category === 'MC' ||
+    (Array.isArray(s.outcomes) && s.outcomes.some(o => o.category === 'MC'));
+
+  // Cadets on MC are out of camp — collect their IDs
+  const mcCadetIds = new Set(
+    activeStatuses.filter(s => (s.type === 'RSO' || s.type === 'RSI') && hasMC(s))
+      .map(s => s.personnel_id).filter(Boolean)
+  );
+  // Movement out-of-camp IDs
+  const movementOutIds = new Set(activeMovements.map(m => m.personnel_id).filter(Boolean));
+  // Union — anyone out via movement OR on MC counts as out of camp
+  const outOfCampIds = new Set([...mcCadetIds, ...movementOutIds]);
+  const outNow = outOfCampIds.size;
+  const movementOut = movementOutIds.size; // movement-only count for the Movement Log links
+
   const cadetInCamp = Math.max(cadetTotal - outNow, 0);
   const pctInCamp = cadetTotal > 0 ? Math.round((cadetInCamp / cadetTotal) * 100) : 0;
   const rsoCount = activeStatuses.filter(s => s.type === 'RSO').length;
   const maCount = activeStatuses.filter(s => s.type === 'MA').length;
   const rsiCount = activeStatuses.filter(s => s.type === 'RSI').length;
-  const effectiveStrength = cadetInCamp - rsoCount - rsiCount - maCount;
+  // Non-MC status holders still in camp but not effective (MC already removed via outNow)
+  const inCampOnStatus = activeStatuses.filter(s =>
+    (s.type === 'RSO' || s.type === 'RSI' || s.type === 'MA') && !mcCadetIds.has(s.personnel_id)
+  ).length;
+  const effectiveStrength = cadetInCamp - inCampOnStatus;
 
   return (
     <div className="pb-24">
@@ -133,7 +154,7 @@ export default function Dashboard() {
       <div className="px-4 space-y-4">
 
         {/* Alert strip — only visible when needed */}
-        {(pendingApprovals.length > 0 || outNow > 0) && (
+        {(pendingApprovals.length > 0 || movementOut > 0) && (
           <div className="space-y-1.5">
             {pendingApprovals.length > 0 && (
               <Link to="/admin/status-approvals" className="flex items-center gap-3 p-3 rounded-xl border border-amber-500/25 bg-amber-500/8">
@@ -142,10 +163,10 @@ export default function Dashboard() {
                 <ChevronRight className="h-3.5 w-3.5 text-amber-500/50" />
               </Link>
             )}
-            {outNow > 0 && (
+            {movementOut > 0 && (
               <Link to="/admin/locations" className="flex items-center gap-3 p-3 rounded-xl border border-primary/20 bg-primary/8">
                 <MapPin className="h-4 w-4 text-primary shrink-0" />
-                <p className="text-xs font-semibold text-primary flex-1">{outNow} personnel out of camp</p>
+                <p className="text-xs font-semibold text-primary flex-1">{movementOut} personnel out of camp</p>
                 <ChevronRight className="h-3.5 w-3.5 text-primary/40" />
               </Link>
             )}
@@ -173,8 +194,8 @@ export default function Dashboard() {
             <div className="px-4 pb-4 space-y-1.5">
               <div className="w-full h-2.5 bg-muted rounded-full overflow-hidden flex gap-0.5">
                 <div className="h-full bg-green-500 rounded-l-full transition-all" style={{ width: `${cadetTotal > 0 ? (Math.max(effectiveStrength,0)/cadetTotal)*100 : 0}%` }} />
-                {(rsoCount + rsiCount + maCount) > 0 && (
-                  <div className="h-full bg-destructive/60 transition-all" style={{ width: `${cadetTotal > 0 ? ((rsoCount+rsiCount+maCount)/cadetTotal)*100 : 0}%` }} />
+                {inCampOnStatus > 0 && (
+                  <div className="h-full bg-destructive/60 transition-all" style={{ width: `${cadetTotal > 0 ? (inCampOnStatus/cadetTotal)*100 : 0}%` }} />
                 )}
                 {outNow > 0 && (
                   <div className="h-full bg-amber-500/50 rounded-r-full transition-all" style={{ width: `${cadetTotal > 0 ? (outNow/cadetTotal)*100 : 0}%` }} />
@@ -195,7 +216,7 @@ export default function Dashboard() {
             { label: 'RSO', value: rsoCount, color: 'text-destructive', bg: 'bg-destructive/8 border-destructive/20' },
             { label: 'RSI', value: rsiCount, color: 'text-amber-400', bg: 'bg-amber-500/8 border-amber-500/20' },
             { label: 'MA', value: maCount, color: 'text-primary', bg: 'bg-primary/8 border-primary/20' },
-            { label: 'Out', value: outNow, color: 'text-orange-400', bg: 'bg-orange-500/8 border-orange-500/20' },
+            { label: 'Out', value: movementOut, color: 'text-orange-400', bg: 'bg-orange-500/8 border-orange-500/20' },
           ].map(({ label, value, color, bg }) => (
             <div key={label} className={`rounded-xl border p-2.5 text-center ${bg}`}>
               <p className={`text-[9px] font-bold uppercase tracking-widest ${color}`}>{label}</p>
@@ -231,7 +252,7 @@ export default function Dashboard() {
         <div className="space-y-2">
           <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Management</p>
           <div className="space-y-1.5">
-            <NavLink to="/admin/locations" icon={MapPin} label="Movement Log" badge={outNow > 0 ? `${outNow} out` : null} />
+            <NavLink to="/admin/locations" icon={MapPin} label="Movement Log" badge={movementOut > 0 ? `${movementOut} out` : null} />
             <NavLink to="/admin/status-approvals" icon={FileText} label="Status Approvals" badge={pendingApprovals.length > 0 ? `${pendingApprovals.length}` : null} />
             <NavLink to="/admin/cet" icon={Calendar} label="Send CET" />
             <NavLink to="/admin/announcements" icon={Megaphone} label="Announcements" />
