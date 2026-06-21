@@ -12,6 +12,7 @@ import { Check, Stethoscope, AlertTriangle, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, addDays } from 'date-fns';
 import OutcomeRow from '@/components/status/OutcomeRow';
+import SuccessDialog from '@/components/ui/SuccessDialog';
 
 function fmtDate(d) {
   if (!d) return '';
@@ -39,6 +40,7 @@ export default function StatusUpdate() {
   const { user } = useOutletContext();
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
 
   const [diagnosis, setDiagnosis] = useState('');
@@ -136,8 +138,7 @@ export default function StatusUpdate() {
 
       if (res.data?.error) throw new Error(res.data.error);
 
-      toast.success('Status updated successfully');
-      navigate('/');
+      setSubmitted(true);
     } catch (err) {
       toast.error('Failed to update. Please try again.');
       console.error(err);
@@ -303,6 +304,13 @@ export default function StatusUpdate() {
           </>
         )}
       </div>
+
+      <SuccessDialog
+        open={submitted}
+        onClose={() => navigate('/')}
+        title="Update Submitted"
+        message={`Your ${selectedReport?.type || 'RSO/RSI'} diagnosis and outcome have been recorded.`}
+      />
     </div>
   );
 }

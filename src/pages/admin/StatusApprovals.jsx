@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { isInstructor, isCadetAdmin, formatRankName } from '@/lib/constants';
 import { Check, X, ClipboardList, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
+import SuccessDialog from '@/components/ui/SuccessDialog';
 
 const TYPE_LABELS = {
   RSO: 'Report Sick Outside',
@@ -39,12 +40,11 @@ function RequestCard({ report, instructorDisplayName, unit, canApprove, onResolv
 
       if (res.data?.error) throw new Error(res.data.error);
 
-      toast.success(
+      onResolved(
         action === 'approve'
           ? `${rankName}'s ${report.type} has been approved.`
           : `${rankName}'s ${report.type} request has been denied.`
       );
-      onResolved();
     } catch (err) {
       toast.error('Action failed. Please try again.');
       console.error(err);
@@ -170,6 +170,8 @@ export default function StatusApprovals() {
   const { user } = useOutletContext();
   const qc = useQueryClient();
 
+  const [successMsg, setSuccessMsg] = useState(null);
+
   const userUnit = user?.unit;
   const userRole = user?.user_role;
   const instructor = isInstructor(user);
@@ -193,9 +195,10 @@ export default function StatusApprovals() {
 
   const pendingReports = fetchResult?.reports || [];
 
-  const handleResolved = () => {
+  const handleResolved = (message) => {
     qc.invalidateQueries({ queryKey: ['status-approvals'] });
     qc.invalidateQueries({ queryKey: ['parade-state'] });
+    if (message) setSuccessMsg(message);
   };
 
   if (!canAccess) {
@@ -269,6 +272,13 @@ export default function StatusApprovals() {
         ))}
 
       </div>
+
+      <SuccessDialog
+        open={!!successMsg}
+        onClose={() => setSuccessMsg(null)}
+        title="Request Resolved"
+        message={successMsg || ''}
+      />
     </div>
   );
 }
