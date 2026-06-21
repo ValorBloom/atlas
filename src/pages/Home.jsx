@@ -412,18 +412,6 @@ export default function Home() {
           )}
         </div>
 
-        {/* All Actions — collapsible */}
-        <CollapsibleSection label="All Actions" defaultOpen={false}>
-          <div className="grid grid-cols-2 gap-2">
-            <ActionTile to="/actions/movement" icon={MapPin} label="Movement" sub="Departure & arrival" accent="default" />
-            <ActionTile to="/actions/sft" icon={Activity} label="SFT" sub="Submit activity" accent="green" />
-            <ActionTile to="/actions/status" icon={FileText} label="Status" sub="RSO / MA / RSI" accent="amber" />
-            <ActionTile to="/actions/cet" icon={Calendar} label="View CET" sub="Daily programme" accent="blue" />
-            <ActionTile to="/actions/duty" icon={CalendarDays} label="Duty" sub="View roster" accent="default" />
-            <ActionTile to="/tasks" icon={ListTodo} label="Tasks" sub="My tasks" accent="green" />
-          </div>
-        </CollapsibleSection>
-
         {/* Cadet Admin section */}
         {cadetAdmin && (
           <CollapsibleSection label="Admin">
