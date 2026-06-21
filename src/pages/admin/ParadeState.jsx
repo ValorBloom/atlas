@@ -52,7 +52,8 @@ function formatStatusLine(r) {
 
   // RSO/RSI awaiting post-consult update — show in RSO/RSI section
   if ((r.type === 'RSO' || r.type === 'RSI') && !r.diagnosis) {
-    return `${name}\n${r.type} — SYMPTOMS: ${r.symptoms?.toUpperCase() || '—'} — AWAITING POST-CONSULT UPDATE`;
+    const stage = r.status === 'pending_approval' ? 'PENDING APPROVAL' : 'AWAITING POST-CONSULT UPDATE';
+    return `${name}\n${r.type} — SYMPTOMS: ${r.symptoms?.toUpperCase() || '—'} — ${stage}`;
   }
 
   // RSO / RSI — diagnosed
@@ -270,12 +271,16 @@ export default function ParadeState() {
   });
 
   // Sections
-  const pendingApproval = activeReports.filter(r => r.status === 'pending_approval');
+  // Pending approval banner — exclude RSO/RSI (those appear directly in the awaiting-update section)
+  const pendingApproval = activeReports.filter(r =>
+    r.status === 'pending_approval' && r.type !== 'RSO' && r.type !== 'RSI'
+  );
 
-  // RSO/RSI approved but awaiting post-consult update (no diagnosis yet)
+  // RSO/RSI awaiting post-consult update — from the moment of request until the
+  // cadet submits their outcome (diagnosis). Shows immediately on request.
   const awaitingUpdate = activeReports.filter(r =>
     (r.type === 'RSO' || r.type === 'RSI') &&
-    r.status === 'approved' &&
+    (r.status === 'pending_approval' || r.status === 'approved') &&
     !r.diagnosis
   );
 
