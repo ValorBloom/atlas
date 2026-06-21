@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
-import { MapPin, Activity, FileText, Calendar, CalendarDays, ListTodo, ClipboardList, Megaphone, Dumbbell, Users, Shield, ChevronRight } from 'lucide-react';
-import { isCadetAdmin } from '@/lib/constants';
+import { MapPin, Activity, FileText, Calendar, CalendarDays, ListTodo, ClipboardList, Megaphone, Dumbbell, Users, Shield, ChevronRight, LayoutDashboard, CheckSquare, BarChart2 } from 'lucide-react';
+import { isCadetAdmin, isInstructor } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 
 const CADET_ACTIONS = [
@@ -13,13 +13,25 @@ const CADET_ACTIONS = [
   { to: '/tasks', icon: ListTodo, label: 'Tasks', sub: 'My assigned tasks', accent: 'green' },
 ];
 
-const ADMIN_ACTIONS = [
-  { to: '/admin/pt', icon: Dumbbell, label: 'PT Admin', sub: 'SFT sessions', accent: 'blue' },
+const INSTRUCTOR_ADMIN_ACTIONS = [
+  { to: '/admin', icon: LayoutDashboard, label: 'Dashboard', sub: 'Command overview', accent: 'blue' },
   { to: '/admin/parade-state', icon: ClipboardList, label: 'Parade State', sub: 'Compile & send', accent: 'default' },
+  { to: '/admin/status-approvals', icon: CheckSquare, label: 'Status Approvals', sub: 'Review pending requests', accent: 'amber' },
   { to: '/admin/locations', icon: MapPin, label: 'Movement Log', sub: 'Track personnel', accent: 'default' },
+  { to: '/admin/pt', icon: Dumbbell, label: 'PT Admin', sub: 'SFT sessions', accent: 'blue' },
+  { to: '/admin/cet', icon: Calendar, label: 'CET Admin', sub: 'Daily programme', accent: 'blue' },
+  { to: '/admin/duty', icon: CalendarDays, label: 'Duty Admin', sub: 'Assign & track', accent: 'purple' },
   { to: '/admin/announcements', icon: Megaphone, label: 'Announcements', sub: 'Unit notices', accent: 'default' },
-  { to: '/admin/duty', icon: CalendarDays, label: 'Duty Admin', sub: 'Assign & track', accent: 'blue' },
+  { to: '/admin/nominal', icon: Users, label: 'Nominal Role', sub: 'View all personnel', accent: 'default' },
   { to: '/admin/appoint', icon: Shield, label: 'Appoint Admin', sub: 'Grant cadet access', accent: 'amber' },
+];
+
+const CADET_ADMIN_ACTIONS = [
+  { to: '/admin/parade-state', icon: ClipboardList, label: 'Parade State', sub: 'Compile & send', accent: 'default' },
+  { to: '/admin/status-approvals', icon: CheckSquare, label: 'Status Approvals', sub: 'Review pending requests', accent: 'amber' },
+  { to: '/admin/locations', icon: MapPin, label: 'Movement Log', sub: 'Track personnel', accent: 'default' },
+  { to: '/admin/cet', icon: Calendar, label: 'CET Admin', sub: 'Daily programme', accent: 'blue' },
+  { to: '/admin/duty', icon: CalendarDays, label: 'Duty Admin', sub: 'Assign & track', accent: 'purple' },
   { to: '/admin/nominal', icon: Users, label: 'Nominal Role', sub: 'View all personnel', accent: 'default' },
 ];
 
@@ -60,8 +72,35 @@ function SectionHeader({ label }) {
 
 export default function Actions() {
   const { user } = useOutletContext();
+  const instructor = isInstructor(user);
   const cadetAdmin = isCadetAdmin(user);
+  const isAdmin = instructor || cadetAdmin;
 
+  // Instructors and cadet admins get an admin-first layout
+  if (isAdmin) {
+    const adminActions = instructor ? INSTRUCTOR_ADMIN_ACTIONS : CADET_ADMIN_ACTIONS;
+    const roleLabel = instructor ? 'Instructor' : 'Cadet Admin';
+    return (
+      <div className="pb-24">
+        <div className="px-4 pt-12 pb-4">
+          <h1 className="text-[22px] font-bold text-foreground">Actions</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">{roleLabel} tools</p>
+        </div>
+
+        <SectionHeader label="Admin" />
+        <div className="rounded-2xl border border-border/60 mx-4 overflow-hidden bg-card">
+          {adminActions.map(a => <ActionRow key={a.to} {...a} />)}
+        </div>
+
+        <SectionHeader label="Cadet Actions" />
+        <div className="rounded-2xl border border-border/60 mx-4 overflow-hidden bg-card">
+          {CADET_ACTIONS.map(a => <ActionRow key={a.to} {...a} />)}
+        </div>
+      </div>
+    );
+  }
+
+  // Standard cadet layout
   return (
     <div className="pb-24">
       <div className="px-4 pt-12 pb-4">
@@ -72,15 +111,6 @@ export default function Actions() {
       <div className="rounded-2xl border border-border/60 mx-4 overflow-hidden bg-card">
         {CADET_ACTIONS.map(a => <ActionRow key={a.to} {...a} />)}
       </div>
-
-      {cadetAdmin && (
-        <>
-          <SectionHeader label="Admin" />
-          <div className="rounded-2xl border border-border/60 mx-4 overflow-hidden bg-card">
-            {ADMIN_ACTIONS.map(a => <ActionRow key={a.to} {...a} />)}
-          </div>
-        </>
-      )}
     </div>
   );
 }

@@ -157,7 +157,7 @@ export default function Duty() {
                   <DutyBadge type={d.duty_type} color={colorForType(d.duty_type)} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground">
-                      {formatRankName(d.personnel_rank, d.personnel_name)}
+                      {formatRankName(d.personnel_rank, d.display_name || d.personnel_name)}
                       {isMe && <span className="ml-1.5 text-[9px] text-primary font-bold uppercase tracking-wider">You</span>}
                     </p>
                     {d.notes && <p className="text-xs text-muted-foreground">{d.notes}</p>}

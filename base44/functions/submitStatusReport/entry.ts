@@ -1,6 +1,8 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
-// Creates a status report and fires the instructor notification (service-role bypasses Notification RLS)
+const ALL_UNITS = ["Alpha", "Charlie", "Delta", "Echo", "Sierra", "Tango", "Mids", "Air", "DIS"];
+
+// Creates a status report and fires notifications to ALL units (whole command)
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -19,15 +21,17 @@ Deno.serve(async (req) => {
     // Create the status report as the user
     const created = await base44.entities.StatusReport.create(reportData);
 
-    // Notify instructors via service role (bypasses Notification create RLS)
+    // Notify ALL units (whole command) via service role
     try {
-      await base44.asServiceRole.entities.Notification.create({
-        title: `New ${upperType} Request`,
-        message: notifMessage,
-        type: 'warning',
-        category: 'approval',
-        recipient_unit: reportData.unit,
-      });
+      await Promise.all(ALL_UNITS.map(unit =>
+        base44.asServiceRole.entities.Notification.create({
+          title: `New ${upperType} Request`,
+          message: notifMessage,
+          type: 'warning',
+          category: 'approval',
+          recipient_unit: unit,
+        })
+      ));
     } catch (_) { /* non-critical */ }
 
     // Audit log

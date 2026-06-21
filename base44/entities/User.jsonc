@@ -28,7 +28,8 @@
       "type": "string"
     },
     "section": {
-      "type": "string"
+      "type": "string",
+      "description": "Optional section within platoon"
     }
   },
   "required": [
@@ -36,7 +37,6 @@
     "unit",
     "rank",
     "user_role",
-    "platoon",
-    "section"
+    "platoon"
   ]
 }

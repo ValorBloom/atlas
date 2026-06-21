@@ -99,9 +99,9 @@ export default function StatusReport() {
 
     if (isMedical) {
       reportData.symptoms = data.symptoms.toUpperCase();
-      reportData.details = data.notes || '';
+      reportData.details = data.notes ? data.notes.toUpperCase() : '';
       reportData.start_date = data.date;
-      notifMessage = `${rankName} — ${upperType} — SYMPTOMS: ${data.symptoms.toUpperCase()}${data.notes ? ` — NOTES: ${data.notes}` : ''}`;
+      notifMessage = `${rankName} — ${upperType} — SYMPTOMS: ${data.symptoms.toUpperCase()}${data.notes ? ` — NOTES: ${data.notes.toUpperCase()}` : ''}`;
     } else if (isMA) {
       const dateFmt = fmtDate(data.appointment_date);
       reportData.start_date = data.appointment_date;
