@@ -41,9 +41,45 @@
       "enum": [
         "MC",
         "Light Duty",
+        "Excused RMJ",
+        "Excused Heavy Loads",
         "Others"
       ],
-      "description": "Outcome category after seeing doctor (RSO/RSI only)"
+      "description": "Primary outcome category after seeing doctor (RSO/RSI only). Mirrors outcomes[0]."
+    },
+    "outcomes": {
+      "type": "array",
+      "description": "List of post-consultation outcomes, each with its own category and date range.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "enum": [
+              "MC",
+              "Light Duty",
+              "Excused RMJ",
+              "Excused Heavy Loads",
+              "Others"
+            ]
+          },
+          "custom_label": {
+            "type": "string",
+            "description": "Free-text label when category is 'Others'"
+          },
+          "duration_text": {
+            "type": "string"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      }
     },
     "start_date": {
       "type": "string",

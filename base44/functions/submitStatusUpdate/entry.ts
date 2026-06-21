@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
     const user = await base44.auth.me();
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-    const { reportId, diagnosis, status_category, start_date, end_date, duration_text, notes, outcomeMsg } = await req.json();
+    const { reportId, diagnosis, status_category, start_date, end_date, duration_text, notes, outcomeMsg, outcomes } = await req.json();
     if (!reportId || !diagnosis || !status_category || !start_date || !end_date) {
       return Response.json({ error: 'Missing required fields' }, { status: 400 });
     }
@@ -25,6 +25,7 @@ Deno.serve(async (req) => {
     await base44.asServiceRole.entities.StatusReport.update(reportId, {
       diagnosis: diagnosis.toUpperCase(),
       status_category,
+      outcomes: Array.isArray(outcomes) ? outcomes : [],
       start_date,
       end_date,
       duration_text,

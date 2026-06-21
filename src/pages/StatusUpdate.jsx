@@ -4,21 +4,35 @@ import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import PageHeader from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { MobileSelect, MobileSelectItem } from '@/components/ui/MobileSelect';
 import { formatRankName } from '@/lib/constants';
-import { Check, Stethoscope, AlertTriangle } from 'lucide-react';
+import { Check, Stethoscope, AlertTriangle, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, addDays } from 'date-fns';
-
-const STATUS_CATEGORIES = ['MC', 'Light Duty', 'Others'];
+import OutcomeRow from '@/components/status/OutcomeRow';
 
 function fmtDate(d) {
   if (!d) return '';
   return d.replace(/-/g, '').slice(2);
+}
+
+const today = () => format(new Date(), 'yyyy-MM-dd');
+const newOutcome = () => ({ category: '', custom_label: '', duration_days: '', start_date: today(), end_date: '' });
+
+// Resolve the display label for an outcome category
+function outcomeLabel(o) {
+  if (o.category === 'Others') return (o.custom_label || 'OTHERS').toUpperCase();
+  if (o.category === 'MC') return 'MC';
+  return o.category.toUpperCase();
+}
+
+// Build the parade-state style text for a single outcome
+function outcomeText(o) {
+  const dur = o.duration_text || '';
+  const dates = o.start_date && o.end_date ? ` (${fmtDate(o.start_date)}-${fmtDate(o.end_date)})` : '';
+  return `${dur} ${outcomeLabel(o)}${dates}`.trim();
 }
 
 export default function StatusUpdate() {
@@ -27,14 +41,9 @@ export default function StatusUpdate() {
   const [saving, setSaving] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
 
-  const [form, setForm] = useState({
-    diagnosis: '',
-    status_category: '',
-    start_date: format(new Date(), 'yyyy-MM-dd'),
-    end_date: '',
-    notes: '',
-    duration_days: '',
-  });
+  const [diagnosis, setDiagnosis] = useState('');
+  const [notes, setNotes] = useState('');
+  const [outcomes, setOutcomes] = useState([newOutcome()]);
 
   const selfName = user?.display_name || user?.full_name || '';
 
@@ -46,12 +55,7 @@ export default function StatusUpdate() {
   const { data: myReports = [], isLoading } = useQuery({
     queryKey: ['my-medical-reports', user?.id],
     queryFn: async () => {
-      const all = await base44.entities.StatusReport.filter(
-        {},
-        '-created_date',
-        50
-      );
-      // Client-side filter to our own reports
+      const all = await base44.entities.StatusReport.filter({}, '-created_date', 50);
       return all.filter(r => r.personnel_id === user?.id);
     },
     enabled: !!user?.id,
@@ -72,56 +76,61 @@ export default function StatusUpdate() {
     }
   }, [preselectedId, updatable.length]);
 
-  const handleCategoryChange = (cat) => {
-    const start = form.start_date || format(new Date(), 'yyyy-MM-dd');
-    const days = parseInt(form.duration_days) || 1;
-    let endDate = days > 0 && start
-      ? format(addDays(new Date(start), days - 1), 'yyyy-MM-dd')
+  // Recompute an outcome's end date from start + duration
+  const updateOutcome = (index, next) => {
+    const days = parseInt(next.duration_days) || 0;
+    const endDate = days > 0 && next.start_date
+      ? format(addDays(new Date(next.start_date), days - 1), 'yyyy-MM-dd')
       : '';
-    setForm({ ...form, status_category: cat, end_date: endDate });
+    setOutcomes(prev => prev.map((o, i) => (i === index ? { ...next, end_date: endDate } : o)));
   };
 
-  const handleDaysChange = (val) => {
-    const days = parseInt(val) || 0;
-    let endDate = days > 0 && form.start_date
-      ? format(addDays(new Date(form.start_date), days - 1), 'yyyy-MM-dd')
-      : '';
-    setForm({ ...form, duration_days: val, end_date: endDate });
-  };
+  const addOutcome = () => setOutcomes(prev => [...prev, newOutcome()]);
+  const removeOutcome = (index) => setOutcomes(prev => prev.filter((_, i) => i !== index));
 
-  const handleStartChange = (val) => {
-    const days = parseInt(form.duration_days) || 0;
-    let endDate = days > 0 && val
-      ? format(addDays(new Date(val), days - 1), 'yyyy-MM-dd')
-      : '';
-    setForm({ ...form, start_date: val, end_date: endDate });
-  };
+  const outcomeValid = (o) =>
+    o.category &&
+    (o.category !== 'Others' || (o.custom_label && o.custom_label.trim())) &&
+    o.duration_days && parseInt(o.duration_days) > 0 &&
+    o.start_date && o.end_date;
 
-  const canSubmit = selectedReport && form.diagnosis && form.status_category && form.start_date && form.end_date;
+  const allOutcomesValid = outcomes.length > 0 && outcomes.every(outcomeValid);
+  const canSubmit = selectedReport && diagnosis.trim() && allOutcomesValid;
 
   const handleSubmit = async () => {
     if (!canSubmit || saving) return;
     setSaving(true);
 
-    const days = parseInt(form.duration_days) || 1;
-    const startFmt = fmtDate(form.start_date);
-    const endFmt = fmtDate(form.end_date);
-    const durationText = `${days} ${form.status_category === 'MC' ? 'DAY' : 'DAYS'}`;
     const rankName = formatRankName(user?.rank, selfName.toUpperCase());
 
-    const outcomeMsg = form.status_category === 'MC'
-      ? `${rankName} — ${selectedReport.type} — ${form.diagnosis.toUpperCase()} — ${durationText} MC (${startFmt}-${endFmt})`
-      : `${rankName} — ${selectedReport.type} — ${form.diagnosis.toUpperCase()} — ${durationText} ${form.status_category.toUpperCase()} (${startFmt}-${endFmt})`;
+    // Normalize outcomes with duration_text for storage + display
+    const builtOutcomes = outcomes.map(o => {
+      const days = parseInt(o.duration_days) || 1;
+      const isMC = o.category === 'MC';
+      return {
+        category: o.category,
+        custom_label: o.category === 'Others' ? (o.custom_label || '').toUpperCase() : '',
+        duration_text: `${days} ${isMC ? 'DAY' : 'DAYS'}`,
+        start_date: o.start_date,
+        end_date: o.end_date,
+      };
+    });
+
+    const outcomeLines = builtOutcomes.map(o => outcomeText(o)).join(' · ');
+    const outcomeMsg = `${rankName} — ${selectedReport.type} — ${diagnosis.toUpperCase()} — ${outcomeLines}`;
+
+    const primary = builtOutcomes[0];
 
     try {
       const res = await base44.functions.invoke('submitStatusUpdate', {
         reportId: selectedReport.id,
-        diagnosis: form.diagnosis,
-        status_category: form.status_category,
-        start_date: form.start_date,
-        end_date: form.end_date,
-        duration_text: durationText,
-        notes: form.notes || '',
+        diagnosis: diagnosis.toUpperCase(),
+        outcomes: builtOutcomes,
+        status_category: primary.category,
+        start_date: primary.start_date,
+        end_date: primary.end_date,
+        duration_text: primary.duration_text,
+        notes: notes || '',
         outcomeMsg,
       });
 
@@ -148,10 +157,18 @@ export default function StatusUpdate() {
     );
   }
 
-  // All my RSO/RSI reports (any status) for context
   const allMyMedical = myReports.filter(r => r.type === 'RSO' || r.type === 'RSI');
   const pendingMedical = allMyMedical.filter(r => r.status === 'pending_approval');
   const rejectedMedical = allMyMedical.filter(r => r.status === 'rejected');
+
+  // Build a preview using the normalized outcomes
+  const previewOutcomes = outcomes
+    .filter(outcomeValid)
+    .map(o => {
+      const days = parseInt(o.duration_days) || 1;
+      const isMC = o.category === 'MC';
+      return outcomeText({ ...o, duration_text: `${days} ${isMC ? 'DAY' : 'DAYS'}` });
+    });
 
   return (
     <div>
@@ -161,7 +178,7 @@ export default function StatusUpdate() {
         <div className="p-3 rounded-xl bg-muted/40 border border-border flex items-start gap-2.5">
           <Stethoscope className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Select your approved RSO or RSI, then fill in your diagnosis and outcome.
+            Select your approved RSO or RSI, then add one or more outcomes — each can have its own dates (e.g. Light Duty 7 days, Excused RMJ 3 days).
           </p>
         </div>
 
@@ -232,76 +249,49 @@ export default function StatusUpdate() {
                   <Label className="text-xs text-muted-foreground uppercase tracking-wide">Diagnosis *</Label>
                   <Textarea
                     placeholder="e.g. VIRAL INFECTION, SPRAINED ANKLE"
-                    value={form.diagnosis}
-                    onChange={e => setForm({ ...form, diagnosis: e.target.value.toUpperCase() })}
+                    value={diagnosis}
+                    onChange={e => setDiagnosis(e.target.value.toUpperCase())}
                     className="min-h-[70px]"
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Outcome *</Label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {STATUS_CATEGORIES.map(cat => (
-                      <button
-                        key={cat}
-                        onClick={() => handleCategoryChange(cat)}
-                        className={`p-2.5 rounded-xl border text-xs font-semibold transition-all ${
-                          form.status_category === cat
-                            ? 'border-primary/40 bg-primary/10 text-primary'
-                            : 'border-border bg-card text-muted-foreground hover:bg-muted/30'
-                        }`}
-                      >
-                        {cat}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Duration (days) *</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    placeholder="e.g. 2"
-                    value={form.duration_days}
-                    onChange={e => handleDaysChange(e.target.value)}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground uppercase tracking-wide">Start Date *</Label>
-                    <Input type="date" value={form.start_date} onChange={e => handleStartChange(e.target.value)} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground uppercase tracking-wide">End Date *</Label>
-                    <Input type="date" value={form.end_date} onChange={e => setForm({ ...form, end_date: e.target.value })} />
-                  </div>
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Outcomes *</Label>
+                  {outcomes.map((o, i) => (
+                    <OutcomeRow
+                      key={i}
+                      outcome={o}
+                      index={i}
+                      canRemove={outcomes.length > 1}
+                      onChange={updateOutcome}
+                      onRemove={removeOutcome}
+                    />
+                  ))}
+                  <Button variant="outline" className="w-full h-9 text-xs gap-1.5" onClick={addOutcome}>
+                    <Plus className="h-3.5 w-3.5" /> Add Another Outcome
+                  </Button>
                 </div>
 
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground uppercase tracking-wide">Notes (optional)</Label>
                   <Textarea
                     placeholder="Additional notes..."
-                    value={form.notes}
-                    onChange={e => setForm({ ...form, notes: e.target.value })}
+                    value={notes}
+                    onChange={e => setNotes(e.target.value)}
                     className="min-h-[60px]"
                   />
                 </div>
 
                 {/* Preview */}
-                {form.status_category && form.diagnosis && form.duration_days && form.start_date && form.end_date && (
+                {diagnosis && previewOutcomes.length > 0 && (
                   <div className="p-3 rounded-xl bg-muted/40 border border-border">
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Preview</p>
-                    {form.status_category === 'MC' ? (
-                      <p className="text-xs font-mono text-foreground leading-relaxed">
-                        {formatRankName(user?.rank, selfName.toUpperCase())} SYMPTOMS: {selectedReport.symptoms?.toUpperCase() || '—'} DIAGNOSIS: {form.diagnosis} STATUS: {form.duration_days} DAY MC ({fmtDate(form.start_date)}-{fmtDate(form.end_date)})
-                      </p>
-                    ) : (
-                      <p className="text-xs font-mono text-foreground leading-relaxed">
-                        {formatRankName(user?.rank, selfName.toUpperCase())} {form.duration_days} DAYS {form.status_category.toUpperCase()} ({fmtDate(form.start_date)}-{fmtDate(form.end_date)})
-                      </p>
-                    )}
+                    <p className="text-xs font-mono text-foreground leading-relaxed">
+                      {formatRankName(user?.rank, selfName.toUpperCase())} {selectedReport.type} — DIAGNOSIS: {diagnosis}
+                      {previewOutcomes.map((line, i) => (
+                        <span key={i} className="block mt-0.5">{line}</span>
+                      ))}
+                    </p>
                   </div>
                 )}
 

@@ -50,23 +50,31 @@ function formatStatusLine(r) {
     return [name, ...lines, endorsed].filter(Boolean).join('\n');
   }
 
-  // RSO / RSI
-  if (r.status_category === 'MC') {
-    const symptoms = r.symptoms ? `SYMPTOMS: ${r.symptoms.toUpperCase()} ` : '';
-    const dx = r.diagnosis ? `DIAGNOSIS: ${r.diagnosis.toUpperCase()} ` : '';
-    const dur = r.duration_text || '';
-    const dates = r.start_date && r.end_date ? ` (${fmtDate(r.start_date)}-${fmtDate(r.end_date)})` : '';
-    return `${name}\n${symptoms}${dx}STATUS: ${dur} MC${dates}`;
-  }
-
   // RSO/RSI awaiting post-consult update — show in RSO/RSI section
   if ((r.type === 'RSO' || r.type === 'RSI') && !r.diagnosis) {
     return `${name}\n${r.type} — SYMPTOMS: ${r.symptoms?.toUpperCase() || '—'} — AWAITING POST-CONSULT UPDATE`;
   }
 
-  // Light Duty / Others outcome
+  // RSO / RSI — diagnosed
+  const symptoms = r.symptoms ? `SYMPTOMS: ${r.symptoms.toUpperCase()} ` : '';
+  const dx = r.diagnosis ? `DIAGNOSIS: ${r.diagnosis.toUpperCase()} ` : '';
+
+  // Multiple outcomes (new): one line per outcome, each with its own dates
+  if (Array.isArray(r.outcomes) && r.outcomes.length > 0) {
+    const lines = r.outcomes.map(o => {
+      const label = o.category === 'Others' ? (o.custom_label || 'OTHERS') : (o.category || 'LIGHT DUTY');
+      const dates = o.start_date && o.end_date ? ` (${fmtDate(o.start_date)}-${fmtDate(o.end_date)})` : '';
+      return `STATUS: ${o.duration_text || ''} ${label.toUpperCase()}${dates}`.trim();
+    });
+    return `${name}\n${symptoms}${dx}`.trim() + '\n' + lines.join('\n');
+  }
+
+  // Single outcome (legacy / MC)
   const dur = r.duration_text || '';
   const dates = r.start_date && r.end_date ? ` (${fmtDate(r.start_date)}-${fmtDate(r.end_date)})` : '';
+  if (r.status_category === 'MC') {
+    return `${name}\n${symptoms}${dx}STATUS: ${dur} MC${dates}`;
+  }
   return `${name}\n${dur} ${(r.status_category || 'LIGHT DUTY').toUpperCase()}${dates}`;
 }
 
