@@ -134,14 +134,25 @@ export default function Dashboard() {
 
   const cadetInCamp = Math.max(cadetTotal - outNow, 0);
   const pctInCamp = cadetTotal > 0 ? Math.round((cadetInCamp / cadetTotal) * 100) : 0;
-  const rsoCount = activeStatuses.filter(s => s.type === 'RSO').length;
-  const maCount = activeStatuses.filter(s => s.type === 'MA').length;
-  const rsiCount = activeStatuses.filter(s => s.type === 'RSI').length;
-  // Non-MC status holders still in camp but not effective (MC already removed via outNow)
-  const inCampOnStatus = activeStatuses.filter(s =>
-    (s.type === 'RSO' || s.type === 'RSI' || s.type === 'MA') && !mcCadetIds.has(s.personnel_id)
-  ).length;
-  const effectiveStrength = cadetInCamp - inCampOnStatus;
+
+  // Count DISTINCT cadets per type (a cadet may have multiple reports) — take latest type per person
+  const distinctCadetsByType = (type) => new Set(
+    activeStatuses.filter(s => s.type === type).map(s => s.personnel_id).filter(Boolean)
+  ).size;
+  const rsoCount = distinctCadetsByType('RSO');
+  const maCount = distinctCadetsByType('MA');
+  const rsiCount = distinctCadetsByType('RSI');
+
+  // Distinct cadets on a non-MC medical/MA status still in camp but not effective
+  // (MC holders already removed via outNow)
+  const inCampStatusIds = new Set(
+    activeStatuses
+      .filter(s => (s.type === 'RSO' || s.type === 'RSI' || s.type === 'MA') && !mcCadetIds.has(s.personnel_id))
+      .map(s => s.personnel_id)
+      .filter(Boolean)
+  );
+  const inCampOnStatus = inCampStatusIds.size;
+  const effectiveStrength = Math.max(cadetInCamp - inCampOnStatus, 0);
 
   return (
     <div className="pb-24">
