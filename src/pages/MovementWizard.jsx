@@ -75,11 +75,13 @@ export default function MovementWizard() {
     return ['All', ...Array.from(groups).sort()];
   }, [users]);
 
+  const nameOf = (u) => u?.display_name || u?.full_name || '';
+
   const filteredUsers = useMemo(() => {
     return users.filter(u => {
       const matchGroup = groupFilter === 'All' || u.platoon === groupFilter;
       const matchSearch = !search || 
-        u.full_name?.toLowerCase().includes(search.toLowerCase()) ||
+        nameOf(u).toLowerCase().includes(search.toLowerCase()) ||
         u.rank?.toLowerCase().includes(search.toLowerCase());
       return matchGroup && matchSearch;
     });
@@ -111,14 +113,14 @@ export default function MovementWizard() {
   const reportLines = () => {
     const date = format(new Date(), 'dd/MM/yy');
     const numberedNames = selectedPersonnel
-      .map((p, i) => `${i + 1}. ${formatRankName(p.rank || '', p.full_name || '')}`)
+      .map((p, i) => `${i + 1}. ${formatRankName(p.rank || '', nameOf(p))}`)
       .join('\n');
     return `${numberedNames}\n\nMOVEMENT FROM ${fromLoc.toUpperCase()} TO ${toLoc.toUpperCase()} FOR ${purpose.toUpperCase()} @${formatTime(data.leave_time)}\nDate: ${date}`;
   };
 
   const instructorNotificationMessage = () => {
     const numberedNames = selectedPersonnel
-      .map((p, i) => `${i + 1}. ${formatRankName(p.rank || '', p.full_name || '')}`)
+      .map((p, i) => `${i + 1}. ${formatRankName(p.rank || '', nameOf(p))}`)
       .join('\n');
     return `Dear Instructors,\n\n${numberedNames}\n\nMOVEMENT FROM ${fromLoc.toUpperCase()} TO ${toLoc.toUpperCase()} FOR ${purpose.toUpperCase()} @${formatTime(data.leave_time)}`;
   };
@@ -131,12 +133,12 @@ export default function MovementWizard() {
     toast.success(
       selectedPersonnel.length > 1
         ? `Movement reported for ${selectedPersonnel.length} personnel from ${fromLoc} to ${toLoc}.`
-        : `Movement reported — ${formatRankName(selectedPersonnel[0].rank || '', selectedPersonnel[0].full_name || '')} departing ${fromLoc} to ${toLoc}.`
+        : `Movement reported — ${formatRankName(selectedPersonnel[0].rank || '', nameOf(selectedPersonnel[0]))} departing ${fromLoc} to ${toLoc}.`
     );
     // Build optimistic log entries to show in reached tab right away
     const optimisticLogs = selectedPersonnel.map((person, idx) => ({
       id: `optimistic-${idx}`,
-      personnel_name: person.full_name,
+      personnel_name: nameOf(person),
       personnel_rank: person.rank || '',
       personnel_id: person.id,
       from_location: fromLoc,
@@ -162,7 +164,7 @@ export default function MovementWizard() {
     const persistAll = async () => {
       for (const person of selectedPersonnel) {
         await base44.entities.MovementLog.create({
-          personnel_name: person.full_name,
+          personnel_name: nameOf(person),
           personnel_rank: person.rank || '',
           personnel_id: person.id,
           from_location: fromLoc,
@@ -276,7 +278,7 @@ export default function MovementWizard() {
                   <div className="flex flex-wrap gap-1.5">
                     {selectedPersonnel.map(p => (
                       <div key={p.id} className="flex items-center gap-1 px-2 py-1 bg-primary/10 border border-primary/20 rounded-lg text-xs font-medium text-primary">
-                        {formatRankName(p.rank || '', p.full_name || '')}
+                        {formatRankName(p.rank || '', nameOf(p))}
                         <button onClick={() => togglePerson(p)}><X className="w-3 h-3" /></button>
                       </div>
                     ))}
@@ -324,7 +326,7 @@ export default function MovementWizard() {
                         }`}
                       >
                         <div>
-                          <span className="font-medium">{formatRankName(u.rank || '', u.full_name || '')}</span>
+                          <span className="font-medium">{formatRankName(u.rank || '', nameOf(u))}</span>
                           {u.platoon && <span className="text-xs text-muted-foreground ml-2">{u.platoon}</span>}
                         </div>
                         {selected && <Check className="w-4 h-4 text-primary shrink-0" />}
