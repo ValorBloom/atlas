@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { format, parseISO, isAfter } from 'date-fns';
 import { Drawer } from 'vaul';
+import CompletionTracker from '@/components/tasks/CompletionTracker';
 
 const STATUS_CONFIG = {
   'Not Done': { icon: Circle, color: 'text-muted-foreground', label: 'Not Done' },
@@ -337,6 +338,11 @@ export default function TaskDetail() {
             </div>
           </div>
         </div>
+
+        {/* Completion roster — visible to the task creator */}
+        {task.assigned_by_id === user?.id && (
+          <CompletionTracker task={task} user={user} />
+        )}
 
         {/* Quick Done button — prominent for assignee */}
         {canChangeStatus && task.status !== 'Completed' && (
