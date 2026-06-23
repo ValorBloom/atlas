@@ -17,6 +17,10 @@ import {
 import { toast } from 'sonner';
 import { format, addDays, subDays, parseISO } from 'date-fns';
 import SuccessDialog from '@/components/ui/SuccessDialog';
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
+} from '@/components/ui/alert-dialog';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const TODAY_STR = format(new Date(), 'yyyy-MM-dd');
@@ -564,19 +568,36 @@ export default function CET() {
             <Button variant="outline" className="flex-1 h-10" onClick={handleCopy}>
               <Copy className="h-4 w-4 mr-1" /> Copy
             </Button>
-            {!confirming ? (
-              <Button className="flex-1 h-10" onClick={() => setConfirming(true)} disabled={hasInvalidTime}>
-                <Send className="h-4 w-4 mr-1" /> {existingId ? 'Update CET' : 'Send CET'}
-              </Button>
-            ) : (
-              <Button className="flex-1 h-10 bg-destructive hover:bg-destructive/90" onClick={handleSend} disabled={sending}>
-                <Check className="h-4 w-4 mr-1" />{sending ? 'Sending...' : 'Confirm'}
-              </Button>
-            )}
+            <Button className="flex-1 h-10" onClick={() => setConfirming(true)} disabled={hasInvalidTime}>
+              <Send className="h-4 w-4 mr-1" /> {existingId ? 'Update CET' : 'Send CET'}
+            </Button>
           </div>
         )}
 
       </div>
+
+      {/* Confirmation popup */}
+      <AlertDialog open={confirming} onOpenChange={(v) => { if (!v && !sending) setConfirming(false); }}>
+        <AlertDialogContent className="max-w-[340px] rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>{existingId ? 'Update CET?' : 'Send CET?'}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {existingId
+                ? 'This will update the CET and notify your entire unit.'
+                : 'This will publish the CET and notify your entire unit.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={sending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleSend(); }}
+              disabled={sending}
+            >
+              {sending ? 'Sending...' : (existingId ? 'Confirm & Update' : 'Confirm & Send')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <SuccessDialog
         open={!!successMsg}
