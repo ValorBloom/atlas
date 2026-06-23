@@ -66,27 +66,7 @@
       ]
     },
     "read": {
-      "$or": [
-        {
-          "data.unit": "{{user.unit}}",
-          "data.is_published": true
-        },
-        {
-          "data.unit": "{{user.unit}}",
-          "$or": [
-            {
-              "user_condition": {
-                "user_role": "instructor"
-              }
-            },
-            {
-              "user_condition": {
-                "user_role": "cadet_admin"
-              }
-            }
-          ]
-        }
-      ]
+      "data.unit": "{{user.unit}}"
     },
     "update": {
       "data.unit": "{{user.unit}}",
