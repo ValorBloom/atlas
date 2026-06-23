@@ -238,52 +238,37 @@ export default function CET() {
     const cet = generateCET();
     const isUpdate = !!existingId;
 
-    const payload = {
-      date: selectedDate,
-      unit: user?.unit,
-      wdi,
-      quote,
-      quote_author: quoteAuthor,
-      timetable: rows.map(r => ({ time: r.time, activity: r.activity })),
-      notes,
-      sent_by: user?.email,
-      is_published: true,
-    };
-
     try {
-      let savedId = existingId;
-      if (isUpdate) {
-        await base44.entities.CETRecord.update(existingId, payload);
-      } else {
-        const created = await base44.entities.CETRecord.create(payload);
-        savedId = created?.id || null;
-      }
-
-      try {
-        await base44.entities.Announcement.create({
+      const { data } = await base44.functions.invoke('sendCET', {
+        existingId: existingId || null,
+        record: {
+          date: selectedDate,
+          wdi,
+          quote,
+          quote_author: quoteAuthor,
+          timetable: rows.map(r => ({ time: r.time, activity: r.activity })),
+          notes,
+        },
+        announcement: {
           title: isUpdate ? `CET Updated — ${dateStr} (${dayStr})` : `CET — ${dateStr} (${dayStr})`,
           content: cet,
-          unit: user?.unit,
-          target_role: 'all',
-          is_active: true,
-          sent_by: user?.email,
-        });
-      } catch (_) { /* best-effort */ }
+        },
+        notification: {
+          title: isUpdate ? `📋 CET Updated — ${dateStr}` : `📋 CET Posted — ${dateStr}`,
+          message: isUpdate ? `The CET for ${dateStr} has been updated.\n\n${cet}` : `The CET for ${dateStr} has been posted.\n\n${cet}`,
+          type: 'info',
+          category: 'announcement',
+        },
+      });
 
-      try {
-        await base44.functions.invoke('broadcastNotification', {
-          notification: {
-            title: isUpdate ? `📋 CET Updated — ${dateStr}` : `📋 CET Posted — ${dateStr}`,
-            message: isUpdate ? `The CET for ${dateStr} has been updated.\n\n${cet}` : `The CET for ${dateStr} has been posted.\n\n${cet}`,
-            type: 'info',
-            category: 'announcement',
-          },
-        });
-      } catch (_) { /* best-effort */ }
+      if (data?.error || !data?.success) {
+        toast.error('Failed to save CET. Please try again.');
+        return;
+      }
 
       setConfirming(false);
       setIsEditing(false);
-      setExistingId(savedId);
+      setExistingId(data.id || existingId);
       qc.invalidateQueries({ queryKey: ['cet-records'] });
       qc.invalidateQueries({ queryKey: ['announcements'] });
       setSuccessMsg(isUpdate
