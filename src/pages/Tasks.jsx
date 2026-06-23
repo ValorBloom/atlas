@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import PageHeader from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { isInstructor, isCadetAdmin } from '@/lib/constants';
-import { ClipboardList, Plus, ChevronRight, CheckCircle2, Clock, Circle, AlertCircle } from 'lucide-react';
+import { ClipboardList, Plus, ChevronRight, CheckCircle2, Clock, Circle, AlertCircle, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parseISO, isAfter } from 'date-fns';
 import { toast } from 'sonner';
@@ -171,6 +171,19 @@ export default function Tasks() {
           </button>
         ))}
       </div>
+
+      {canManage && (
+        <div className="px-4 pt-3">
+          <Link to="/tasks/tracking">
+            <Button variant="outline" className="w-full h-10 justify-between text-sm">
+              <span className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-primary" /> Track Completion by Assignee
+              </span>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          </Link>
+        </div>
+      )}
 
       <div className="px-4 py-4 space-y-3">
         {isLoading ? (

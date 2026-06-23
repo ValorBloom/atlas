@@ -27,6 +27,7 @@ import StatusUpdate from './pages/StatusUpdate.jsx';
 import ViewCET from './pages/ViewCET';
 import Duty from './pages/Duty';
 import Tasks from './pages/Tasks';
+import TaskTracking from './pages/TaskTracking';
 import TaskDetail from './pages/TaskDetail';
 import TaskWidget from './pages/TaskWidget';
 
@@ -92,6 +93,7 @@ const AuthenticatedApp = () => {
         <Route path="/actions/cet" element={<ViewCET />} />
         <Route path="/actions/duty" element={<Duty />} />
         <Route path="/tasks" element={<Tasks />} />
+        <Route path="/tasks/tracking" element={<TaskTracking />} />
         <Route path="/tasks/:id" element={<TaskDetail />} />
         <Route path="/admin" element={<Dashboard />} />
         <Route path="/admin/locations" element={<LocationTracker />} />
