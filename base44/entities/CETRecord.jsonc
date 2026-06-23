@@ -43,6 +43,35 @@
     "is_published": {
       "type": "boolean",
       "default": false
+    },
+    "delivery": {
+      "type": "object",
+      "description": "Distribution report from the last send/update.",
+      "properties": {
+        "total_members": {
+          "type": "number",
+          "description": "Number of unit members targeted"
+        },
+        "delivered": {
+          "type": "number",
+          "description": "Number of members the notification reached"
+        },
+        "failed": {
+          "type": "number",
+          "description": "Number of members that failed delivery"
+        },
+        "failures": {
+          "type": "array",
+          "description": "Emails of members whose notification failed",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sent_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
     }
   },
   "required": [

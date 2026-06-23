@@ -1,8 +1,11 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 
-// Saves a CET record (create or update) and broadcasts it to the entire unit.
-// Runs as service role so the write + notification always fire together,
+// Saves a CET record (create or update) and broadcasts it to every member of the unit.
+// Runs as service role so the write + per-member notifications always fire together,
 // independent of per-row RLS quirks. Instructors / cadet admins only.
+//
+// Returns a delivery report (total members targeted, delivered, failed) which is
+// also persisted on the CET record so instructors can audit distribution later.
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -19,37 +22,84 @@ Deno.serve(async (req) => {
 
     const { record, existingId, announcement, notification } = await req.json();
 
-    const payload = { ...record, unit, sent_by: user.email, is_published: true };
+    // ── 1. Save the CET record FIRST so persistence is never blocked by notifications ──
+    const basePayload = { ...record, unit, sent_by: user.email, is_published: true };
 
-    let saved;
+    let savedId = existingId;
     if (existingId) {
-      saved = await base44.asServiceRole.entities.CETRecord.update(existingId, payload);
+      await base44.asServiceRole.entities.CETRecord.update(existingId, basePayload);
     } else {
-      saved = await base44.asServiceRole.entities.CETRecord.create(payload);
+      const created = await base44.asServiceRole.entities.CETRecord.create(basePayload);
+      savedId = created?.id;
     }
 
+    // ── 2. Optional unit-wide announcement (best-effort) ──
+    let announcementError = null;
     if (announcement) {
-      await base44.asServiceRole.entities.Announcement.create({
-        title: announcement.title,
-        content: announcement.content,
-        unit,
-        target_role: 'all',
-        is_active: true,
-        sent_by: user.email,
-      });
+      try {
+        await base44.asServiceRole.entities.Announcement.create({
+          title: announcement.title,
+          content: announcement.content,
+          unit,
+          target_role: 'all',
+          is_active: true,
+          sent_by: user.email,
+        });
+      } catch (e) {
+        announcementError = e.message;
+      }
     }
+
+    // ── 3. Fan out a notification to every member of the unit + track delivery ──
+    const delivery = {
+      total_members: 0,
+      delivered: 0,
+      failed: 0,
+      failures: [],
+      sent_at: new Date().toISOString(),
+    };
 
     if (notification) {
-      await base44.asServiceRole.entities.Notification.create({
-        title: notification.title,
-        message: notification.message,
-        type: notification.type || 'info',
-        category: notification.category || 'announcement',
-        recipient_unit: unit,
-      });
+      // All members of the unit (the people who should receive the CET).
+      const members = await base44.asServiceRole.entities.User.filter({ unit });
+      const recipients = members.filter((m) => m.email);
+      delivery.total_members = recipients.length;
+
+      // Per-member fan-out: each member gets their own targeted notification so we can
+      // measure delivery precisely (avoids duplicating a separate unit-wide broadcast).
+      for (const m of recipients) {
+        try {
+          await base44.asServiceRole.entities.Notification.create({
+            title: notification.title,
+            message: notification.message,
+            type: notification.type || 'info',
+            category: notification.category || 'announcement',
+            recipient_unit: unit,
+            recipient_email: m.email,
+          });
+          delivery.delivered += 1;
+        } catch (_e) {
+          delivery.failed += 1;
+          delivery.failures.push(m.email);
+        }
+      }
     }
 
-    return Response.json({ success: true, id: saved?.id || existingId });
+    // ── 4. Persist the delivery report on the CET record ──
+    if (savedId) {
+      try {
+        await base44.asServiceRole.entities.CETRecord.update(savedId, { delivery });
+      } catch (_e) {
+        // Non-fatal — the report is still returned to the caller below.
+      }
+    }
+
+    return Response.json({
+      success: true,
+      id: savedId,
+      delivery,
+      announcementError,
+    });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
