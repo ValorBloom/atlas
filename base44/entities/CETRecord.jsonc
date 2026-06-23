@@ -51,7 +51,7 @@
   ],
   "rls": {
     "create": {
-      "data.unit": "{{user.data.unit}}",
+      "data.unit": "{{user.unit}}",
       "$or": [
         {
           "user_condition": {
@@ -68,11 +68,11 @@
     "read": {
       "$or": [
         {
-          "data.unit": "{{user.data.unit}}",
+          "data.unit": "{{user.unit}}",
           "data.is_published": true
         },
         {
-          "data.unit": "{{user.data.unit}}",
+          "data.unit": "{{user.unit}}",
           "$or": [
             {
               "user_condition": {
@@ -89,7 +89,7 @@
       ]
     },
     "update": {
-      "data.unit": "{{user.data.unit}}",
+      "data.unit": "{{user.unit}}",
       "$or": [
         {
           "user_condition": {
@@ -104,7 +104,7 @@
       ]
     },
     "delete": {
-      "data.unit": "{{user.data.unit}}",
+      "data.unit": "{{user.unit}}",
       "$or": [
         {
           "user_condition": {
