@@ -96,7 +96,10 @@ export default function CET() {
   // Fetch CET records for this unit
   const { data: cetRecords = [] } = useQuery({
     queryKey: ['cet-records', user?.unit],
-    queryFn: () => base44.entities.CETRecord.filter({ unit: user?.unit }, '-date', 10),
+    queryFn: async () => {
+      const { data } = await base44.functions.invoke('getCET', {});
+      return data?.records || [];
+    },
     enabled: !!user?.unit,
   });
 

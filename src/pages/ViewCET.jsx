@@ -33,7 +33,10 @@ export default function ViewCET() {
 
   const { data: cetRecords = [], isLoading } = useQuery({
     queryKey: ['cet-records-view', user?.unit],
-    queryFn: () => base44.entities.CETRecord.filter({ unit: user?.unit }, '-date', 30),
+    queryFn: async () => {
+      const { data } = await base44.functions.invoke('getCET', {});
+      return data?.records || [];
+    },
     enabled: !!user?.unit,
   });
 
