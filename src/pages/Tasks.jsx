@@ -105,18 +105,19 @@ export default function Tasks() {
   const handleDone = async (task) => {
     await base44.entities.Task.update(task.id, { status: 'Completed' });
 
-    // notify assigner
+    // notify assigner (via service-role function — cadets can't create Notifications directly)
     if (task.assigned_by_id && task.assigned_by_id !== user?.id) {
       const unitUsers = await base44.entities.User.filter({ unit: user?.unit });
       const assigner = unitUsers.find(u => u.id === task.assigned_by_id);
       if (assigner) {
-        await base44.entities.Notification.create({
-          title: '✅ Task Completed',
-          message: `"${task.title}" has been completed by ${user?.rank ? user.rank + ' ' : ''}${user?.display_name || user?.full_name || ''}`,
-          type: 'success',
-          category: 'admin',
-          recipient_email: assigner.email,
-          recipient_unit: user?.unit,
+        await base44.functions.invoke('broadcastNotification', {
+          notification: {
+            title: '✅ Task Completed',
+            message: `"${task.title}" has been completed by ${user?.rank ? user.rank + ' ' : ''}${user?.display_name || user?.full_name || ''}`,
+            type: 'success',
+            category: 'admin',
+            recipient_email: assigner.email,
+          },
         });
       }
     }
@@ -139,13 +140,11 @@ export default function Tasks() {
         subtitle={`${user?.unit} · ${openCount} pending`}
         backTo="/"
         rightAction={
-          canManage && (
-            <Link to="/tasks/new">
-              <Button size="sm" className="h-8 text-xs gap-1.5">
-                <Plus className="h-3.5 w-3.5" /> Assign
-              </Button>
-            </Link>
-          )
+          <Link to="/tasks/new">
+            <Button size="sm" className="h-8 text-xs gap-1.5">
+              <Plus className="h-3.5 w-3.5" /> Assign
+            </Button>
+          </Link>
         }
       />
 

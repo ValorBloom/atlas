@@ -39,7 +39,7 @@ export default function TaskDetail() {
   const { data: unitUsers = [] } = useQuery({
     queryKey: ['unit-users-tasks', user?.unit],
     queryFn: () => base44.entities.User.filter({ unit: user?.unit }),
-    enabled: !!user?.unit && canManage,
+    enabled: !!user?.unit,
   });
 
   const assignableUsers = unitUsers.filter(u => u.id !== user?.id);
@@ -99,14 +99,15 @@ export default function TaskDetail() {
         status: 'Not Done',
       });
 
-      // Notify each assignee
-      await base44.entities.Notification.create({
-        title: '📋 New Task Assigned',
-        message: `You have been assigned: "${form.title}"${form.due_datetime ? ` · Due ${format(parseISO(form.due_datetime), "d MMM, h:mma").replace(':00', '')}` : ''}`,
-        type: 'info',
-        category: 'admin',
-        recipient_email: assignee.email,
-        recipient_unit: user?.unit,
+      // Notify each assignee (via service-role function — cadets can't create Notifications directly)
+      await base44.functions.invoke('broadcastNotification', {
+        notification: {
+          title: '📋 New Task Assigned',
+          message: `You have been assigned: "${form.title}"${form.due_datetime ? ` · Due ${format(parseISO(form.due_datetime), "d MMM, h:mma").replace(':00', '')}` : ''}`,
+          type: 'info',
+          category: 'admin',
+          recipient_email: assignee.email,
+        },
       });
     }
 
@@ -124,13 +125,14 @@ export default function TaskDetail() {
       const assigner = unitUsers.find(u => u.id === task.assigned_by_id)
         || (await base44.entities.User.filter({ unit: user?.unit })).find(u => u.id === task.assigned_by_id);
       if (assigner) {
-        await base44.entities.Notification.create({
-          title: newStatus === 'Completed' ? '✅ Task Completed' : '📋 Task Updated',
-          message: `"${task.title}" marked as "${newStatus}" by ${user?.rank ? user.rank + ' ' : ''}${user?.display_name || user?.full_name || ''}`,
-          type: newStatus === 'Completed' ? 'success' : 'info',
-          category: 'admin',
-          recipient_email: assigner.email,
-          recipient_unit: user?.unit,
+        await base44.functions.invoke('broadcastNotification', {
+          notification: {
+            title: newStatus === 'Completed' ? '✅ Task Completed' : '📋 Task Updated',
+            message: `"${task.title}" marked as "${newStatus}" by ${user?.rank ? user.rank + ' ' : ''}${user?.display_name || user?.full_name || ''}`,
+            type: newStatus === 'Completed' ? 'success' : 'info',
+            category: 'admin',
+            recipient_email: assigner.email,
+          },
         });
       }
     }

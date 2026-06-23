@@ -11,13 +11,15 @@ Deno.serve(async (req) => {
 
     const { notification, audit } = await req.json();
 
+    const userUnit = user.unit || user.data?.unit;
+
     if (notification) {
       await base44.asServiceRole.entities.Notification.create({
         title: notification.title,
         message: notification.message,
         type: notification.type || 'info',
         category: notification.category || 'system',
-        recipient_unit: user.unit,
+        recipient_unit: userUnit,
         ...(notification.recipient_email ? { recipient_email: notification.recipient_email } : {}),
         ...(notification.link ? { link: notification.link } : {}),
       });
@@ -29,7 +31,7 @@ Deno.serve(async (req) => {
         category: audit.category || 'admin',
         details: audit.details || '',
         performed_by: user.email,
-        unit: user.unit,
+        unit: userUnit,
         ...(audit.target_entity ? { target_entity: audit.target_entity } : {}),
         ...(audit.target_id ? { target_id: audit.target_id } : {}),
       });
