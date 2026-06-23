@@ -17,6 +17,7 @@ import {
 import { toast } from 'sonner';
 import { format, addDays, subDays, parseISO } from 'date-fns';
 import SuccessDialog from '@/components/ui/SuccessDialog';
+import DeliveryStatus from '@/components/cet/DeliveryStatus';
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
   AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
@@ -84,6 +85,7 @@ export default function CET() {
   const [usedQuotes, setUsedQuotes] = useState([]);
   const [customWdi, setCustomWdi] = useState('');
   const [successMsg, setSuccessMsg] = useState(null);
+  const [lastDelivery, setLastDelivery] = useState(null);
 
   // Fetch instructors in same unit
   const { data: unitUsers = [] } = useQuery({
@@ -272,11 +274,19 @@ export default function CET() {
       setConfirming(false);
       setIsEditing(false);
       setExistingId(data.id || existingId);
+      setLastDelivery(data.delivery || null);
       qc.invalidateQueries({ queryKey: ['cet-records'] });
       qc.invalidateQueries({ queryKey: ['announcements'] });
-      setSuccessMsg(isUpdate
-        ? `The CET for ${dateStr} has been updated and your unit has been notified.`
-        : `The CET for ${dateStr} has been sent to your unit.`);
+
+      const dlv = data.delivery;
+      const reach = dlv
+        ? (dlv.failed > 0
+            ? ` Delivered to ${dlv.delivered} of ${dlv.total_members} members — ${dlv.failed} failed.`
+            : ` Delivered to all ${dlv.total_members} unit members.`)
+        : '';
+      setSuccessMsg((isUpdate
+        ? `The CET for ${dateStr} has been updated.`
+        : `The CET for ${dateStr} has been sent to your unit.`) + reach);
     } catch (err) {
       toast.error('Failed to save CET. Please try again.');
     } finally {
@@ -344,14 +354,17 @@ export default function CET() {
 
       {/* ── Status Banner ── */}
       {selectedRec?.is_published && !isEditing ? (
-        <div className="mx-4 mt-3 p-3 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Check className="h-4 w-4 text-green-400" />
-            <span className="text-sm text-green-400 font-medium">CET Published</span>
+        <div className="mx-4 mt-3 space-y-2">
+          <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Check className="h-4 w-4 text-green-400" />
+              <span className="text-sm text-green-400 font-medium">CET Published</span>
+            </div>
+            <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-green-400" onClick={() => setIsEditing(true)}>
+              <Edit3 className="h-3 w-3" /> Edit
+            </Button>
           </div>
-          <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-green-400" onClick={() => setIsEditing(true)}>
-            <Edit3 className="h-3 w-3" /> Edit
-          </Button>
+          <DeliveryStatus delivery={selectedRec.delivery || lastDelivery} />
         </div>
       ) : !selectedRec ? (
         <div className="mx-4 mt-3 p-3 bg-amber-500/8 border border-amber-500/20 rounded-xl">
