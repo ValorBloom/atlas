@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useOutletContext } from 'react-router-dom';
@@ -8,11 +8,18 @@ import PageHeader from '@/components/layout/PageHeader';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Clock, ArrowRight, AlertCircle, CheckCircle2, Users } from 'lucide-react';
 import { formatRankName, formatTime, isInstructor, isCadetAdmin } from '@/lib/constants';
-import { isToday, parseISO, differenceInMinutes } from 'date-fns';
+import { isToday, parseISO, differenceInMinutes, isWithinInterval, subDays } from 'date-fns';
+
+const RANGE_OPTIONS = [
+  { key: 'today', label: 'Today' },
+  { key: 'week', label: '7 Days' },
+  { key: 'all', label: 'All' },
+];
 
 export default function LocationTracker() {
   const { user } = useOutletContext();
   const queryClient = useQueryClient();
+  const [range, setRange] = useState('today');
 
   const refresh = async () => {
     await queryClient.invalidateQueries({ queryKey: ['movements-today'] });
@@ -26,11 +33,21 @@ export default function LocationTracker() {
     refetchInterval: 30000,
   });
 
-  const todayMovements = allMovements.filter(m => {
-    try { return isToday(parseISO(m.movement_date || m.created_date)); } catch { return false; }
-  });
+  const inRange = (m) => {
+    try {
+      const d = parseISO(m.movement_date || m.created_date);
+      if (range === 'today') return isToday(d);
+      if (range === 'week') return isWithinInterval(d, { start: subDays(new Date(), 6), end: new Date() });
+      return true;
+    } catch { return false; }
+  };
 
-  const pending = todayMovements.filter(m => m.status === 'departed');
+  // All active (departed, not yet reached) movements show regardless of the date range.
+  const activePending = allMovements.filter(m => m.status === 'departed');
+  const activeIds = new Set(activePending.map(m => m.id));
+  const todayMovements = allMovements.filter(m => inRange(m) || activeIds.has(m.id));
+
+  const pending = activePending;
   const returned = todayMovements.filter(m => m.status === 'reached');
 
   const isOverdue = (m) => {
@@ -46,8 +63,23 @@ export default function LocationTracker() {
   return (
     <div className="pb-24 relative">
       <PullToRefresh pullDistance={pullDistance} refreshing={refreshing} />
-      <PageHeader title="Movement Log" backTo="/admin" subtitle={`Today · ${todayMovements.length} movements`} />
+      <PageHeader title="Movement Log" backTo="/admin" subtitle={`${todayMovements.length} movements · ${pending.length} active`} />
       <div className="px-4 py-4 space-y-5">
+
+        {/* Date range toggle */}
+        <div className="flex gap-1.5">
+          {RANGE_OPTIONS.map(opt => (
+            <button
+              key={opt.key}
+              onClick={() => setRange(opt.key)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+                range === opt.key ? 'bg-primary text-white border-primary' : 'border-border text-muted-foreground bg-card'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
 
         {/* Pending Out Banner */}
         {pending.length > 0 && (
@@ -71,7 +103,9 @@ export default function LocationTracker() {
         {!isLoading && todayMovements.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <CheckCircle2 className="h-10 w-10 text-muted-foreground/25 mb-3" />
-            <p className="text-sm font-medium text-muted-foreground">No movements recorded today</p>
+            <p className="text-sm font-medium text-muted-foreground">
+              No movements {range === 'today' ? 'recorded today' : range === 'week' ? 'in the last 7 days' : 'recorded'}
+            </p>
             <p className="text-xs text-muted-foreground/60 mt-1">All personnel accounted for</p>
           </div>
         )}
@@ -154,7 +188,7 @@ export default function LocationTracker() {
         {todayMovements.length > 0 && (
           <div className="space-y-2">
             <h2 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">
-              Today's Full Log ({todayMovements.length})
+              {range === 'today' ? "Today's" : range === 'week' ? 'Last 7 Days' : 'Full'} Log ({todayMovements.length})
             </h2>
             {todayMovements.map((m, idx) => (
               <div key={m.id} className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card">
