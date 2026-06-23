@@ -1,16 +1,16 @@
 /**
- * taskReminders — scheduled task to send due-soon notifications
- * Security features:
+ * taskReminders — scheduled task to send incomplete-task reminders to assignees
+ * Sends each cadet a single digest of all their open (Not Done / In Progress) tasks,
+ * so they stay on top of assigned duties. Flags overdue and due-soon items.
+ * Security:
  * - Zod schema validation on incoming payload
  * - Admin-only guard (role check before execution)
- * - Rate limiting per invocation (prevents runaway re-triggers)
- * - Runs only via service role; never exposes raw user data
+ * - Runs via service role; never exposes raw user data
  */
 
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.31';
 import { z } from 'npm:zod@3.22.4';
 
-// Zod schema: scheduled runner sends an empty body or { dry_run: bool }
 const PayloadSchema = z.object({
   dry_run: z.boolean().optional().default(false),
 }).optional().default({});
@@ -28,7 +28,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Validate payload
     const rawBody = await req.json().catch(() => ({}));
     const parsed = PayloadSchema.safeParse(rawBody);
     if (!parsed.success) {
@@ -39,42 +38,50 @@ Deno.serve(async (req) => {
     const now = new Date();
     const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
-    const tasks = await base44.asServiceRole.entities.Task.filter({ status: 'Not Done' });
-    const inProgressTasks = await base44.asServiceRole.entities.Task.filter({ status: 'In Progress' });
-    const allOpen = [...tasks, ...inProgressTasks];
+    const notDone = await base44.asServiceRole.entities.Task.filter({ status: 'Not Done' });
+    const inProgress = await base44.asServiceRole.entities.Task.filter({ status: 'In Progress' });
+    const allOpen = [...notDone, ...inProgress].filter(t => t.assigned_to_id);
 
-    const reminders = allOpen.filter(t => {
-      if (!t.due_date) return false;
-      const due = new Date(t.due_date);
-      return due > now && due <= in24h;
-    });
+    // Group open tasks by assignee
+    const byAssignee = {};
+    for (const task of allOpen) {
+      (byAssignee[task.assigned_to_id] ||= []).push(task);
+    }
 
     let sent = 0;
-    for (const task of reminders) {
-      if (!task.assigned_to_id) continue;
-
-      const users = await base44.asServiceRole.entities.User.filter({ id: task.assigned_to_id });
+    for (const [assigneeId, tasks] of Object.entries(byAssignee)) {
+      const users = await base44.asServiceRole.entities.User.filter({ id: assigneeId });
       const assignee = users?.[0];
       if (!assignee?.email) continue;
 
-      const dueStr = new Date(task.due_date).toLocaleString('en-SG', {
-        day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit'
-      });
+      const overdue = tasks.filter(t => t.due_date && new Date(t.due_date) < now);
+      const dueSoon = tasks.filter(t => t.due_date && new Date(t.due_date) >= now && new Date(t.due_date) <= in24h);
+
+      const count = tasks.length;
+      let message;
+      if (overdue.length > 0) {
+        message = `You have ${count} incomplete task${count > 1 ? 's' : ''} — ${overdue.length} overdue${dueSoon.length ? `, ${dueSoon.length} due soon` : ''}. Tap to review and complete them.`;
+      } else if (dueSoon.length > 0) {
+        message = `You have ${count} incomplete task${count > 1 ? 's' : ''}, ${dueSoon.length} due within 24h. Tap to review and complete them.`;
+      } else {
+        message = `You have ${count} incomplete task${count > 1 ? 's' : ''} assigned. Tap to review and complete them.`;
+      }
 
       if (!dry_run) {
         await base44.asServiceRole.entities.Notification.create({
-          title: '⏰ Task Due Soon',
-          message: `Reminder: "${task.title}" is due ${dueStr}`,
-          type: 'warning',
+          title: overdue.length > 0 ? '⚠️ Overdue Tasks' : '📋 Task Reminder',
+          message,
+          type: overdue.length > 0 ? 'error' : 'warning',
           category: 'admin',
           recipient_email: assignee.email,
-          recipient_unit: task.unit,
+          recipient_unit: assignee.unit || tasks[0].unit,
+          link: '/tasks',
         });
       }
       sent++;
     }
 
-    return Response.json({ checked: allOpen.length, reminders_sent: sent, dry_run });
+    return Response.json({ assignees_notified: sent, open_tasks: allOpen.length, dry_run });
 
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
